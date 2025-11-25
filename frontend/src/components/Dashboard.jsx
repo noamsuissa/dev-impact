@@ -11,8 +11,16 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
           &gt; {user.name}@dev-impact:~$
         </div>
         {user.github && (
-          <div className="text-terminal-orange">
-            Connected to GitHub: @{user.github}
+          <div className="flex items-center gap-3 text-terminal-orange">
+            <span>Connected to GitHub:</span>
+            {user.github.avatar_url && (
+              <img 
+                src={user.github.avatar_url} 
+                alt={user.github.username}
+                className="w-6 h-6 rounded-full"
+              />
+            )}
+            <span>@{user.github.username || user.github}</span>
           </div>
         )}
       </div>
