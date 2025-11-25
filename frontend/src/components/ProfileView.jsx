@@ -14,14 +14,14 @@ const ProfileView = ({ user, projects, onBack }) => {
       </div>
 
       <div style={{ 
-        border: '1px solid #00ff00',
+        border: '1px solid #5a5a5a',
         padding: '40px',
         marginBottom: '40px'
       }}>
-        <div style={{ fontSize: '32px', marginBottom: '10px', textTransform: 'uppercase' }}>
+        <div style={{ fontSize: '32px', marginBottom: '10px', textTransform: 'uppercase', color: '#ff8c42' }}>
           {user.name}
         </div>
-        <div style={{ fontSize: '18px', color: '#00aa00', marginBottom: '20px' }}>
+        <div style={{ fontSize: '18px', color: '#c9c5c0', marginBottom: '20px' }}>
           Developer Profile
         </div>
         {user.github && (
@@ -31,9 +31,10 @@ const ProfileView = ({ user, projects, onBack }) => {
           </div>
         )}
         <div style={{ 
-          borderTop: '1px solid #00ff00',
+          borderTop: '1px solid #5a5a5a',
           marginTop: '20px',
-          paddingTop: '20px'
+          paddingTop: '20px',
+          color: '#c9c5c0'
         }}>
           {projects.length} {projects.length === 1 ? 'Project' : 'Projects'} • 
           {' '}{projects.reduce((sum, p) => sum + p.metrics.length, 0)} Achievements

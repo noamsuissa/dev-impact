@@ -132,9 +132,10 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
         <div style={{ marginBottom: '8px' }}>&gt; Impact Metrics:</div>
         {metrics.map((metric, i) => (
           <div key={i} style={{ 
-            border: '1px solid #00ff00', 
+            border: '1px solid #5a5a5a', 
             padding: '15px', 
-            marginBottom: '10px' 
+            marginBottom: '10px',
+            backgroundColor: '#3a3a3a'
           }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
               <div>
@@ -177,11 +178,12 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
           {techStack.map(tech => (
             <div key={tech} style={{ 
-              border: '1px solid #00ff00', 
+              border: '1px solid #ff8c42', 
               padding: '5px 10px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '8px',
+              backgroundColor: '#3a3a3a'
             }}>
               {tech}
               <button 
@@ -189,9 +191,10 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
                 style={{ 
                   background: 'none', 
                   border: 'none', 
-                  color: '#00ff00', 
+                  color: '#ff8c42', 
                   cursor: 'pointer',
-                  padding: '0'
+                  padding: '0',
+                  fontSize: '20px'
                 }}
               >
                 ×

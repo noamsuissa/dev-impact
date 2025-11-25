@@ -1,11 +1,16 @@
 import React from 'react';
 import TerminalButton from './common/TerminalButton';
-import { repeat, padLine, centerText } from '../utils/helpers';
+import { repeat, padLine, centerText, wrapText } from '../utils/helpers';
 
 const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
   const maxWidth = compact ? 60 : 80;
   
   const padLineLocal = (text) => padLine(text, maxWidth);
+  
+  const padMultiLine = (text, maxWidth) => {
+    const wrapped = wrapText(text, maxWidth - 2);
+    return wrapped.map(line => padLine(line, maxWidth));
+  };
   
   const buildMetricCard = (metric) => {
     const cardWidth = 16;
@@ -45,25 +50,31 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
       fontFamily: "'JetBrains Mono', 'Courier New', monospace",
       fontSize: compact ? '12px' : '14px',
       lineHeight: '1.5',
-      color: '#00ff00',
-      backgroundColor: '#0a0a0a',
+      color: '#e8e6e3',
+      backgroundColor: '#3a3a3a',
       padding: '20px',
       whiteSpace: 'pre',
-      border: '1px solid #00ff00',
+      border: '1px solid #5a5a5a',
       margin: '20px 0'
     }}>
       <div>┌{repeat('─', maxWidth)}┐</div>
-      <div>{padLineLocal(`🏢 ${project.company}`)}</div>
-      <div>{padLineLocal(project.projectName)}</div>
+      <div>{padLineLocal(`Company: ${project.company}`)}</div>
+      {padMultiLine(project.projectName, maxWidth).map((line, idx) => (
+        <div key={idx}>{line}</div>
+      ))}
       <div>{padLineLocal(`${project.role} • Team of ${project.teamSize}`)}</div>
       <div>├{repeat('─', maxWidth)}┤</div>
       <div>{padLineLocal('')}</div>
-      <div>{padLineLocal(`Problem: ${project.problem}`)}</div>
+      {padMultiLine(`Problem: ${project.problem}`, maxWidth).map((line, idx) => (
+        <div key={`prob-${idx}`}>{line}</div>
+      ))}
       <div>{padLineLocal('')}</div>
       <div>{padLineLocal('Solution:')}</div>
-      {project.contributions.map((contrib, idx) => (
-        <div key={idx}>{padLineLocal(`• ${contrib}`)}</div>
-      ))}
+      {project.contributions.map((contrib, idx) => 
+        padMultiLine(`• ${contrib}`, maxWidth).map((line, lineIdx) => (
+          <div key={`${idx}-${lineIdx}`}>{line}</div>
+        ))
+      )}
       <div>{padLineLocal('')}</div>
       
       {combinedMetrics.map((line, idx) => (
@@ -71,7 +82,9 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
       ))}
       
       <div>{padLineLocal('')}</div>
-      <div>{padLineLocal(project.techStack.join(' • '))}</div>
+      {padMultiLine(project.techStack.join(' • '), maxWidth).map((line, idx) => (
+        <div key={`tech-${idx}`}>{line}</div>
+      ))}
       <div>└{repeat('─', maxWidth)}┘</div>
       
       {(onEdit || onDelete) && (

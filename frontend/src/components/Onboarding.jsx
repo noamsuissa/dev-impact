@@ -53,10 +53,10 @@ const Onboarding = ({ onComplete }) => {
               <TerminalInput value={github} onChange={setGithub} placeholder="johndoe" />
             )}
             {i < step && s.input === 'name' && (
-              <div style={{ color: '#00aa00' }}>{name}</div>
+              <div style={{ color: '#ff8c42' }}>{name}</div>
             )}
             {i < step && s.input === 'github' && (
-              <div style={{ color: '#00aa00' }}>{github || '(skipped)'}</div>
+              <div style={{ color: '#ff8c42' }}>{github || '(skipped)'}</div>
             )}
           </div>
         ))}

@@ -11,7 +11,7 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
           &gt; {user.name}@dev-impact:~$
         </div>
         {user.github && (
-          <div style={{ color: '#00aa00' }}>
+          <div style={{ color: '#ff8c42' }}>
             Connected to GitHub: @{user.github}
           </div>
         )}
@@ -42,7 +42,7 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
           &gt; Your Projects ({projects.length})
         </div>
         {projects.length === 0 ? (
-          <div style={{ color: '#00aa00', marginBottom: '20px' }}>
+          <div style={{ color: '#ff8c42', marginBottom: '20px' }}>
             No projects yet. Add your first project to get started!
           </div>
         ) : (
