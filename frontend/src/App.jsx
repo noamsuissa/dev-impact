@@ -4,10 +4,11 @@ import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import ProjectBuilder from './components/ProjectBuilder';
 import ProfileView from './components/ProfileView';
+import ExportPage from './components/ExportPage';
 import './styles/terminal.css';
 
 export default function App() {
-  const [page, setPage] = useState('landing'); // landing, onboarding, dashboard, builder, profile
+  const [page, setPage] = useState('landing'); // landing, onboarding, dashboard, builder, profile, export
   const [user, setUser] = useState(null);
   const [projects, setProjects] = useState([]);
   const [editingProject, setEditingProject] = useState(null);
@@ -59,6 +60,7 @@ export default function App() {
           onEditProject={handleEditProject}
           onDeleteProject={handleDeleteProject}
           onViewProfile={() => setPage('profile')}
+          onExport={() => setPage('export')}
         />
       )}
       {page === 'builder' && (
@@ -70,6 +72,13 @@ export default function App() {
       )}
       {page === 'profile' && (
         <ProfileView
+          user={user}
+          projects={projects}
+          onBack={() => setPage('dashboard')}
+        />
+      )}
+      {page === 'export' && (
+        <ExportPage
           user={user}
           projects={projects}
           onBack={() => setPage('dashboard')}

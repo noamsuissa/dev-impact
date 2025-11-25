@@ -3,7 +3,7 @@ import { Plus, Eye, Download } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
 
-const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProject, onViewProfile }) => {
+const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProject, onViewProfile, onExport }) => {
   return (
     <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ marginBottom: '40px' }}>
@@ -30,7 +30,7 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
             <Eye size={16} style={{ display: 'inline', marginRight: '8px' }} />
             [Preview Profile]
           </TerminalButton>
-          <TerminalButton onClick={() => alert('Export coming soon!')}>
+          <TerminalButton onClick={onExport}>
             <Download size={16} style={{ display: 'inline', marginRight: '8px' }} />
             [Export]
           </TerminalButton>
