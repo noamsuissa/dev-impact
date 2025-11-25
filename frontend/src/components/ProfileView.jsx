@@ -5,37 +5,28 @@ import ProjectCard from './ProjectCard';
 
 const ProfileView = ({ user, projects, onBack }) => {
   return (
-    <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+    <div className="p-10 max-w-[1200px] mx-auto">
+      <div className="mb-10 flex items-center gap-5">
         <TerminalButton onClick={onBack}>
-          <ArrowLeft size={16} style={{ display: 'inline', marginRight: '8px' }} />
+          <ArrowLeft size={16} className="inline mr-2" />
           [Back to Dashboard]
         </TerminalButton>
       </div>
 
-      <div style={{ 
-        border: '1px solid #5a5a5a',
-        padding: '40px',
-        marginBottom: '40px'
-      }}>
-        <div style={{ fontSize: '32px', marginBottom: '10px', textTransform: 'uppercase', color: '#ff8c42' }}>
+      <div className="border border-terminal-border p-10 mb-10">
+        <div className="text-[32px] mb-2.5 uppercase text-terminal-orange">
           {user.name}
         </div>
-        <div style={{ fontSize: '18px', color: '#c9c5c0', marginBottom: '20px' }}>
+        <div className="text-lg text-[#c9c5c0] mb-5">
           Developer Profile
         </div>
         {user.github && (
-          <div style={{ marginBottom: '10px' }}>
-            <Github size={16} style={{ display: 'inline', marginRight: '8px' }} />
+          <div className="mb-2.5">
+            <Github size={16} className="inline mr-2" />
             github.com/{user.github}
           </div>
         )}
-        <div style={{ 
-          borderTop: '1px solid #5a5a5a',
-          marginTop: '20px',
-          paddingTop: '20px',
-          color: '#c9c5c0'
-        }}>
+        <div className="border-t border-terminal-border mt-5 pt-5 text-[#c9c5c0]">
           {projects.length} {projects.length === 1 ? 'Project' : 'Projects'} • 
           {' '}{projects.reduce((sum, p) => sum + p.metrics.length, 0)} Achievements
         </div>

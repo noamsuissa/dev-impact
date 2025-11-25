@@ -258,66 +258,41 @@ const ExportPage = ({ user, projects, onBack }) => {
   };
 
   return (
-    <div style={{ padding: '40px', maxWidth: '1000px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+    <div className="p-10 max-w-[1000px] mx-auto">
+      <div className="mb-10 flex items-center gap-5">
         <TerminalButton onClick={onBack}>
-          <ArrowLeft size={16} style={{ display: 'inline', marginRight: '8px' }} />
+          <ArrowLeft size={16} className="inline mr-2" />
           [Back]
         </TerminalButton>
       </div>
 
-      <div style={{ marginBottom: '30px' }}>
-        <div style={{ fontSize: '16px', marginBottom: '10px', color: '#c9c5c0' }}>
+      <div className="mb-8">
+        <div className="text-base mb-2.5 text-[#c9c5c0]">
           Export your profile in different formats:
         </div>
       </div>
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '20px',
-        marginBottom: '30px'
-      }}>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5 mb-8">
         {exportFormats.map(format => {
           const Icon = format.icon;
           return (
             <div
               key={format.id}
-              style={{
-                background: '#3a3a3a',
-                border: `2px solid ${selectedFormat === format.id ? '#ff8c42' : '#5a5a5a'}`,
-                padding: '25px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                position: 'relative'
-              }}
+              className={`bg-terminal-bg-lighter border-2 p-6 cursor-pointer transition-all duration-200 relative hover:border-terminal-orange ${
+                selectedFormat === format.id ? 'border-terminal-orange' : 'border-terminal-border'
+              }`}
               onClick={() => handleExport(format.id)}
-              onMouseEnter={(e) => {
-                if (selectedFormat !== format.id) {
-                  e.currentTarget.style.borderColor = '#ff8c42';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedFormat !== format.id) {
-                  e.currentTarget.style.borderColor = '#5a5a5a';
-                }
-              }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
+              <div className="flex items-center gap-4 mb-2.5">
                 <Icon size={28} color={format.color} />
-                <div style={{ fontSize: '18px', fontWeight: '500' }}>
+                <div className="text-lg font-medium">
                   {format.name}
                 </div>
               </div>
-              <div style={{ color: '#c9c5c0', fontSize: '14px' }}>
+              <div className="text-[#c9c5c0] text-sm">
                 {format.description}
               </div>
-              <div style={{ 
-                position: 'absolute', 
-                top: '15px', 
-                right: '15px',
-                opacity: 0.5
-              }}>
+              <div className="absolute top-4 right-4 opacity-50">
                 <Download size={20} />
               </div>
             </div>
@@ -326,28 +301,18 @@ const ExportPage = ({ user, projects, onBack }) => {
       </div>
 
       {exportStatus && (
-        <div style={{
-          background: exportStatus.includes('✓') ? '#3a3a3a' : '#3a3a3a',
-          border: `1px solid ${exportStatus.includes('✓') ? '#ff8c42' : '#5a5a5a'}`,
-          padding: '15px 20px',
-          color: exportStatus.includes('✓') ? '#ff8c42' : '#e8e6e3',
-          textAlign: 'center',
-          fontSize: '14px'
-        }}>
+        <div className={`bg-terminal-bg-lighter border ${
+          exportStatus.includes('✓') ? 'border-terminal-orange text-terminal-orange' : 'border-terminal-border text-terminal-text'
+        } py-4 px-5 text-center text-sm`}>
           {exportStatus}
         </div>
       )}
 
-      <div style={{ 
-        marginTop: '40px',
-        padding: '20px',
-        background: '#3a3a3a',
-        border: '1px solid #5a5a5a'
-      }}>
-        <div style={{ fontSize: '14px', color: '#c9c5c0', marginBottom: '10px' }}>
+      <div className="mt-10 p-5 bg-terminal-bg-lighter border border-terminal-border">
+        <div className="text-sm text-[#c9c5c0] mb-2.5">
           &gt; Export Information
         </div>
-        <ul style={{ color: '#e8e6e3', fontSize: '13px', lineHeight: '1.8' }}>
+        <ul className="text-terminal-text text-[13px] leading-relaxed">
           <li><strong>JSON:</strong> Perfect for importing into other tools or backing up your data</li>
           <li><strong>Markdown:</strong> Great for GitHub READMEs and documentation</li>
           <li><strong>HTML:</strong> Standalone webpage you can host or share</li>

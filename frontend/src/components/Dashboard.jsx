@@ -5,44 +5,44 @@ import ProjectCard from './ProjectCard';
 
 const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProject, onViewProfile, onExport }) => {
   return (
-    <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '40px' }}>
-        <div style={{ fontSize: '24px', marginBottom: '10px' }}>
+    <div className="p-10 max-w-[1200px] mx-auto">
+      <div className="mb-10">
+        <div className="text-2xl mb-2.5">
           &gt; {user.name}@dev-impact:~$
         </div>
         {user.github && (
-          <div style={{ color: '#ff8c42' }}>
+          <div className="text-terminal-orange">
             Connected to GitHub: @{user.github}
           </div>
         )}
       </div>
 
-      <div style={{ marginBottom: '40px' }}>
-        <div style={{ fontSize: '18px', marginBottom: '20px' }}>
+      <div className="mb-10">
+        <div className="text-lg mb-5">
           &gt; Actions
         </div>
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+        <div className="flex gap-5 flex-wrap">
           <TerminalButton onClick={onAddProject}>
-            <Plus size={16} style={{ display: 'inline', marginRight: '8px' }} />
+            <Plus size={16} className="inline mr-2" />
             [Add Project]
           </TerminalButton>
           <TerminalButton onClick={onViewProfile}>
-            <Eye size={16} style={{ display: 'inline', marginRight: '8px' }} />
+            <Eye size={16} className="inline mr-2" />
             [Preview Profile]
           </TerminalButton>
           <TerminalButton onClick={onExport}>
-            <Download size={16} style={{ display: 'inline', marginRight: '8px' }} />
+            <Download size={16} className="inline mr-2" />
             [Export]
           </TerminalButton>
         </div>
       </div>
 
       <div>
-        <div style={{ fontSize: '18px', marginBottom: '20px' }}>
+        <div className="text-lg mb-5">
           &gt; Your Projects ({projects.length})
         </div>
         {projects.length === 0 ? (
-          <div style={{ color: '#ff8c42', marginBottom: '20px' }}>
+          <div className="text-terminal-orange mb-5">
             No projects yet. Add your first project to get started!
           </div>
         ) : (

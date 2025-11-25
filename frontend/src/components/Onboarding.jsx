@@ -35,17 +35,11 @@ const Onboarding = ({ onComplete }) => {
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div style={{ maxWidth: '600px', width: '100%' }}>
+    <div className="min-h-screen flex items-center justify-center p-5">
+      <div className="max-w-[600px] w-full">
         {steps.slice(0, step + 1).map((s, i) => (
-          <div key={i} className="fade-in" style={{ marginBottom: '20px' }}>
-            <div style={{ marginBottom: '10px' }}>{s.prompt}</div>
+          <div key={i} className="fade-in mb-5">
+            <div className="mb-2.5">{s.prompt}</div>
             {i === step && s.input === 'name' && (
               <TerminalInput value={name} onChange={setName} placeholder="John Doe" />
             )}
@@ -53,15 +47,15 @@ const Onboarding = ({ onComplete }) => {
               <TerminalInput value={github} onChange={setGithub} placeholder="johndoe" />
             )}
             {i < step && s.input === 'name' && (
-              <div style={{ color: '#ff8c42' }}>{name}</div>
+              <div className="text-terminal-orange">{name}</div>
             )}
             {i < step && s.input === 'github' && (
-              <div style={{ color: '#ff8c42' }}>{github || '(skipped)'}</div>
+              <div className="text-terminal-orange">{github || '(skipped)'}</div>
             )}
           </div>
         ))}
         {step === steps.length - 1 && (
-          <div className="fade-in" style={{ marginTop: '40px', display: 'flex', gap: '20px' }}>
+          <div className="fade-in mt-10 flex gap-5">
             <TerminalButton onClick={handleNext}>
               [Continue]
             </TerminalButton>
@@ -71,14 +65,14 @@ const Onboarding = ({ onComplete }) => {
           </div>
         )}
         {step < steps.length - 1 && steps[step].input && (
-          <div style={{ marginTop: '20px' }}>
+          <div className="mt-5">
             <TerminalButton onClick={handleNext}>
               [Next]
             </TerminalButton>
           </div>
         )}
         {step < steps.length - 1 && !steps[step].input && (
-          <div style={{ marginTop: '20px' }}>
+          <div className="mt-5">
             <TerminalButton onClick={handleNext}>
               [Continue]
             </TerminalButton>

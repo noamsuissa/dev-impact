@@ -72,47 +72,47 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
                   contributions.some(c => c.trim()) && techStack.length > 0;
 
   return (
-    <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+    <div className="p-10 max-w-[800px] mx-auto">
+      <div className="mb-10 flex items-center gap-5">
         <TerminalButton onClick={onCancel}>
-          <ArrowLeft size={16} style={{ display: 'inline', marginRight: '8px' }} />
+          <ArrowLeft size={16} className="inline mr-2" />
           [Back]
         </TerminalButton>
-        <div style={{ fontSize: '20px' }}>
+        <div className="text-xl">
           &gt; {editProject ? 'Edit' : 'New'} Project
         </div>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ marginBottom: '8px' }}>&gt; Company:</div>
+      <div className="mb-5">
+        <div className="mb-2">&gt; Company:</div>
         <TerminalInput value={company} onChange={setCompany} placeholder="TechCorp" />
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ marginBottom: '8px' }}>&gt; Project Name:</div>
+      <div className="mb-5">
+        <div className="mb-2">&gt; Project Name:</div>
         <TerminalInput value={projectName} onChange={setProjectName} placeholder="Real-time Analytics Dashboard" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+      <div className="grid grid-cols-2 gap-5 mb-5">
         <div>
-          <div style={{ marginBottom: '8px' }}>&gt; Your Role:</div>
+          <div className="mb-2">&gt; Your Role:</div>
           <TerminalInput value={role} onChange={setRole} placeholder="Senior Frontend Engineer" />
         </div>
         <div>
-          <div style={{ marginBottom: '8px' }}>&gt; Team Size:</div>
+          <div className="mb-2">&gt; Team Size:</div>
           <TerminalInput value={teamSize} onChange={setTeamSize} placeholder="5" />
         </div>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ marginBottom: '8px' }}>&gt; Problem (one line):</div>
+      <div className="mb-5">
+        <div className="mb-2">&gt; Problem (one line):</div>
         <TerminalInput value={problem} onChange={setProblem} placeholder="5min dashboard load blocking marketing team" />
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ marginBottom: '8px' }}>&gt; Your Solution (3-5 bullets):</div>
+      <div className="mb-5">
+        <div className="mb-2">&gt; Your Solution (3-5 bullets):</div>
         {contributions.map((contrib, i) => (
-          <div key={i} style={{ marginBottom: '10px', display: 'flex', gap: '10px' }}>
+          <div key={i} className="mb-2.5 flex gap-2.5">
             <TerminalInput 
               value={contrib} 
               onChange={(val) => updateContribution(i, val)} 
@@ -128,18 +128,13 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
         </TerminalButton>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ marginBottom: '8px' }}>&gt; Impact Metrics:</div>
+      <div className="mb-5">
+        <div className="mb-2">&gt; Impact Metrics:</div>
         {metrics.map((metric, i) => (
-          <div key={i} style={{ 
-            border: '1px solid #5a5a5a', 
-            padding: '15px', 
-            marginBottom: '10px',
-            backgroundColor: '#3a3a3a'
-          }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+          <div key={i} className="border border-terminal-border p-4 mb-2.5 bg-terminal-bg-lighter">
+            <div className="grid grid-cols-2 gap-2.5 mb-2.5">
               <div>
-                <div style={{ marginBottom: '5px', fontSize: '12px' }}>Value:</div>
+                <div className="mb-1 text-xs">Value:</div>
                 <TerminalInput 
                   value={metric.primary} 
                   onChange={(val) => updateMetric(i, 'primary', val)} 
@@ -147,7 +142,7 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
                 />
               </div>
               <div>
-                <div style={{ marginBottom: '5px', fontSize: '12px' }}>Label:</div>
+                <div className="mb-1 text-xs">Label:</div>
                 <TerminalInput 
                   value={metric.label} 
                   onChange={(val) => updateMetric(i, 'label', val)} 
@@ -155,8 +150,8 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
                 />
               </div>
             </div>
-            <div style={{ marginBottom: '10px' }}>
-              <div style={{ marginBottom: '5px', fontSize: '12px' }}>Detail (optional):</div>
+            <div className="mb-2.5">
+              <div className="mb-1 text-xs">Detail (optional):</div>
               <TerminalInput 
                 value={metric.detail} 
                 onChange={(val) => updateMetric(i, 'detail', val)} 
@@ -173,36 +168,22 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
         </TerminalButton>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ marginBottom: '8px' }}>&gt; Tech Stack:</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+      <div className="mb-5">
+        <div className="mb-2">&gt; Tech Stack:</div>
+        <div className="flex flex-wrap gap-2.5 mb-2.5">
           {techStack.map(tech => (
-            <div key={tech} style={{ 
-              border: '1px solid #ff8c42', 
-              padding: '5px 10px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              backgroundColor: '#3a3a3a'
-            }}>
+            <div key={tech} className="border border-terminal-orange py-1 px-2.5 flex items-center gap-2 bg-terminal-bg-lighter">
               {tech}
               <button 
                 onClick={() => removeTech(tech)}
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  color: '#ff8c42', 
-                  cursor: 'pointer',
-                  padding: '0',
-                  fontSize: '20px'
-                }}
+                className="bg-transparent border-none text-terminal-orange cursor-pointer p-0 text-xl"
               >
                 ×
               </button>
             </div>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div className="flex gap-2.5">
           <TerminalInput 
             value={newTech} 
             onChange={setNewTech} 
@@ -214,7 +195,7 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '20px', marginTop: '40px' }}>
+      <div className="flex gap-5 mt-10">
         <TerminalButton onClick={handleSave} disabled={!isValid}>
           [Save Project]
         </TerminalButton>

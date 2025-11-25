@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply m-0 p-0 bg-[#2d2d2d] text-[#e8e6e3] font-mono;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 14px;
+  }
+}
+
+@layer components {
+  .terminal-glow {
+    text-shadow: 0 0 5px #ff8c42;
+  }
+
+  .terminal-button {
+    @apply bg-transparent border border-terminal-text text-terminal-text px-4 py-2 font-mono cursor-pointer transition-all duration-200;
+  }
+
+  .terminal-button:hover:not(:disabled) {
+    @apply bg-terminal-orange border-terminal-orange text-terminal-bg;
+    box-shadow: 0 0 10px rgba(255, 140, 66, 0.3);
+  }
+
+  .terminal-button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .terminal-input {
+    @apply bg-terminal-bg-lighter border border-terminal-border text-terminal-text p-2 font-mono w-full outline-none;
+  }
+
+  .terminal-input:focus {
+    @apply border-terminal-orange;
+    box-shadow: 0 0 5px rgba(255, 140, 66, 0.3);
+  }
+
+  .terminal-card {
+    @apply bg-terminal-bg border border-terminal-border p-5 my-5;
+  }
+}
+
+@layer utilities {
+  .blink {
+    animation: blink 1s infinite;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+

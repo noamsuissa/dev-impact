@@ -5,7 +5,7 @@ import Dashboard from './components/Dashboard';
 import ProjectBuilder from './components/ProjectBuilder';
 import ProfileView from './components/ProfileView';
 import ExportPage from './components/ExportPage';
-import './styles/terminal.css';
+import './index.css';
 
 export default function App() {
   const [page, setPage] = useState('landing'); // landing, onboarding, dashboard, builder, profile, export
@@ -45,7 +45,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#2d2d2d' }}>
+    <div className="min-h-screen bg-[#2d2d2d]">
       {page === 'landing' && (
         <LandingPage onStart={() => setPage('onboarding')} />
       )}

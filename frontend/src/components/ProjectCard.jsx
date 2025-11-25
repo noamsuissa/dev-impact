@@ -46,17 +46,7 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
   }
 
   return (
-    <div style={{
-      fontFamily: "'JetBrains Mono', 'Courier New', monospace",
-      fontSize: compact ? '12px' : '14px',
-      lineHeight: '1.5',
-      color: '#e8e6e3',
-      backgroundColor: '#3a3a3a',
-      padding: '20px',
-      whiteSpace: 'pre',
-      border: '1px solid #5a5a5a',
-      margin: '20px 0'
-    }}>
+    <div className={`font-mono ${compact ? 'text-xs' : 'text-sm'} leading-normal text-terminal-text bg-terminal-bg-lighter p-5 whitespace-pre border border-terminal-border my-5`}>
       <div>┌{repeat('─', maxWidth)}┐</div>
       <div>{padLineLocal(`Company: ${project.company}`)}</div>
       {padMultiLine(project.projectName, maxWidth).map((line, idx) => (
@@ -88,7 +78,7 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
       <div>└{repeat('─', maxWidth)}┘</div>
       
       {(onEdit || onDelete) && (
-        <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+        <div className="mt-2.5 flex gap-2.5">
           {onEdit && (
             <TerminalButton onClick={() => onEdit(project)}>
               [Edit]

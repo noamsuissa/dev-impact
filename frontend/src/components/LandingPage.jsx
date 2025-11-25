@@ -28,21 +28,15 @@ const LandingPage = ({ onStart }) => {
   }, []);
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div style={{ maxWidth: '600px', width: '100%' }}>
+    <div className="min-h-screen flex items-center justify-center p-5">
+      <div className="max-w-[600px] w-full">
         {lines.map((line, i) => (
-          <div key={i} className="fade-in" style={{ marginBottom: '10px' }}>
+          <div key={i} className="fade-in mb-2.5">
             {line}
           </div>
         ))}
         {showButtons && (
-          <div className="fade-in" style={{ marginTop: '40px', display: 'flex', gap: '20px' }}>
+          <div className="fade-in mt-10 flex gap-5">
             <TerminalButton onClick={onStart}>
               [Start Building]
             </TerminalButton>
