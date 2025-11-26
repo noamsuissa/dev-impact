@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LandingPage from './components/LandingPage';
 import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
@@ -7,11 +7,38 @@ import ProfileView from './components/ProfileView';
 import ExportPage from './components/ExportPage';
 import './index.css';
 
+// Helper function to load from localStorage
+const loadFromStorage = (key, defaultValue) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultValue;
+  } catch (e) {
+    console.error(`Failed to parse ${key}:`, e);
+    return defaultValue;
+  }
+};
+
 export default function App() {
-  const [page, setPage] = useState('landing'); // landing, onboarding, dashboard, builder, profile, export
-  const [user, setUser] = useState(null);
-  const [projects, setProjects] = useState([]);
+  const [user, setUser] = useState(() => loadFromStorage('dev-impact-user', null));
+  const [page, setPage] = useState(() => 
+    loadFromStorage('dev-impact-user', null) ? 'dashboard' : 'landing'
+  );
+  const [projects, setProjects] = useState(() => loadFromStorage('dev-impact-projects', []));
   const [editingProject, setEditingProject] = useState(null);
+
+  // Save user data to localStorage whenever it changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('dev-impact-user', JSON.stringify(user));
+    }
+  }, [user]);
+
+  // Save projects to localStorage whenever they change
+  useEffect(() => {
+    if (projects.length > 0) {
+      localStorage.setItem('dev-impact-projects', JSON.stringify(projects));
+    }
+  }, [projects]);
 
   const handleOnboardingComplete = (userData) => {
     setUser(userData);
