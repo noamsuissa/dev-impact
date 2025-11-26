@@ -26,14 +26,24 @@ export default function App() {
   const [currentView, setCurrentView] = useState(null); // null, 'auth', 'onboarding', 'dashboard', etc.
   const [projects, setProjects] = useState(() => loadFromStorage('dev-impact-projects', []));
   const [editingProject, setEditingProject] = useState(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Handle initial load to prevent flicker
+  useEffect(() => {
+    if (!authLoading && isInitialLoad) {
+      // Small delay to prevent flicker
+      const timer = setTimeout(() => setIsInitialLoad(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [authLoading, isInitialLoad]);
 
   // Determine which page to show based on auth and profile state
   const page = (() => {
     // If explicitly navigating to a page, use that
     if (currentView) return currentView;
 
-    // If still loading auth, show loading
-    if (authLoading) return 'loading';
+    // If still loading auth or initial load, show loading
+    if (authLoading || isInitialLoad) return 'loading';
 
     // Not authenticated - show landing
     if (!authUser) return 'landing';

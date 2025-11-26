@@ -120,7 +120,7 @@ const Auth = ({ onAuthSuccess }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-5">
-      <div className="max-w-[500px] w-full">
+      <div className="max-w-[500px] w-full" key={mode}>
         {/* Header */}
         <div className="fade-in mb-10">
           <div className="text-2xl mb-2">
