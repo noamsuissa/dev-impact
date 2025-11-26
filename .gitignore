@@ -7,7 +7,6 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
 dist
 dist-ssr
 *.local
@@ -79,3 +78,13 @@ coverage.xml
 # Pyre type checker
 .pyre/
 
+# npm
+node_modules/
+package-lock.json
+package.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+yarn.lock
+bun.lockb
+bun.lock
+bun.lockb
