@@ -49,8 +49,6 @@ The frontend will run at `http://localhost:5173`
 4. Connect your GitHub account (optional but recommended)
 5. Start building your impact profile!
 
-For detailed setup and testing instructions, see [SETUP.md](SETUP.md) and [TESTING.md](TESTING.md).
-
 ## How to Contribute
 
 We welcome contributions! Here's how you can help:
@@ -131,8 +129,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Questions?
 
-- Check out [SETUP.md](SETUP.md) for detailed setup instructions
-- See [TESTING.md](TESTING.md) for testing guidelines
 - Open an issue for any questions or problems
 
 ---
