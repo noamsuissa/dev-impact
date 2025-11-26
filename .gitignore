@@ -28,4 +28,4 @@ dist-ssr
 # Ignore all markdown files except README.md or any README in subdirectories
 *.md
 !README.md
-!**/README.md
+**README.md
