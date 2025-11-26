@@ -3,7 +3,7 @@ import TerminalButton from './common/TerminalButton';
 import { repeat, padLine, centerText, wrapText } from '../utils/helpers';
 
 const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
-  const maxWidth = compact ? 60 : 80;
+  const maxWidth = compact ? 45 : 80;
   
   const padLineLocal = (text) => padLine(text, maxWidth);
   
@@ -13,7 +13,7 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
   };
   
   const buildMetricCard = (metric) => {
-    const cardWidth = 16;
+    const cardWidth = compact ? 12 : 16;
     const lines = [];
     
     lines.push('┌' + repeat('─', cardWidth) + '┐');
@@ -34,10 +34,12 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
   const maxMetricLines = Math.max(...metricCards.map(c => c.length), 0);
   
   const combinedMetrics = [];
+  const metricSpacing = compact ? 14 : 18; // card width + 2 for padding
+  
   for (let i = 0; i < maxMetricLines; i++) {
     let line = '│ ';
     metricCards.forEach((card, idx) => {
-      line += (card[i] || repeat(' ', 18));
+      line += (card[i] || repeat(' ', metricSpacing));
       if (idx < metricCards.length - 1) line += '  ';
     });
     const currentLength = line.length - 2;
@@ -46,7 +48,8 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
   }
 
   return (
-    <div className={`font-mono ${compact ? 'text-xs' : 'text-sm'} leading-normal text-terminal-text bg-terminal-bg-lighter p-5 whitespace-pre border border-terminal-border my-5`}>
+    <div className={`font-mono ${compact ? 'text-xs' : 'text-sm'} leading-normal text-terminal-text whitespace-pre overflow-x-auto flex flex-col h-full`}>
+      <div className="inline-block min-w-fit flex-grow">
       <div>┌{repeat('─', maxWidth)}┐</div>
       <div>{padLineLocal(`Company: ${project.company}`)}</div>
       {padMultiLine(project.projectName, maxWidth).map((line, idx) => (
@@ -76,9 +79,10 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
         <div key={`tech-${idx}`}>{line}</div>
       ))}
       <div>└{repeat('─', maxWidth)}┘</div>
+      </div>
       
       {(onEdit || onDelete) && (
-        <div className="mt-2.5 flex gap-2.5">
+        <div className="mt-2.5 ml-[4px] flex gap-2.5">
           {onEdit && (
             <TerminalButton onClick={() => onEdit(project)}>
               [Edit]

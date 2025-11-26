@@ -32,9 +32,17 @@ const ProfileView = ({ user, projects, onBack }) => {
         </div>
       </div>
 
-      {projects.map(project => (
-        <ProjectCard key={project.id} project={project} />
-      ))}
+      {projects.length > 0 && (
+        <div className="bg-terminal-bg-lighter border border-terminal-border p-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start auto-rows-fr">
+            {projects.map(project => (
+              <div key={project.id} className="min-w-0 h-full">
+                <ProjectCard project={project} compact />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
