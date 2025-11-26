@@ -5,7 +5,7 @@ import { useSupabase } from '../hooks/useSupabase';
 
 const Auth = ({ onAuthSuccess }) => {
   const { supabase } = useSupabase();
-  const [mode, setMode] = useState('signin'); // 'signin' or 'signup'
+  const [mode, setMode] = useState('signin'); // 'signin', 'signup', or 'reset'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -108,8 +108,30 @@ const Auth = ({ onAuthSuccess }) => {
     }
   };
 
-  const toggleMode = () => {
-    setMode(mode === 'signin' ? 'signup' : 'signin');
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    setLoading(true);
+
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (resetError) throw resetError;
+
+      setMessage('Password reset email sent! Check your inbox.');
+      setEmail('');
+    } catch (err) {
+      setError(err.message || 'Failed to send reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleMode = (newMode) => {
+    setMode(newMode || (mode === 'signin' ? 'signup' : 'signin'));
     setError(null);
     setMessage(null);
     setEmail('');
@@ -124,17 +146,19 @@ const Auth = ({ onAuthSuccess }) => {
         {/* Header */}
         <div className="fade-in mb-10">
           <div className="text-2xl mb-2">
-            &gt; {mode === 'signin' ? 'Sign In' : 'Create Account'}
+            &gt; {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
           </div>
           <div className="text-terminal-gray">
             {mode === 'signin' 
               ? 'Welcome back to dev-impact' 
-              : 'Start showcasing your developer impact'}
+              : mode === 'signup'
+              ? 'Start showcasing your developer impact'
+              : 'Enter your email to receive a password reset link'}
           </div>
         </div>
 
         {/* Form */}
-        <form onSubmit={mode === 'signin' ? handleSignIn : handleSignUp} className="space-y-5">
+        <form onSubmit={mode === 'signin' ? handleSignIn : mode === 'signup' ? handleSignUp : handlePasswordReset} className="space-y-5">
           {/* Email */}
           <div className="fade-in">
             <div className="mb-2">&gt; Email:</div>
@@ -148,21 +172,34 @@ const Auth = ({ onAuthSuccess }) => {
             />
           </div>
 
-          {/* Password */}
-          <div className="fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="mb-2">&gt; Password:</div>
-            <TerminalInput
-              type="password"
-              value={password}
-              onChange={(val) => {
-                setPassword(val);
-                if (mode === 'signup') setShowPasswordHints(true);
-              }}
-              placeholder="••••••••"
-              disabled={loading}
-              required
-            />
-          </div>
+          {/* Password (hidden in reset mode) */}
+          {mode !== 'reset' && (
+            <div className="fade-in" style={{ animationDelay: '0.1s' }}>
+              <div className="mb-2 flex justify-between items-center">
+                <span>&gt; Password:</span>
+                {mode === 'signin' && (
+                  <button
+                    type="button"
+                    onClick={() => toggleMode('reset')}
+                    className="text-terminal-orange text-xs hover:text-terminal-orange-light transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <TerminalInput
+                type="password"
+                value={password}
+                onChange={(val) => {
+                  setPassword(val);
+                  if (mode === 'signup') setShowPasswordHints(true);
+                }}
+                placeholder="••••••••"
+                disabled={loading}
+                required
+              />
+            </div>
+          )}
 
           {/* Password Requirements (signup only) */}
           {mode === 'signup' && showPasswordHints && password.length > 0 && (
@@ -231,11 +268,17 @@ const Auth = ({ onAuthSuccess }) => {
               disabled={
                 loading || 
                 !email || 
-                !password || 
+                (mode !== 'reset' && !password) ||
                 (mode === 'signup' && (!confirmPassword || !passwordValidation.isValid || password !== confirmPassword))
               }
             >
-              {loading ? '[Processing...]' : mode === 'signin' ? '[Sign In]' : '[Create Account]'}
+              {loading 
+                ? '[Processing...]' 
+                : mode === 'signin' 
+                ? '[Sign In]' 
+                : mode === 'signup'
+                ? '[Create Account]'
+                : '[Send Reset Link]'}
             </TerminalButton>
           </div>
         </form>
@@ -243,11 +286,25 @@ const Auth = ({ onAuthSuccess }) => {
         {/* Toggle Mode */}
         <div className="fade-in mt-10 pt-10 border-t border-terminal-border" style={{ animationDelay: mode === 'signup' ? '0.4s' : '0.3s' }}>
           <div className="text-terminal-gray mb-3">
-            {mode === 'signin' ? "Don't have an account?" : "Already have an account?"}
+            {mode === 'signin' 
+              ? "Don't have an account?" 
+              : mode === 'signup'
+              ? "Already have an account?"
+              : "Remember your password?"}
           </div>
-          <TerminalButton onClick={toggleMode} disabled={loading}>
-            {mode === 'signin' ? '[Create Account]' : '[Sign In]'}
-          </TerminalButton>
+          <div className="flex gap-3">
+            <TerminalButton 
+              onClick={() => toggleMode(mode === 'reset' ? 'signin' : mode === 'signin' ? 'signup' : 'signin')} 
+              disabled={loading}
+            >
+              {mode === 'signin' ? '[Create Account]' : '[Sign In]'}
+            </TerminalButton>
+            {mode === 'signup' && (
+              <TerminalButton onClick={() => toggleMode('reset')} disabled={loading}>
+                [Forgot Password?]
+              </TerminalButton>
+            )}
+          </div>
         </div>
 
         {/* Help Text */}

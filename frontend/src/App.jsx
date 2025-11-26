@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSupabase } from './hooks/useSupabase';
 import LandingPage from './components/LandingPage';
 import Auth from './components/Auth';
+import ResetPassword from './components/ResetPassword';
 import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import ProjectBuilder from './components/ProjectBuilder';
@@ -27,6 +28,12 @@ export default function App() {
   const [projects, setProjects] = useState(() => loadFromStorage('dev-impact-projects', []));
   const [editingProject, setEditingProject] = useState(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Check if user is resetting password (from email link)
+  const [isResettingPassword, setIsResettingPassword] = useState(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    return hashParams.get('type') === 'recovery';
+  });
 
   // Handle initial load to prevent flicker
   useEffect(() => {
@@ -39,6 +46,9 @@ export default function App() {
 
   // Determine which page to show based on auth and profile state
   const page = (() => {
+    // If resetting password, show reset page
+    if (isResettingPassword) return 'reset-password';
+
     // If explicitly navigating to a page, use that
     if (currentView) return currentView;
 
@@ -72,6 +82,13 @@ export default function App() {
   const handleAuthSuccess = () => {
     // After successful auth, reset view to let automatic routing handle it
     setCurrentView(null);
+  };
+
+  const handlePasswordResetSuccess = () => {
+    // After password reset, clear the flag and redirect to auth
+    setIsResettingPassword(false);
+    window.location.hash = ''; // Clear hash
+    setCurrentView('auth');
   };
 
   const handleOnboardingComplete = (userData) => {
@@ -119,6 +136,9 @@ export default function App() {
       )}
       {page === 'auth' && (
         <Auth onAuthSuccess={handleAuthSuccess} />
+      )}
+      {page === 'reset-password' && (
+        <ResetPassword onSuccess={handlePasswordResetSuccess} />
       )}
       {page === 'onboarding' && (
         <Onboarding onComplete={handleOnboardingComplete} />
