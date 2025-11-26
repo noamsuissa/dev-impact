@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useSupabase } from './hooks/useSupabase';
 import LandingPage from './components/LandingPage';
+import Auth from './components/Auth';
 import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import ProjectBuilder from './components/ProjectBuilder';
@@ -19,19 +21,36 @@ const loadFromStorage = (key, defaultValue) => {
 };
 
 export default function App() {
-  const [user, setUser] = useState(() => loadFromStorage('dev-impact-user', null));
-  const [page, setPage] = useState(() => 
-    loadFromStorage('dev-impact-user', null) ? 'dashboard' : 'landing'
-  );
+  const { user: authUser, loading: authLoading } = useSupabase();
+  const [userProfile, setUserProfile] = useState(() => loadFromStorage('dev-impact-user', null));
+  const [currentView, setCurrentView] = useState(null); // null, 'auth', 'onboarding', 'dashboard', etc.
   const [projects, setProjects] = useState(() => loadFromStorage('dev-impact-projects', []));
   const [editingProject, setEditingProject] = useState(null);
 
-  // Save user data to localStorage whenever it changes
+  // Determine which page to show based on auth and profile state
+  const page = (() => {
+    // If explicitly navigating to a page, use that
+    if (currentView) return currentView;
+
+    // If still loading auth, show loading
+    if (authLoading) return 'loading';
+
+    // Not authenticated - show landing
+    if (!authUser) return 'landing';
+
+    // Authenticated but no profile - show onboarding
+    if (!userProfile) return 'onboarding';
+
+    // Authenticated with profile - show dashboard
+    return 'dashboard';
+  })();
+
+  // Save user profile to localStorage whenever it changes
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('dev-impact-user', JSON.stringify(user));
+    if (userProfile) {
+      localStorage.setItem('dev-impact-user', JSON.stringify(userProfile));
     }
-  }, [user]);
+  }, [userProfile]);
 
   // Save projects to localStorage whenever they change
   useEffect(() => {
@@ -40,19 +59,24 @@ export default function App() {
     }
   }, [projects]);
 
+  const handleAuthSuccess = () => {
+    // After successful auth, reset view to let automatic routing handle it
+    setCurrentView(null);
+  };
+
   const handleOnboardingComplete = (userData) => {
-    setUser(userData);
-    setPage('dashboard');
+    setUserProfile(userData);
+    setCurrentView(null); // Will auto-navigate to dashboard
   };
 
   const handleAddProject = () => {
     setEditingProject(null);
-    setPage('builder');
+    setCurrentView('builder');
   };
 
   const handleEditProject = (project) => {
     setEditingProject(project);
-    setPage('builder');
+    setCurrentView('builder');
   };
 
   const handleSaveProject = (project) => {
@@ -62,7 +86,7 @@ export default function App() {
       setProjects([...projects, project]);
     }
     setEditingProject(null);
-    setPage('dashboard');
+    setCurrentView('dashboard');
   };
 
   const handleDeleteProject = (id) => {
@@ -73,42 +97,52 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#2d2d2d]">
+      {page === 'loading' && (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="fade-in">
+            <div>&gt; Loading dev-impact...</div>
+          </div>
+        </div>
+      )}
       {page === 'landing' && (
-        <LandingPage onStart={() => setPage('onboarding')} />
+        <LandingPage onStart={() => setCurrentView('auth')} />
+      )}
+      {page === 'auth' && (
+        <Auth onAuthSuccess={handleAuthSuccess} />
       )}
       {page === 'onboarding' && (
         <Onboarding onComplete={handleOnboardingComplete} />
       )}
       {page === 'dashboard' && (
         <Dashboard
-          user={user}
+          user={userProfile}
           projects={projects}
           onAddProject={handleAddProject}
           onEditProject={handleEditProject}
           onDeleteProject={handleDeleteProject}
-          onViewProfile={() => setPage('profile')}
-          onExport={() => setPage('export')}
+          onViewProfile={() => setCurrentView('profile')}
+          onExport={() => setCurrentView('export')}
         />
       )}
       {page === 'builder' && (
         <ProjectBuilder
           editProject={editingProject}
           onSave={handleSaveProject}
-          onCancel={() => setPage('dashboard')}
+          onCancel={() => setCurrentView('dashboard')}
         />
       )}
       {page === 'profile' && (
         <ProfileView
-          user={user}
+          user={userProfile}
           projects={projects}
-          onBack={() => setPage('dashboard')}
+          onBack={() => setCurrentView('dashboard')}
         />
       )}
       {page === 'export' && (
         <ExportPage
-          user={user}
+          user={userProfile}
           projects={projects}
-          onBack={() => setPage('dashboard')}
+          onBack={() => setCurrentView('dashboard')}
         />
       )}
     </div>
