@@ -13,6 +13,7 @@ const Auth = ({ onAuthSuccess }) => {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [showPasswordHints, setShowPasswordHints] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   // Password validation rules
   const passwordValidation = useMemo(() => {
@@ -94,7 +95,11 @@ const Auth = ({ onAuthSuccess }) => {
     try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
+        options: {
+          // Control session persistence based on remember me
+          persistSession: rememberMe
+        }
       });
 
       if (signInError) throw signInError;
@@ -158,17 +163,26 @@ const Auth = ({ onAuthSuccess }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={mode === 'signin' ? handleSignIn : mode === 'signup' ? handleSignUp : handlePasswordReset} className="space-y-5">
+        <form 
+          onSubmit={mode === 'signin' ? handleSignIn : mode === 'signup' ? handleSignUp : handlePasswordReset} 
+          className="space-y-5"
+          autoComplete="on"
+        >
           {/* Email */}
           <div className="fade-in">
-            <div className="mb-2">&gt; Email:</div>
+            <div className="mb-2">
+              <label htmlFor="email">&gt; Email:</label>
+            </div>
             <TerminalInput
               type="email"
+              name="email"
+              id="email"
               value={email}
               onChange={setEmail}
               placeholder="developer@example.com"
               disabled={loading}
               required
+              autoComplete={mode === 'signin' ? 'email' : 'username'}
             />
           </div>
 
@@ -176,7 +190,7 @@ const Auth = ({ onAuthSuccess }) => {
           {mode !== 'reset' && (
             <div className="fade-in" style={{ animationDelay: '0.1s' }}>
               <div className="mb-2 flex justify-between items-center">
-                <span>&gt; Password:</span>
+                <label htmlFor="password">&gt; Password:</label>
                 {mode === 'signin' && (
                   <button
                     type="button"
@@ -189,6 +203,8 @@ const Auth = ({ onAuthSuccess }) => {
               </div>
               <TerminalInput
                 type="password"
+                name={mode === 'signin' ? 'password' : 'new-password'}
+                id="password"
                 value={password}
                 onChange={(val) => {
                   setPassword(val);
@@ -197,6 +213,7 @@ const Auth = ({ onAuthSuccess }) => {
                 placeholder="••••••••"
                 disabled={loading}
                 required
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
               />
             </div>
           )}
@@ -223,17 +240,38 @@ const Auth = ({ onAuthSuccess }) => {
             </div>
           )}
 
+          {/* Remember Me (signin only) */}
+          {mode === 'signin' && (
+            <div className="fade-in flex items-center gap-3" style={{ animationDelay: '0.2s' }}>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={loading}
+                  className="w-4 h-4 bg-terminal-bg-lighter border border-terminal-border cursor-pointer accent-terminal-orange"
+                />
+                <span className="text-terminal-text text-sm">Remember me</span>
+              </label>
+            </div>
+          )}
+
           {/* Confirm Password (signup only) */}
           {mode === 'signup' && (
             <div className="fade-in" style={{ animationDelay: '0.2s' }}>
-              <div className="mb-2">&gt; Confirm Password:</div>
+              <div className="mb-2">
+                <label htmlFor="confirm-password">&gt; Confirm Password:</label>
+              </div>
               <TerminalInput
                 type="password"
+                name="confirm-password"
+                id="confirm-password"
                 value={confirmPassword}
                 onChange={setConfirmPassword}
                 placeholder="••••••••"
                 disabled={loading}
                 required
+                autoComplete="new-password"
               />
               {confirmPassword.length > 0 && (
                 <div className="mt-2 text-sm">
