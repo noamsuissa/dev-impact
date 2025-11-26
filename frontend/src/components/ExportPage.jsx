@@ -85,7 +85,7 @@ const ExportPage = ({ user, projects, onBack }) => {
   };
 
   const exportMarkdown = () => {
-    const githubUsername = user.github?.username || user.github;
+    const githubUsername = user.github?.username || '';
     let md = `# ${user.name}\n\n`;
     if (githubUsername) {
       md += `GitHub: [@${githubUsername}](https://github.com/${githubUsername})\n\n`;
@@ -117,7 +117,7 @@ const ExportPage = ({ user, projects, onBack }) => {
   };
 
   const exportHTML = () => {
-    const githubUsername = user.github?.username || user.github;
+    const githubUsername = user.github?.username || '';
     let html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -209,7 +209,7 @@ const ExportPage = ({ user, projects, onBack }) => {
   };
 
   const exportText = () => {
-    const githubUsername = user.github?.username || user.github;
+    const githubUsername = user.github?.username || '';
     const width = 80;
     
     let text = `${'='.repeat(width)}\n`;

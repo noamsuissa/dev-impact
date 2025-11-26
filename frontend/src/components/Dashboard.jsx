@@ -1,28 +1,48 @@
 import React from 'react';
-import { Plus, Eye, Download } from 'lucide-react';
+import { Plus, Eye, Download, LogOut } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
+import { useSupabase } from '../hooks/useSupabase';
 
 const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProject, onViewProfile, onExport }) => {
+  const { supabase } = useSupabase();
+
+  const handleSignOut = async () => {
+    if (confirm('Are you sure you want to sign out?')) {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        alert('Error signing out: ' + error.message);
+      }
+      // User will be automatically redirected by auth state change
+    }
+  };
   return (
     <div className="p-10 max-w-[1200px] mx-auto">
       <div className="mb-10">
-        <div className="text-2xl mb-2.5">
-          &gt; {user.name}@dev-impact:~$
-        </div>
-        {user.github && (
-          <div className="flex items-center gap-3 text-terminal-orange">
-            <span>Connected to GitHub:</span>
-            {user.github.avatar_url && (
-              <img 
-                src={user.github.avatar_url} 
-                alt={user.github.username}
-                className="w-6 h-6 rounded-full"
-              />
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="text-2xl mb-2.5">
+              &gt; {user.name}@dev-impact:~$
+            </div>
+            {user.github?.username && (
+              <div className="flex items-center gap-3 text-terminal-orange">
+                <span>Connected to GitHub:</span>
+                {user.github.avatar_url && (
+                  <img 
+                    src={user.github.avatar_url} 
+                    alt={user.github.username}
+                    className="w-6 h-6 rounded-full"
+                  />
+                )}
+                <span>@{user.github.username}</span>
+              </div>
             )}
-            <span>@{user.github.username || user.github}</span>
           </div>
-        )}
+          <TerminalButton onClick={handleSignOut}>
+            <LogOut size={16} className="inline mr-2" />
+            [Sign Out]
+          </TerminalButton>
+        </div>
       </div>
 
       <div className="mb-10">

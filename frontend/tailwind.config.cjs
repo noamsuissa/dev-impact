@@ -14,8 +14,11 @@ module.exports = {
           border: '#5a5a5a',
           text: '#e8e6e3',
           'text-dim': '#c9c5c0',
+          gray: '#999999',
           orange: '#ff8c42',
           'orange-dark': '#cc6f35',
+          'orange-light': '#ffaa66',
+          green: '#4ade80',
         },
       },
       fontFamily: {
