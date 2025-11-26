@@ -7,7 +7,7 @@ import { SupabaseProvider } from './contexts/SupabaseContext.jsx'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <SupabaseProvider>
-      <App />
+    <App />
     </SupabaseProvider>
   </StrictMode>,
 )

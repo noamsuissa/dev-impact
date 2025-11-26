@@ -20,10 +20,10 @@ const ProfileView = ({ user, projects, onBack }) => {
         <div className="text-lg text-[#c9c5c0] mb-5">
           Developer Profile
         </div>
-        {user.github && (
+        {user.github?.username && (
           <div className="mb-2.5">
             <Github size={16} className="inline mr-2" />
-            github.com/{user.github.username || user.github}
+            github.com/{user.github.username}
           </div>
         )}
         <div className="border-t border-terminal-border mt-5 pt-5 text-[#c9c5c0]">
