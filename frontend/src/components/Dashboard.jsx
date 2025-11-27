@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Eye, Download, LogOut, Github, Share2, CheckCircle, ExternalLink, Copy } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
-import { useSupabase } from '../hooks/useSupabase';
+import { useAuth } from '../hooks/useAuth';
 import { completeGitHubAuth } from '../utils/githubAuth';
+import { profiles } from '../utils/client';
 
 const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProject, onViewProfile, onExport, onGitHubConnect }) => {
-  const { supabase } = useSupabase();
+  const { signOut } = useAuth();
   const [githubState, setGithubState] = useState('initial'); // initial, loading, awaiting, success, error
   const [deviceCode, setDeviceCode] = useState(null);
   const [error, setError] = useState(null);
@@ -17,11 +18,12 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
+      try {
+        await signOut();
+        // User will be automatically redirected by auth state change
+      } catch (error) {
         alert('Error signing out: ' + error.message);
       }
-      // User will be automatically redirected by auth state change
     }
   };
 
@@ -111,12 +113,6 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
       const username = user.github?.username || 
                       user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-      // Get auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('You must be logged in to publish your profile');
-      }
-
       // Prepare profile data
       const profileData = {
         username,
@@ -140,23 +136,8 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
         }))
       };
 
-      // Publish to backend
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiUrl}/api/profiles`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify(profileData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to publish profile');
-      }
-
-      await response.json(); // Profile published successfully
+      // Publish via API
+      await profiles.publish(profileData);
       
       // Copy link to clipboard
       const shareUrl = `https://dev-impact.io/${username}`;
@@ -202,25 +183,8 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
       const username = user.github?.username || 
                       user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-      // Get auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('You must be logged in to unpublish your profile');
-      }
-
-      // Unpublish via backend
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiUrl}/api/profiles/${username}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to unpublish profile');
-      }
+      // Unpublish via API
+      await profiles.unpublish(username);
 
       // Mark as unpublished
       setIsPublished(false);

@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
-import { useSupabase } from '../hooks/useSupabase';
+import { useAuth } from '../hooks/useAuth';
+import { auth as authClient } from '../utils/client';
 
 const Auth = ({ onAuthSuccess }) => {
-  const { supabase } = useSupabase();
+  const { refreshSession } = useAuth();
   const [mode, setMode] = useState('signin'); // 'signin', 'signup', or 'reset'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,29 +52,17 @@ const Auth = ({ onAuthSuccess }) => {
 
     try {
       // Sign up the user
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin
-        }
-      });
-
-      if (signUpError) {
-        console.error('Signup error:', signUpError);
-        throw signUpError;
-      }
+      const data = await authClient.signUp(email, password);
 
       console.log('Signup successful:', data);
 
       // Check if email confirmation is required
-      if (data?.user?.identities?.length === 0) {
-        setError('An account with this email already exists');
-      } else if (data?.user && !data.session) {
+      if (data.requires_email_verification) {
         setMessage('Check your email to verify your account');
-      } else if (data?.user && data.session) {
+      } else if (data.user && data.session) {
         // Successfully signed up and logged in
         setMessage('Account created! Redirecting...');
+        await refreshSession();
         setTimeout(() => onAuthSuccess(data.user), 1500);
       } else {
         setError('Unexpected response from authentication service');
@@ -93,18 +82,10 @@ const Auth = ({ onAuthSuccess }) => {
     setLoading(true);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-        options: {
-          // Control session persistence based on remember me
-          persistSession: rememberMe
-        }
-      });
-
-      if (signInError) throw signInError;
+      const data = await authClient.signIn(email, password);
 
       setMessage('Signed in! Redirecting...');
+      await refreshSession();
       setTimeout(() => onAuthSuccess(data.user), 1000);
     } catch (err) {
       setError(err.message || 'Invalid email or password');
@@ -120,11 +101,7 @@ const Auth = ({ onAuthSuccess }) => {
     setLoading(true);
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
-      });
-
-      if (resetError) throw resetError;
+      await authClient.resetPassword(email);
 
       setMessage('Password reset email sent! Check your inbox.');
       setEmail('');

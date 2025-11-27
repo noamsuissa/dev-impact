@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from models.schemas import (
+from schemas.github_auth import (
     DeviceCodeResponse,
     PollRequest,
-    TokenResponse,
     GitHubUser,
     UserProfileRequest,
 )

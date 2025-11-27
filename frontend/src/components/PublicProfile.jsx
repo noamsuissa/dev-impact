@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { Github, ArrowLeft, Eye } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
@@ -51,34 +51,9 @@ const PublicProfile = () => {
     );
   }
 
+  // Redirect to 404 page if profile not found
   if (error) {
-    return (
-      <div className="min-h-screen bg-[#2d2d2d] text-terminal-text">
-        <div className="p-10 max-w-[1200px] mx-auto">
-          <div className="mb-10">
-            <Link to="/">
-              <TerminalButton>
-                <ArrowLeft size={16} className="inline mr-2" />
-                [Back to Home]
-              </TerminalButton>
-            </Link>
-          </div>
-          <div className="border border-red-500 bg-red-500/10 p-10">
-            <div className="text-[32px] mb-2.5 text-red-400">
-              ERROR 404
-            </div>
-            <div className="text-lg text-[#c9c5c0]">
-              {error === 'Profile not found' 
-                ? `Profile "${username}" not found` 
-                : error}
-            </div>
-            <div className="mt-5 text-terminal-gray">
-              This profile doesn't exist or hasn't been published yet.
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <Navigate to="/404" replace />;
   }
 
   if (!profile) {
