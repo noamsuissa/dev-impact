@@ -1,10 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
-import { useSupabase } from '../hooks/useSupabase';
+import { auth } from '../utils/client';
 
 const ResetPassword = ({ onSuccess }) => {
-  const { supabase } = useSupabase();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -45,11 +44,7 @@ const ResetPassword = ({ onSuccess }) => {
     setLoading(true);
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password
-      });
-
-      if (updateError) throw updateError;
+      await auth.updatePassword(password);
 
       setMessage('Password updated successfully! Redirecting...');
       setTimeout(() => {
