@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import github_auth
+from routers import github_auth, profiles
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = FastAPI(
     title="Dev Impact API",
@@ -20,6 +24,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(github_auth.router)
+app.include_router(profiles.router)
 
 
 @app.get("/")
