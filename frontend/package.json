@@ -15,6 +15,7 @@
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.6",
     "tslib": "^2.8.1"
   },
   "devDependencies": {

@@ -9,8 +9,9 @@ Traditional resumes are static documents that rarely capture the true impact of 
 **dev-impact** changes this. It's a platform for developers to showcase their real impact through:
 - Quantifiable metrics that matter
 - Clear problem-solution narratives
-- Beautiful, shareable profiles
+- Beautiful, shareable profiles at `dev-impact.io/your-username`
 - Easy export to multiple formats
+- Public profile links to share with anyone
 
 Show your work. Show your impact. Stand out.
 
@@ -48,6 +49,29 @@ The frontend will run at `http://localhost:5173`
 3. Click "Get Started" and complete onboarding
 4. Connect your GitHub account (optional but recommended)
 5. Start building your impact profile!
+6. Click "Publish Profile" to get a shareable link!
+
+## Features
+
+### 🎯 Core Features
+- **Project Builder**: Add projects with metrics, tech stack, and impact stories
+- **Profile Preview**: See how your profile looks before sharing
+- **GitHub Integration**: Connect your GitHub for seamless username generation
+- **Export Options**: Download your profile in multiple formats
+
+### 🚀 Publish & Share (NEW!)
+- **One-Click Publish**: Generate shareable links instantly
+- **Public Profiles**: Share at `dev-impact.io/your-username`
+- **No Auth Required**: Anyone can view your published profile
+- **View Tracking**: See how many times your profile has been viewed
+- **Auto Username**: Uses your GitHub username or generates from your name
+
+👉 **[Quick Start Guide](PUBLISH_README.md)** - Get publishing in 5 minutes!
+
+📚 **Full Documentation**:
+- [Publish Feature Overview](docs/PUBLISH_FEATURE.md)
+- [Setup Instructions](docs/PUBLISH_SETUP.md)
+- [Production Deployment](docs/PRODUCTION_DEPLOYMENT.md)
 
 ## How to Contribute
 
@@ -94,9 +118,13 @@ We welcome contributions! Here's how you can help:
 
 ### Areas We'd Love Help With
 
+- Custom usernames (let users choose their own)
+- Profile analytics dashboard
+- SEO optimization for public profiles
+- Social media preview cards (Open Graph)
 - Additional OAuth providers (GitLab, Bitbucket)
 - More export formats (PDF, JSON Resume)
-- Analytics and insights features
+- Profile themes and customization
 - Mobile responsive improvements
 - Accessibility enhancements
 - Performance optimizations
@@ -119,9 +147,11 @@ dev-impact/
 ## Tech Stack
 
 - **Backend**: FastAPI, Python 3.12
-- **Frontend**: React, Vite, TailwindCSS
+- **Frontend**: React 19, Vite, TailwindCSS, React Router
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
 - **OAuth**: GitHub Device Flow
-- **Storage**: Browser localStorage (no database required)
+- **Hosting**: Ready for Vercel, Railway, Fly.io, etc.
 
 ## License
 

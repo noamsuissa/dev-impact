@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useSupabase } from './hooks/useSupabase';
 import LandingPage from './components/LandingPage';
 import Auth from './components/Auth';
@@ -8,6 +9,7 @@ import Dashboard from './components/Dashboard';
 import ProjectBuilder from './components/ProjectBuilder';
 import ProfileView from './components/ProfileView';
 import ExportPage from './components/ExportPage';
+import PublicProfile from './components/PublicProfile';
 import './index.css';
 
 export default function App() {
@@ -380,6 +382,13 @@ export default function App() {
   };
 
   return (
+    <Router>
+      <Routes>
+        {/* Public profile route - must come before other routes */}
+        <Route path="/:username" element={<PublicProfile />} />
+        
+        {/* Main app routes */}
+        <Route path="/" element={
     <div className="min-h-screen bg-[#2d2d2d]">
       {page === 'loading' && (
         <div className="min-h-screen flex items-center justify-center">
@@ -434,5 +443,8 @@ export default function App() {
         />
       )}
     </div>
+        } />
+      </Routes>
+    </Router>
   );
 }
