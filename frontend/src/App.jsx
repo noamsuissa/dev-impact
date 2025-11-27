@@ -10,6 +10,7 @@ import ProjectBuilder from './components/ProjectBuilder';
 import ProfileView from './components/ProfileView';
 import ExportPage from './components/ExportPage';
 import PublicProfile from './components/PublicProfile';
+import NotFound from './components/NotFound';
 import './index.css';
 
 export default function App() {
@@ -384,9 +385,6 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* Public profile route - must come before other routes */}
-        <Route path="/:username" element={<PublicProfile />} />
-        
         {/* Main app routes */}
         <Route path="/" element={
     <div className="min-h-screen bg-[#2d2d2d]">
@@ -444,6 +442,13 @@ export default function App() {
       )}
     </div>
         } />
+        
+        {/* Public profile route */}
+        <Route path="/:username" element={<PublicProfile />} />
+        
+        {/* 404 routes - must be last */}
+        <Route path="/404" element={<NotFound />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
