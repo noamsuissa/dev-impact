@@ -348,6 +348,37 @@ export default function App() {
     }
   };
 
+  const handleGitHubConnect = async (githubData) => {
+    if (!authUser || !supabase) return;
+
+    try {
+      // Update profile in Supabase with GitHub info
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          github_username: githubData.username,
+          github_avatar_url: githubData.avatar_url
+        })
+        .eq('id', authUser.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setUserProfile({
+        ...userProfile,
+        github: {
+          username: githubData.username,
+          avatar_url: githubData.avatar_url
+        }
+      });
+
+      console.log('GitHub connected and saved to Supabase');
+    } catch (err) {
+      console.error('Failed to save GitHub connection:', err);
+      alert('GitHub connected but failed to save. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#2d2d2d]">
       {page === 'loading' && (
@@ -378,6 +409,7 @@ export default function App() {
           onDeleteProject={handleDeleteProject}
           onViewProfile={() => setCurrentView('profile')}
           onExport={() => setCurrentView('export')}
+          onGitHubConnect={handleGitHubConnect}
         />
       )}
       {page === 'builder' && (

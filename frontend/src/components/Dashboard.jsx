@@ -1,11 +1,15 @@
-import React from 'react';
-import { Plus, Eye, Download, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Eye, Download, LogOut, Github } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
 import { useSupabase } from '../hooks/useSupabase';
+import { completeGitHubAuth } from '../utils/githubAuth';
 
-const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProject, onViewProfile, onExport }) => {
+const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProject, onViewProfile, onExport, onGitHubConnect }) => {
   const { supabase } = useSupabase();
+  const [githubState, setGithubState] = useState('initial'); // initial, loading, awaiting, success, error
+  const [deviceCode, setDeviceCode] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -16,6 +20,40 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
       // User will be automatically redirected by auth state change
     }
   };
+
+  const handleConnectGitHub = async () => {
+    setGithubState('loading');
+    setError(null);
+
+    try {
+      const result = await completeGitHubAuth(
+        ({ userCode, verificationUri }) => {
+          setDeviceCode({ userCode, verificationUri });
+          setGithubState('awaiting');
+        },
+        (message) => {
+          console.log('GitHub OAuth progress:', message);
+        }
+      );
+
+      setGithubState('success');
+      
+      // Update user profile with GitHub data
+      if (onGitHubConnect) {
+        onGitHubConnect(result);
+      }
+    } catch (err) {
+      console.error('GitHub OAuth error:', err);
+      setError(err.message);
+      setGithubState('error');
+    }
+  };
+
+  const handleCancelGitHub = () => {
+    setGithubState('initial');
+    setDeviceCode(null);
+    setError(null);
+  };
   return (
     <div className="p-10 max-w-[1200px] mx-auto">
       <div className="mb-10">
@@ -24,7 +62,7 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
             <div className="text-2xl mb-2.5">
               &gt; {user.name}@dev-impact:~$
             </div>
-            {user.github?.username && (
+            {user.github?.username ? (
               <div className="flex items-center gap-3 text-terminal-orange">
                 <span>Connected to GitHub:</span>
                 {user.github.avatar_url && (
@@ -35,6 +73,74 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
                   />
                 )}
                 <span>@{user.github.username}</span>
+              </div>
+            ) : (
+              <div>
+                {githubState === 'initial' && (
+                  <TerminalButton onClick={handleConnectGitHub}>
+                    <Github size={16} className="inline mr-2" />
+                    [Connect GitHub]
+                  </TerminalButton>
+                )}
+
+                {githubState === 'loading' && (
+                  <div className="text-terminal-orange text-sm">
+                    &gt; Initiating GitHub authentication...
+                  </div>
+                )}
+
+                {githubState === 'awaiting' && deviceCode && (
+                  <div className="space-y-3 bg-terminal-bg-lighter border border-terminal-orange/30 p-4 rounded">
+                    <div className="text-terminal-orange text-sm">
+                      &gt; Authorize this device:
+                    </div>
+                    <div>
+                      <span className="text-terminal-gray text-sm">Code: </span>
+                      <span className="text-terminal-orange font-bold text-lg tracking-wider">
+                        {deviceCode.userCode}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-terminal-gray text-sm">Visit: </span>
+                      <a 
+                        href={deviceCode.verificationUri}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-terminal-orange underline hover:text-terminal-orange-light text-sm"
+                      >
+                        {deviceCode.verificationUri}
+                      </a>
+                    </div>
+                    <div className="text-terminal-gray text-xs">
+                      Waiting for authorization...
+                    </div>
+                    <TerminalButton onClick={handleCancelGitHub}>
+                      [Cancel]
+                    </TerminalButton>
+                  </div>
+                )}
+
+                {githubState === 'success' && (
+                  <div className="text-terminal-green text-sm">
+                    ✓ Successfully connected to GitHub! Refresh to see changes.
+                  </div>
+                )}
+
+                {githubState === 'error' && (
+                  <div className="space-y-3">
+                    <div className="text-red-400 text-sm">
+                      ✗ Error: {error}
+                    </div>
+                    <div className="flex gap-3">
+                      <TerminalButton onClick={handleConnectGitHub}>
+                        [Retry]
+                      </TerminalButton>
+                      <TerminalButton onClick={handleCancelGitHub}>
+                        [Cancel]
+                      </TerminalButton>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
