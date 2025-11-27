@@ -7,6 +7,3 @@ supabase==2.10.0
 pyjwt==2.8.0
 slowapi==0.1.9
 
-# Pin cryptography to version with pre-built wheels (no Rust required)
-cryptography==41.0.7
-
