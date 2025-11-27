@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useSupabase } from './hooks/useSupabase';
+import { useAuth } from './hooks/useAuth';
+import { user as userClient, projects as projectsClient } from './utils/client';
 import LandingPage from './components/LandingPage';
 import Auth from './components/Auth';
 import ResetPassword from './components/ResetPassword';
@@ -10,10 +11,11 @@ import ProjectBuilder from './components/ProjectBuilder';
 import ProfileView from './components/ProfileView';
 import ExportPage from './components/ExportPage';
 import PublicProfile from './components/PublicProfile';
+import NotFound from './components/NotFound';
 import './index.css';
 
 export default function App() {
-  const { supabase, user: authUser, loading: authLoading } = useSupabase();
+  const { user: authUser, loading: authLoading } = useAuth();
   const [userProfile, setUserProfile] = useState(null);
   const [currentView, setCurrentView] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -35,43 +37,30 @@ export default function App() {
     }
   }, [authLoading, isInitialLoad]);
 
-  // Load user profile from Supabase when authenticated
+  // Load user profile from API when authenticated
   useEffect(() => {
     const loadProfile = async () => {
-      if (!authUser || !supabase) return;
+      if (!authUser) return;
 
       setDataLoading(true);
       try {
-        // Try to load from Supabase first
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authUser.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-          console.error('Error loading profile:', error);
-        }
+        // Try to load from API
+        const data = await userClient.getProfile();
 
         if (data) {
-          // Map Supabase profile to app format
+          // Map API profile to app format
           setUserProfile({
             name: data.full_name,
-            github: {
+            github: data.github_username ? {
               username: data.github_username,
               avatar_url: data.github_avatar_url
-            }
+            } : null
           });
-        } else {
-          // No profile in Supabase, check localStorage for migration
-          const oldProfile = localStorage.getItem('dev-impact-user');
-          if (oldProfile) {
-            console.log('Found old localStorage profile, will migrate during onboarding');
-            setUserProfile(JSON.parse(oldProfile));
-          }
         }
       } catch (err) {
         console.error('Failed to load profile:', err);
+        // Profile not found - user needs onboarding
+        setUserProfile(null);
       } finally {
         setDataLoading(false);
       }
@@ -84,71 +73,26 @@ export default function App() {
       setUserProfile(null);
       setProjects([]);
     }
-  }, [authUser, supabase]);
+  }, [authUser]);
 
-  // Load projects from Supabase when user is authenticated
+  // Load projects from API when user is authenticated
   useEffect(() => {
     const loadProjects = async () => {
-      if (!authUser || !supabase) return;
+      if (!authUser) return;
 
       try {
-        const { data, error } = await supabase
-          .from('impact_projects')
-          .select(`
-            *,
-            metrics:project_metrics (*)
-          `)
-          .eq('user_id', authUser.id)
-          .order('display_order');
-
-        if (error) {
-          console.error('Error loading projects:', error);
-          // Fall back to localStorage
-          const oldProjects = localStorage.getItem('dev-impact-projects');
-          if (oldProjects) {
-            console.log('Loaded projects from localStorage');
-            setProjects(JSON.parse(oldProjects));
-          }
-          return;
-        }
-
-        if (data && data.length > 0) {
-          // Transform Supabase data to app format
-          const transformedProjects = data.map(project => ({
-            id: project.id,
-            company: project.company,
-            projectName: project.project_name,
-            role: project.role,
-            teamSize: project.team_size,
-            problem: project.problem,
-            contributions: project.contributions,
-            techStack: project.tech_stack,
-            metrics: project.metrics
-              ?.sort((a, b) => a.display_order - b.display_order)
-              .map(m => ({
-                primary: m.primary_value,
-                label: m.label,
-                detail: m.detail
-              })) || []
-          }));
-          setProjects(transformedProjects);
-        } else {
-          // No projects in Supabase, check localStorage
-          const oldProjects = localStorage.getItem('dev-impact-projects');
-          if (oldProjects) {
-            console.log('Found old localStorage projects');
-            setProjects(JSON.parse(oldProjects));
-          }
-        }
+        const data = await projectsClient.list();
+        setProjects(data || []);
       } catch (err) {
         console.error('Failed to load projects:', err);
+        setProjects([]);
       }
     };
 
     if (authUser && userProfile) {
       loadProjects();
     }
-  }, [authUser, userProfile, supabase]);
+  }, [authUser, userProfile]);
 
   // Determine which page to show based on auth and profile state
   const page = (() => {
@@ -182,36 +126,20 @@ export default function App() {
   };
 
   const handleOnboardingComplete = async (userData) => {
-    if (!authUser || !supabase) return;
+    if (!authUser) return;
 
     try {
-      // Save profile to Supabase
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: authUser.id,
-          username: userData.github?.username || userData.name.toLowerCase().replace(/\s+/g, '-'),
-          full_name: userData.name,
-          github_username: userData.github?.username,
-          github_avatar_url: userData.github?.avatar_url,
-          is_published: false
-        });
-
-      if (error) {
-        console.error('Error saving profile:', error);
-        // Fall back to localStorage
-        localStorage.setItem('dev-impact-user', JSON.stringify(userData));
-      } else {
-        console.log('Profile saved to Supabase');
-        // Clear old localStorage
-        localStorage.removeItem('dev-impact-user');
-      }
-
+      // Save profile via API
+      await userClient.completeOnboarding(userData);
+      
+      console.log('Profile saved via API');
       setUserProfile(userData);
       setCurrentView(null);
     } catch (err) {
       console.error('Failed to save profile:', err);
+      // Still set profile locally so user can proceed
       setUserProfile(userData);
+      setCurrentView(null);
     }
   };
 
@@ -226,101 +154,25 @@ export default function App() {
   };
 
   const handleSaveProject = async (project) => {
-    if (!authUser || !supabase) return;
+    if (!authUser) return;
 
     try {
       setDataLoading(true);
 
       if (editingProject) {
         // Update existing project
-        const { error: projectError } = await supabase
-          .from('impact_projects')
-          .update({
-            company: project.company,
-            project_name: project.projectName,
-            role: project.role,
-            team_size: project.teamSize,
-            problem: project.problem,
-            contributions: project.contributions,
-            tech_stack: project.techStack
-          })
-          .eq('id', project.id);
-
-        if (projectError) throw projectError;
-
-        // Delete old metrics and insert new ones
-        await supabase.from('project_metrics').delete().eq('project_id', project.id);
-        
-        if (project.metrics && project.metrics.length > 0) {
-          const metricsToInsert = project.metrics.map((metric, index) => ({
-            project_id: project.id,
-            primary_value: metric.primary,
-            label: metric.label,
-            detail: metric.detail || null,
-            display_order: index
-          }));
-
-          const { error: metricsError } = await supabase
-            .from('project_metrics')
-            .insert(metricsToInsert);
-
-          if (metricsError) throw metricsError;
-        }
-
-        setProjects(projects.map(p => p.id === project.id ? project : p));
-        console.log('Project updated in Supabase');
+        const updated = await projectsClient.update(project.id, project);
+        setProjects(projects.map(p => p.id === project.id ? updated : p));
+        console.log('Project updated via API');
       } else {
-        // Insert new project
-        const { data: projectData, error: projectError } = await supabase
-          .from('impact_projects')
-          .insert({
-            user_id: authUser.id,
-            company: project.company,
-            project_name: project.projectName,
-            role: project.role,
-            team_size: project.teamSize,
-            problem: project.problem,
-            contributions: project.contributions,
-            tech_stack: project.techStack,
-            display_order: projects.length
-          })
-          .select()
-          .single();
-
-        if (projectError) throw projectError;
-
-        // Insert metrics
-        if (project.metrics && project.metrics.length > 0) {
-          const metricsToInsert = project.metrics.map((metric, index) => ({
-            project_id: projectData.id,
-            primary_value: metric.primary,
-            label: metric.label,
-            detail: metric.detail || null,
-            display_order: index
-          }));
-
-          const { error: metricsError } = await supabase
-            .from('project_metrics')
-            .insert(metricsToInsert);
-
-          if (metricsError) throw metricsError;
-        }
-
-        setProjects([...projects, { ...project, id: projectData.id }]);
-        console.log('Project saved to Supabase');
+        // Create new project
+        const created = await projectsClient.create(project);
+        setProjects([...projects, created]);
+        console.log('Project created via API');
       }
-
-      // Clear old localStorage
-      localStorage.removeItem('dev-impact-projects');
     } catch (err) {
       console.error('Failed to save project:', err);
-      // Fall back to localStorage
-      if (editingProject) {
-        setProjects(projects.map(p => p.id === project.id ? project : p));
-      } else {
-        setProjects([...projects, project]);
-      }
-      localStorage.setItem('dev-impact-projects', JSON.stringify(projects));
+      alert('Failed to save project: ' + err.message);
     } finally {
       setDataLoading(false);
       setEditingProject(null);
@@ -331,39 +183,27 @@ export default function App() {
   const handleDeleteProject = async (id) => {
     if (!confirm('Delete this project?')) return;
 
-    if (!authUser || !supabase) return;
+    if (!authUser) return;
 
     try {
-      const { error } = await supabase
-        .from('impact_projects')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
+      await projectsClient.delete(id);
       setProjects(projects.filter(p => p.id !== id));
-      console.log('Project deleted from Supabase');
+      console.log('Project deleted via API');
     } catch (err) {
       console.error('Failed to delete project:', err);
-      // Fall back to local state update
-      setProjects(projects.filter(p => p.id !== id));
+      alert('Failed to delete project: ' + err.message);
     }
   };
 
   const handleGitHubConnect = async (githubData) => {
-    if (!authUser || !supabase) return;
+    if (!authUser) return;
 
     try {
-      // Update profile in Supabase with GitHub info
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          github_username: githubData.username,
-          github_avatar_url: githubData.avatar_url
-        })
-        .eq('id', authUser.id);
-
-      if (error) throw error;
+      // Update profile via API with GitHub info
+      await userClient.updateProfile({
+        github_username: githubData.username,
+        github_avatar_url: githubData.avatar_url
+      });
 
       // Update local state
       setUserProfile({
@@ -374,7 +214,7 @@ export default function App() {
         }
       });
 
-      console.log('GitHub connected and saved to Supabase');
+      console.log('GitHub connected and saved via API');
     } catch (err) {
       console.error('Failed to save GitHub connection:', err);
       alert('GitHub connected but failed to save. Please try again.');
@@ -384,9 +224,6 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* Public profile route - must come before other routes */}
-        <Route path="/:username" element={<PublicProfile />} />
-        
         {/* Main app routes */}
         <Route path="/" element={
     <div className="min-h-screen bg-[#2d2d2d]">
@@ -444,6 +281,13 @@ export default function App() {
       )}
     </div>
         } />
+        
+        {/* Public profile route */}
+        <Route path="/:username" element={<PublicProfile />} />
+        
+        {/* 404 routes - must be last */}
+        <Route path="/404" element={<NotFound />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
