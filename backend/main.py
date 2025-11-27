@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import github_auth, profiles
+from routers import github_auth, profile
 from dotenv import load_dotenv
+import os
 
 # Load environment variables from .env file
 load_dotenv()
@@ -13,18 +14,24 @@ app = FastAPI(
 )
 
 # Configure CORS - allow all origins for development
+cors_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "")
+# Strip whitespace from each origin and filter out empty ones, and do not allow '*' in prod
+cors_origins = [o.strip() for o in cors_origins_str.split(",") if o.strip()]
+if "*" in cors_origins:
+    raise RuntimeError("Wildcard '*' for allowed CORS origins is not permitted in production. Please specify allowed origins explicitly.")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins in development
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    expose_headers=["Content-Type", "Authorization"],
 )
 
 # Include routers
 app.include_router(github_auth.router)
-app.include_router(profiles.router)
+app.include_router(profile.router)
 
 
 @app.get("/")
