@@ -31,7 +31,7 @@ BEGIN
     END IF;
     
     -- If username is taken or reserved, append numbers until we find available one
-    WHILE NOT is_username_available(generated_username) LOOP
+    WHILE NOT public.is_username_available(generated_username) LOOP
         counter := counter + 1;
         generated_username := split_part(NEW.email, '@', 1) || '-' || counter;
         generated_username := lower(regexp_replace(generated_username, '[^a-z0-9-]', '-', 'gi'));

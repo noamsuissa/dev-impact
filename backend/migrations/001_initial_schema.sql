@@ -135,7 +135,7 @@ ON CONFLICT (username) DO NOTHING;
 -- ============================================
 
 -- Function to check if username is available
-CREATE OR REPLACE FUNCTION is_username_available(desired_username TEXT)
+CREATE OR REPLACE FUNCTION public.is_username_available(desired_username TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
     -- Check if username matches format
@@ -149,12 +149,12 @@ BEGIN
     END IF;
     
     -- Check if reserved
-    IF EXISTS (SELECT 1 FROM reserved_usernames WHERE username = desired_username) THEN
+    IF EXISTS (SELECT 1 FROM public.reserved_usernames WHERE username = desired_username) THEN
         RETURN false;
     END IF;
     
     -- Check if taken
-    IF EXISTS (SELECT 1 FROM profiles WHERE username = desired_username) THEN
+    IF EXISTS (SELECT 1 FROM public.profiles WHERE username = desired_username) THEN
         RETURN false;
     END IF;
     
@@ -163,7 +163,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -172,7 +172,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to set published_at when is_published becomes true
-CREATE OR REPLACE FUNCTION set_published_at()
+CREATE OR REPLACE FUNCTION public.set_published_at()
 RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.is_published = true AND OLD.is_published = false THEN
@@ -188,19 +188,19 @@ $$ LANGUAGE plpgsql;
 
 -- Trigger for profiles updated_at
 CREATE TRIGGER update_profiles_updated_at
-    BEFORE UPDATE ON profiles
+    BEFORE UPDATE ON public.profiles
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Trigger for profiles published_at
 CREATE TRIGGER set_profiles_published_at
-    BEFORE UPDATE ON profiles
+    BEFORE UPDATE ON public.profiles
     FOR EACH ROW
     EXECUTE FUNCTION set_published_at();
 
 -- Trigger for impact_projects updated_at
 CREATE TRIGGER update_impact_projects_updated_at
-    BEFORE UPDATE ON impact_projects
+    BEFORE UPDATE ON public.impact_projects
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
