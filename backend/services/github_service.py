@@ -3,7 +3,7 @@ from typing import Optional
 from schemas.github_auth import DeviceCodeResponse, TokenResponse, GitHubUser
 import os
 
-GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "Ov23liVVD1Tq5ebZpc8p")
+GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_DEVICE_AUTH_URL = os.getenv("GITHUB_DEVICE_AUTH_URL", "https://github.com/login/device/code")
 GITHUB_TOKEN_URL = os.getenv("GITHUB_TOKEN_URL", "https://github.com/login/oauth/access_token")
 GITHUB_USER_API_URL = os.getenv("GITHUB_USER_API_URL", "https://api.github.com/user")
