@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import github_auth, profile, auth, user, projects
 from dotenv import load_dotenv
@@ -6,6 +6,7 @@ import os
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+import uvicorn
 
 # Load environment variables from .env file
 load_dotenv()
@@ -23,12 +24,22 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configure CORS - allow all origins for development
+# Configure CORS
 cors_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "")
-# Strip whitespace from each origin and filter out empty ones, and do not allow '*' in prod
+print(f"DEBUG: CORS_ALLOWED_ORIGINS env var = '{cors_origins_str}'")
+
+# Strip whitespace from each origin and filter out empty ones
 cors_origins = [o.strip() for o in cors_origins_str.split(",") if o.strip()]
-if "*" in cors_origins:
-    raise RuntimeError("Wildcard '*' for allowed CORS origins is not permitted in production. Please specify allowed origins explicitly.")
+
+# Validate and log CORS configuration
+if not cors_origins:
+    print("WARNING: No CORS origins configured! Set CORS_ALLOWED_ORIGINS environment variable.")
+    # Default to localhost for development
+    cors_origins = ["http://localhost:5173"]
+elif "*" in cors_origins:
+    raise RuntimeError("Wildcard '*' for allowed CORS origins is not permitted. Please specify allowed origins explicitly.")
+
+print(f"INFO: CORS allowed origins: {cors_origins}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -64,6 +75,5 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 

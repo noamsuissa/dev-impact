@@ -43,9 +43,16 @@ class AuthService:
         """
         try:
             supabase = AuthService.get_supabase_client()
+            
+            # Get redirect URL from environment (fallback to localhost for dev)
+            redirect_url = os.getenv("AUTH_REDIRECT_URL", "http://localhost:5173")
+            
             response = supabase.auth.sign_up({
                 "email": email,
-                "password": password
+                "password": password,
+                "options": {
+                    "email_redirect_to": redirect_url
+                }
             })
             
             if response.user is None:
@@ -244,7 +251,16 @@ class AuthService:
         """
         try:
             supabase = AuthService.get_supabase_client()
-            supabase.auth.reset_password_email(email)
+            
+            # Get redirect URL from environment (fallback to localhost for dev)
+            redirect_url = os.getenv("AUTH_REDIRECT_URL", "http://localhost:5173")
+            
+            supabase.auth.reset_password_email(
+                email,
+                options={
+                    "redirect_to": f"{redirect_url}/reset-password"
+                }
+            )
             
             return {
                 "success": True,
