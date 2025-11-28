@@ -33,7 +33,7 @@ BEGIN
 END $$;
 
 -- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_published_profiles_updated_at()
+CREATE OR REPLACE FUNCTION public.update_published_profiles_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -42,9 +42,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger for updating updated_at
-DROP TRIGGER IF EXISTS update_published_profiles_updated_at_trigger ON published_profiles;
+DROP TRIGGER IF EXISTS update_published_profiles_updated_at_trigger ON public.published_profiles;
 CREATE TRIGGER update_published_profiles_updated_at_trigger
-    BEFORE UPDATE ON published_profiles
+    BEFORE UPDATE ON public.published_profiles
     FOR EACH ROW
     EXECUTE FUNCTION update_published_profiles_updated_at();
 

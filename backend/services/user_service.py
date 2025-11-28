@@ -17,8 +17,8 @@ class UserService:
     @staticmethod
     def get_supabase_client() -> Client:
         """Get Supabase client from environment"""
-        url = os.getenv("VITE_SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_ANON_KEY")
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
         
         if not url or not key:
             raise HTTPException(

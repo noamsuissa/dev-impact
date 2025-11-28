@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
 import { auth } from '../utils/client';
@@ -9,6 +9,18 @@ const ResetPassword = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
+  const [recoveryToken, setRecoveryToken] = useState(null);
+
+  // Extract recovery token from URL hash on mount
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const token = hashParams.get('access_token');
+    if (token) {
+      setRecoveryToken(token);
+    } else {
+      setError('Invalid or expired reset link. Please request a new one.');
+    }
+  }, []);
 
   // Password validation rules
   const passwordValidation = useMemo(() => {
@@ -41,10 +53,15 @@ const ResetPassword = ({ onSuccess }) => {
       return;
     }
 
+    if (!recoveryToken) {
+      setError('Invalid or expired reset link. Please request a new one.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await auth.updatePassword(password);
+      await auth.updatePassword(password, recoveryToken);
 
       setMessage('Password updated successfully! Redirecting...');
       setTimeout(() => {
