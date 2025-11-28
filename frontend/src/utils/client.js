@@ -203,9 +203,13 @@ export const auth = {
   /**
    * Update password
    */
-  updatePassword: async (newPassword) => {
-    const response = await fetchWithAuth('/api/auth/update-password', {
+  updatePassword: async (newPassword, recoveryToken) => {
+    const response = await fetch(`${API_URL}/api/auth/update-password`, {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${recoveryToken}`
+      },
       body: JSON.stringify({ new_password: newPassword }),
     });
     

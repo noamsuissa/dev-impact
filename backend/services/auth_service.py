@@ -6,6 +6,7 @@ from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 from fastapi import HTTPException
 from supabase import create_client, Client
+import jwt
 
 # Load environment variables
 load_dotenv()
@@ -17,9 +18,9 @@ class AuthService:
     @staticmethod
     def get_supabase_client() -> Client:
         """Get Supabase client from environment"""
-        url = os.getenv("VITE_SUPABASE_URL")
+        url = os.getenv("SUPABASE_URL")
         # Use service role key for backend operations
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_ANON_KEY")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
         
         if not url or not key:
             raise HTTPException(
@@ -258,7 +259,7 @@ class AuthService:
             supabase.auth.reset_password_email(
                 email,
                 options={
-                    "redirect_to": f"{redirect_url}/reset-password"
+                    "redirect_to": redirect_url
                 }
             )
             
@@ -280,25 +281,52 @@ class AuthService:
         Update user password
         
         Args:
-            access_token: User's access token
+            access_token: User's access token from recovery link
             new_password: New password
             
         Returns:
             Dict with success status
         """
         try:
-            supabase = AuthService.get_supabase_client()
-            supabase.postgrest.auth(access_token)
+            # Decode the JWT to get the user ID
+            decoded = jwt.decode(access_token, options={"verify_signature": False})
+            user_id = decoded.get('sub')
             
-            response = supabase.auth.update_user({
-                "password": new_password
-            })
-            
-            if response.user is None:
+            if not user_id:
                 raise HTTPException(
                     status_code=400,
-                    detail="Failed to update password"
+                    detail="Invalid token"
                 )
+            
+            # Use service role key to update password directly
+            url = os.getenv("SUPABASE_URL")
+            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            
+            if not url or not service_key:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Server configuration error"
+                )
+            
+            # Update password using Admin API
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.put(
+                    f"{url}/auth/v1/admin/users/{user_id}",
+                    headers={
+                        "apikey": service_key,
+                        "Authorization": f"Bearer {service_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={"password": new_password}
+                )
+                
+                if response.status_code not in [200, 204]:
+                    print(f"Supabase update password failed: {response.text}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Failed to update password"
+                    )
             
             return {
                 "success": True,
@@ -310,7 +338,7 @@ class AuthService:
             print(f"Update password error: {e}")
             raise HTTPException(
                 status_code=400,
-                detail="Failed to update password"
+                detail=str(e)
             )
 
     @staticmethod
