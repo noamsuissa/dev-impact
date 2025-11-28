@@ -30,16 +30,16 @@ class ProfileService:
         """Get Supabase client from environment"""
         from supabase import create_client, Client
         
-        url = os.getenv("VITE_SUPABASE_URL")
+        url = os.getenv("SUPABASE_URL")
         # Try service role key first (for backend operations), fall back to anon key
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("VITE_SUPABASE_ANON_KEY")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
         
         if not url or not key:
-            print(f"DEBUG - VITE_SUPABASE_URL: {url}")
+            print(f"DEBUG - SUPABASE_URL: {url}")
             print(f"DEBUG - Key available: {'Yes' if key else 'No'}")
             raise HTTPException(
                 status_code=500,
-                detail="Supabase configuration not found. Make sure VITE_SUPABASE_URL and keys are set in .env file"
+                detail="Supabase configuration not found. Make sure SUPABASE_URL and keys are set in .env file"
             )
         
         client = create_client(url, key)
