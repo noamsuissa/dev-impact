@@ -59,8 +59,12 @@ const Auth = ({ onAuthSuccess }) => {
       // Check if email confirmation is required
       if (data.requires_email_verification) {
         setMessage('Check your email to verify your account');
+        setTimeout(() => {
+          setMessage(null);
+          setMode('signin');
+        }, 1800);
       } else if (data.user && data.session) {
-        // Successfully signed up and logged in
+        // Successfully signed up and logged in automatically
         setMessage('Account created! Redirecting...');
         await refreshSession();
         setTimeout(() => onAuthSuccess(data.user), 1500);
