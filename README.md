@@ -21,6 +21,31 @@ Show your work. Show your impact. Stand out.
 - Python 3.8+
 - Node.js 16+
 - A GitHub account
+- Cloud or [Self-hosted](https://supabase.com/docs/guides/self-hosting/docker) Supabase
+
+### Environment Setup
+
+Copy `.env.example` to `.env` in both the `backend` and `frontend` folders and fill in the required values. You’ll need to provide your Supabase keys and set the correct redirect URLs.
+
+
+> Make sure to set `AUTH_REDIRECT_URL` to your frontend’s password reset route (e.g., `http://localhost:5173/reset-password`).
+
+---
+
+Once your `.env` files are ready, continue with the Backend and Frontend setup below!
+
+### Database Migrations (Supabase)
+
+Apply the migrations in the `backend/migrations` folder *in order* using the Supabase SQL editor:
+
+1. Open your Supabase project and go to the "SQL Editor".
+2. Start with the lowest migration number (e.g., `001_...`), open the file, and paste its contents into the SQL editor.
+3. Run the SQL snippet.
+4. Repeat for each next migration (`002_...`, `003_...`, etc.), **in order**, until all migrations are applied.
+
+This will set up the database tables and policies required for dev-impact to work!
+
+
 
 ### Backend Setup
 
@@ -66,20 +91,17 @@ The frontend will run at `http://localhost:5173`
 - **View Tracking**: See how many times your profile has been viewed
 - **Auto Username**: Uses your GitHub username or generates from your name
 
-👉 **[Quick Start Guide](PUBLISH_README.md)** - Get publishing in 5 minutes!
-
 📚 **Full Documentation**:
-- [Publish Feature Overview](docs/PUBLISH_FEATURE.md)
-- [Setup Instructions](docs/PUBLISH_SETUP.md)
-- [Production Deployment](docs/PRODUCTION_DEPLOYMENT.md)
+Coming soon: Full API documentation, advanced configuration guides, and deployment tutorials. Stay tuned!
+
 
 ## How to Contribute
 
-We welcome contributions! Here's how you can help:
+We welcome contributions 🫶! Here's how you can help:
 
 ### Reporting Issues
-- Found a bug? Open an issue with details and steps to reproduce
-- Have a feature idea? Share it in the issues with the "enhancement" label
+- Found a bug? Open an issue with details and steps to reproduce.
+- Have a feature idea? Share it in the issues with the "enhancement" label.
 
 ### Contributing Code
 
@@ -90,38 +112,56 @@ We welcome contributions! Here's how you can help:
    ```
 
 2. **Create a feature branch**
-   ```bash
-   git checkout -b feat/your-feature-name
-   ```
+   - Make sure your fork is up to date with the upstream repository. By default, all contributions should branch from the `dev` branch (not `main`, which is production).
+   - Add the upstream remote and fetch the latest branches:
+     ```bash
+     git remote add upstream https://github.com/noamsuissa/dev-impact.git
+     git fetch upstream
+     git checkout dev
+     git pull upstream dev
+     ```
+   - Create your feature or fix branch from `dev`:
+     ```bash
+     git checkout -b feat/your-feature-name
+     ```
 
 3. **Make your changes**
-   - Backend: Follow FastAPI best practices
-   - Frontend: Keep the terminal aesthetic consistent
-   - Write clear commit messages
+   - Backend: Follow FastAPI best practices.
+   - Frontend: Keep the terminal aesthetic consistent.
+   - Write clear commit messages.
 
 4. **Test your changes**
-   - Ensure backend starts without errors
-   - Verify frontend functionality works
-   - Check that existing features aren't broken
+   - Ensure backend starts without errors.
+   - Verify frontend functionality works.
+   - Check that existing features aren't broken.
 
 5. **Submit a pull request**
-   - Describe what you changed and why
-   - Reference any related issues
-   - Wait for review and feedback
+   - Push your branch to your own fork:
+     ```bash
+     git push origin feat/your-feature-name
+     ```
+   - Open a pull request **from your fork’s feature branch to the `dev` branch on the main repository**.
+   - Describe what you changed and why.
+   - Reference any related issues.
+   - Wait for review and feedback.
+
+> **Note:** Only maintainers merge to `main` (connected to the production platform). Please always PR into `dev`.
 
 ### Development Guidelines
 
-- **Code Style**: Follow existing patterns and conventions
-- **Commit Messages**: Use clear, descriptive messages (e.g., "feat: add GitHub OAuth", "fix: dashboard rendering")
-- **Documentation**: Update relevant docs if you change functionality
-- **Testing**: Manually test your changes before submitting
+- **Code Style**: Follow existing patterns and conventions.
+- **Commit Messages**: Use clear, descriptive messages (e.g., "feat: add GitHub OAuth", "fix: dashboard rendering").
+- **Documentation**: Update relevant docs if you change functionality.
+- **Testing**: Manually test your changes before submitting.
 
 ### Areas We'd Love Help With
+**Want to help but not sure where to start?** Check out our [issues](https://github.com/noamsuissa/dev-impact/issues) for bugs, feature requests, and good first contributions!
+
+Here are some additional ideas:
 
 - Custom usernames (let users choose their own)
 - Profile analytics dashboard
 - SEO optimization for public profiles
-- Social media preview cards (Open Graph)
 - Additional OAuth providers (GitLab, Bitbucket)
 - More export formats (PDF, JSON Resume)
 - Profile themes and customization
