@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
 
-const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
-  const [company, setCompany] = useState(editProject?.company || '');
-  const [projectName, setProjectName] = useState(editProject?.projectName || '');
-  const [role, setRole] = useState(editProject?.role || '');
-  const [teamSize, setTeamSize] = useState(editProject?.teamSize || '');
-  const [problem, setProblem] = useState(editProject?.problem || '');
-  const [contributions, setContributions] = useState(editProject?.contributions || ['']);
-  const [metrics, setMetrics] = useState(editProject?.metrics || []);
-  const [techStack, setTechStack] = useState(editProject?.techStack || []);
+const ProjectForm = ({ initialData, onSave, onCancel, isEditing }) => {
+  const [company, setCompany] = useState(initialData?.company || '');
+  const [projectName, setProjectName] = useState(initialData?.projectName || '');
+  const [role, setRole] = useState(initialData?.role || '');
+  const [teamSize, setTeamSize] = useState(initialData?.teamSize || '');
+  const [problem, setProblem] = useState(initialData?.problem || '');
+  const [contributions, setContributions] = useState(initialData?.contributions || ['']);
+  const [metrics, setMetrics] = useState(initialData?.metrics || []);
+  const [techStack, setTechStack] = useState(initialData?.techStack || []);
   const [newTech, setNewTech] = useState('');
 
   const addContribution = () => {
@@ -55,7 +56,7 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
 
   const handleSave = () => {
     const project = {
-      id: editProject?.id || Date.now().toString(),
+      id: initialData?.id || Date.now().toString(),
       company,
       projectName,
       role,
@@ -79,7 +80,7 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
           [Back]
         </TerminalButton>
         <div className="text-xl">
-          &gt; {editProject ? 'Edit' : 'New'} Project
+          &gt; {isEditing ? 'Edit' : 'New'} Project
         </div>
       </div>
 
@@ -207,5 +208,42 @@ const ProjectBuilder = ({ onSave, onCancel, editProject = null }) => {
   );
 };
 
-export default ProjectBuilder;
+const ProjectBuilder = ({ onSave, projects = [] }) => {
+  const navigate = useNavigate();
+  const { projectId } = useParams();
+  const isEditing = projectId && projectId !== 'new';
+  
+  // Derive project from props instead of syncing to state
+  const project = isEditing && projects.length > 0 
+    ? projects.find(p => p.id === projectId)
+    : null;
 
+  // If editing but project not found yet (and projects likely loading or empty),
+  // we can show a loading state or just wait. 
+  // But if projects array is populated and still not found, it's a 404 case.
+  const isLoading = isEditing && !project && projects.length === 0;
+  
+  if (isLoading) {
+    return (
+      <div className="p-10 text-center">
+        <div className="fade-in">&gt; Loading project...</div>
+      </div>
+    );
+  }
+
+  // Use key to force re-mounting when project ID changes
+  return (
+    <ProjectForm
+      key={project?.id || 'new'}
+      initialData={project}
+      onSave={(data) => {
+        onSave(data);
+        navigate('/dashboard');
+      }}
+      onCancel={() => navigate('/dashboard')}
+      isEditing={isEditing}
+    />
+  );
+};
+
+export default ProjectBuilder;

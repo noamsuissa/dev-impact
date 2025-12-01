@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowLeft, Download, FileText, Code, FileJson, Globe } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 
-const ExportPage = ({ user, projects, onBack }) => {
+const ExportPage = ({ user, projects }) => {
   const [selectedFormat, setSelectedFormat] = useState(null);
   const [exportStatus, setExportStatus] = useState('');
 
@@ -263,10 +264,12 @@ const ExportPage = ({ user, projects, onBack }) => {
   return (
     <div className="p-10 max-w-[1000px] mx-auto">
       <div className="mb-10 flex items-center gap-5">
-        <TerminalButton onClick={onBack}>
-          <ArrowLeft size={16} className="inline mr-2" />
-          [Back]
-        </TerminalButton>
+        <Link to="/dashboard">
+          <TerminalButton>
+            <ArrowLeft size={16} className="inline mr-2" />
+            [Back]
+          </TerminalButton>
+        </Link>
       </div>
 
       <div className="mb-8">

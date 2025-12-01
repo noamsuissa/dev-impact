@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { user as userClient, projects as projectsClient } from './utils/client';
+
+// Pages / Components
 import LandingPage from './components/LandingPage';
-import Auth from './components/Auth';
+import SignIn from './components/auth/SignIn';
+import SignUp from './components/auth/SignUp';
+import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
@@ -12,43 +16,41 @@ import ProfileView from './components/ProfileView';
 import ExportPage from './components/ExportPage';
 import PublicProfile from './components/PublicProfile';
 import NotFound from './components/NotFound';
+import ProtectedRoute from './components/ProtectedRoute';
+
 import './index.css';
 
-export default function App() {
-  const { user: authUser, loading: authLoading } = useAuth();
-  const [userProfile, setUserProfile] = useState(null);
-  const [currentView, setCurrentView] = useState(null);
-  const [projects, setProjects] = useState([]);
-  const [editingProject, setEditingProject] = useState(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [dataLoading, setDataLoading] = useState(false);
-  
-  // Check if user is resetting password (from email link)
-  const [isResettingPassword, setIsResettingPassword] = useState(() => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    return hashParams.get('type') === 'recovery';
-  });
+// Component to handle initial redirects based on hash (Supabase auth)
+const AuthRedirectHandler = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Handle initial load to prevent flicker
   useEffect(() => {
-    if (!authLoading && isInitialLoad) {
-      const timer = setTimeout(() => setIsInitialLoad(false), 100);
-      return () => clearTimeout(timer);
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    if (hashParams.get('type') === 'recovery') {
+      // Redirect to reset password page, preserving the hash
+      navigate('/reset-password' + window.location.hash);
     }
-  }, [authLoading, isInitialLoad]);
+  }, [navigate, location]);
 
-  // Load user profile from API when authenticated
+  return null;
+};
+
+// Authenticated Layout Component
+// This component wraps all protected routes.
+// It is responsible for fetching the user profile and projects once authenticated.
+const AuthenticatedLayout = () => {
+  const [userProfile, setUserProfile] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const navigate = useNavigate();
+
+  // Load user profile
   useEffect(() => {
     const loadProfile = async () => {
-      if (!authUser) return;
-
-      setDataLoading(true);
       try {
-        // Try to load from API
         const data = await userClient.getProfile();
-
         if (data) {
-          // Map API profile to app format
           setUserProfile({
             name: data.full_name,
             github: data.github_username ? {
@@ -56,30 +58,30 @@ export default function App() {
               avatar_url: data.github_avatar_url
             } : null
           });
+        } else {
+             // No profile found -> Onboarding
+             // We can't navigate here if we are already on onboarding path, avoid loops
+             if (window.location.pathname !== '/onboarding') {
+                navigate('/onboarding');
+             }
         }
       } catch (err) {
         console.error('Failed to load profile:', err);
-        // Profile not found - user needs onboarding
-        setUserProfile(null);
+        // If profile load fails, we assume onboarding is needed or error state
+        if (window.location.pathname !== '/onboarding') {
+            navigate('/onboarding');
+        }
       } finally {
-        setDataLoading(false);
+        setIsLoadingProfile(false);
       }
     };
+    loadProfile();
+  }, [navigate]);
 
-    if (authUser) {
-      loadProfile();
-    } else {
-      // Clear profile when logged out
-      setUserProfile(null);
-      setProjects([]);
-    }
-  }, [authUser]);
-
-  // Load projects from API when user is authenticated
+  // Load projects
   useEffect(() => {
     const loadProjects = async () => {
-      if (!authUser) return;
-
+      if (!userProfile) return;
       try {
         const data = await projectsClient.list();
         setProjects(data || []);
@@ -88,84 +90,29 @@ export default function App() {
         setProjects([]);
       }
     };
-
-    if (authUser && userProfile) {
-      loadProjects();
-    }
-  }, [authUser, userProfile]);
-
-  // Determine which page to show based on auth and profile state
-  const page = (() => {
-    // If resetting password, show reset page
-    if (isResettingPassword) return 'reset-password';
-
-    // If explicitly navigating to a page, use that
-    if (currentView) return currentView;
-
-    // If still loading auth, data, or initial load, show loading
-    if (authLoading || isInitialLoad || (authUser && dataLoading && !userProfile)) return 'loading';
-
-    // Not authenticated - show landing
-    if (!authUser) return 'landing';
-
-    // Authenticated but no profile - show onboarding
-    if (!userProfile) return 'onboarding';
-
-    // Authenticated with profile - show dashboard
-    return 'dashboard';
-  })();
-
-  const handleAuthSuccess = () => {
-    setCurrentView(null);
-  };
-
-  const handlePasswordResetSuccess = () => {
-    setIsResettingPassword(false);
-    window.location.hash = '';
-    setCurrentView('auth');
-  };
+    loadProjects();
+  }, [userProfile]);
 
   const handleOnboardingComplete = async (userData) => {
-    if (!authUser) return;
-
     try {
-      // Save profile via API
       await userClient.completeOnboarding(userData);
-      
       console.log('Profile saved via API');
       setUserProfile(userData);
-      setCurrentView(null);
+      navigate('/dashboard');
     } catch (err) {
       console.error('Failed to save profile:', err);
-      // Still set profile locally so user can proceed
       setUserProfile(userData);
-      setCurrentView(null);
     }
-  };
-
-  const handleAddProject = () => {
-    setEditingProject(null);
-    setCurrentView('builder');
-  };
-
-  const handleEditProject = (project) => {
-    setEditingProject(project);
-    setCurrentView('builder');
   };
 
   const handleSaveProject = async (project) => {
-    if (!authUser) return;
-
     try {
-      setDataLoading(true);
-
-      if (editingProject) {
-        // Update existing project
+      const isExisting = projects.some(p => p.id === project.id);
+      if (isExisting) {
         const updated = await projectsClient.update(project.id, project);
         setProjects(projects.map(p => p.id === project.id ? updated : p));
         console.log('Project updated via API');
       } else {
-        // Create new project
         const created = await projectsClient.create(project);
         setProjects([...projects, created]);
         console.log('Project created via API');
@@ -173,18 +120,12 @@ export default function App() {
     } catch (err) {
       console.error('Failed to save project:', err);
       alert('Failed to save project: ' + err.message);
-    } finally {
-      setDataLoading(false);
-      setEditingProject(null);
-      setCurrentView('dashboard');
+      throw err;
     }
   };
 
   const handleDeleteProject = async (id) => {
     if (!confirm('Delete this project?')) return;
-
-    if (!authUser) return;
-
     try {
       await projectsClient.delete(id);
       setProjects(projects.filter(p => p.id !== id));
@@ -196,16 +137,11 @@ export default function App() {
   };
 
   const handleGitHubConnect = async (githubData) => {
-    if (!authUser) return;
-
     try {
-      // Update profile via API with GitHub info
       await userClient.updateProfile({
         github_username: githubData.username,
         github_avatar_url: githubData.avatar_url
       });
-
-      // Update local state
       setUserProfile({
         ...userProfile,
         github: {
@@ -213,7 +149,6 @@ export default function App() {
           avatar_url: githubData.avatar_url
         }
       });
-
       console.log('GitHub connected and saved via API');
     } catch (err) {
       console.error('Failed to save GitHub connection:', err);
@@ -221,72 +156,142 @@ export default function App() {
     }
   };
 
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen bg-[#2d2d2d] flex items-center justify-center">
+        <div className="fade-in">
+          <div>&gt; Loading profile data...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Pass props to children via Outlet context or cloneElement?
+  // React Router v6 Outlet context is cleaner.
+  return (
+    <Outlet context={{ 
+        userProfile, 
+        projects, 
+        handleOnboardingComplete, 
+        handleSaveProject, 
+        handleDeleteProject, 
+        handleGitHubConnect 
+    }} />
+  );
+};
+
+// Route wrapper components to consume context and pass as props
+// This adapts the Outlet context back to props for existing components
+import { useOutletContext } from 'react-router-dom';
+
+const OnboardingRoute = () => {
+    const { userProfile, handleOnboardingComplete } = useOutletContext();
+    const navigate = useNavigate();
+    
+    // If profile exists, redirect to dashboard
+    useEffect(() => {
+        if (userProfile) navigate('/dashboard');
+    }, [userProfile, navigate]);
+
+    if (userProfile) return null;
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+}
+
+const DashboardRoute = () => {
+    const { userProfile, projects, handleDeleteProject, handleGitHubConnect } = useOutletContext();
+    const navigate = useNavigate();
+
+    // If no profile, redirect to onboarding (double check, though layout handles it too)
+    useEffect(() => {
+        if (!userProfile) navigate('/onboarding');
+    }, [userProfile, navigate]);
+
+    if (!userProfile) return null;
+
+    return <Dashboard 
+        user={userProfile} 
+        projects={projects} 
+        onDeleteProject={handleDeleteProject}
+        onGitHubConnect={handleGitHubConnect}
+    />;
+}
+
+const ProjectBuilderRoute = () => {
+    const { userProfile, projects, handleSaveProject } = useOutletContext();
+    const navigate = useNavigate();
+    
+    if (!userProfile) {
+        navigate('/onboarding');
+        return null;
+    }
+
+    return <ProjectBuilder onSave={handleSaveProject} projects={projects} />;
+}
+
+const ProfileViewRoute = () => {
+    const { userProfile, projects } = useOutletContext();
+    const navigate = useNavigate();
+    
+    if (!userProfile) {
+        navigate('/onboarding');
+        return null;
+    }
+
+    return <ProfileView user={userProfile} projects={projects} />;
+}
+
+const ExportPageRoute = () => {
+    const { userProfile, projects } = useOutletContext();
+    const navigate = useNavigate();
+    
+    if (!userProfile) {
+        navigate('/onboarding');
+        return null;
+    }
+
+    return <ExportPage user={userProfile} projects={projects} />;
+}
+
+export default function App() {
+  const { loading: authLoading } = useAuth();
+  
+  // Loading screen
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#2d2d2d] flex items-center justify-center">
+        <div className="fade-in">
+          <div>&gt; Loading dev-impact...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Router>
+      <AuthRedirectHandler />
       <Routes>
-        {/* Main app routes */}
-        <Route path="/" element={
-    <div className="min-h-screen bg-[#2d2d2d]">
-      {page === 'loading' && (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="fade-in">
-            <div>&gt; Loading dev-impact...</div>
-          </div>
-        </div>
-      )}
-      {page === 'landing' && (
-        <LandingPage onStart={() => setCurrentView('auth')} />
-      )}
-      {page === 'auth' && (
-        <Auth onAuthSuccess={handleAuthSuccess} />
-      )}
-      {page === 'reset-password' && (
-        <ResetPassword onSuccess={handlePasswordResetSuccess} />
-      )}
-      {page === 'onboarding' && (
-        <Onboarding onComplete={handleOnboardingComplete} />
-      )}
-      {page === 'dashboard' && (
-        <Dashboard
-          user={userProfile}
-          projects={projects}
-          onAddProject={handleAddProject}
-          onEditProject={handleEditProject}
-          onDeleteProject={handleDeleteProject}
-          onViewProfile={() => setCurrentView('profile')}
-          onExport={() => setCurrentView('export')}
-          onGitHubConnect={handleGitHubConnect}
-        />
-      )}
-      {page === 'builder' && (
-        <ProjectBuilder
-          editProject={editingProject}
-          onSave={handleSaveProject}
-          onCancel={() => setCurrentView('dashboard')}
-        />
-      )}
-      {page === 'profile' && (
-        <ProfileView
-          user={userProfile}
-          projects={projects}
-          onBack={() => setCurrentView('dashboard')}
-        />
-      )}
-      {page === 'export' && (
-        <ExportPage
-          user={userProfile}
-          projects={projects}
-          onBack={() => setCurrentView('dashboard')}
-        />
-      )}
-    </div>
-        } />
+        {/* Public Routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         
-        {/* Public profile route */}
+        {/* Protected Routes - All nested under a Layout */}
+        <Route element={<ProtectedRoute><AuthenticatedLayout /></ProtectedRoute>}>
+            <Route path="/onboarding" element={<OnboardingRoute />} />
+            <Route path="/dashboard" element={<DashboardRoute />} />
+            <Route path="/project/new" element={<ProjectBuilderRoute />} />
+            <Route path="/project/:projectId/edit" element={<ProjectBuilderRoute />} />
+            <Route path="/profile" element={<ProfileViewRoute />} />
+            <Route path="/export" element={<ExportPageRoute />} />
+        </Route>
+        
+        {/* Public Profile Route */}
+        <Route path="/404" element={<NotFound />} />
         <Route path="/:username" element={<PublicProfile />} />
         
-        {/* 404 routes - must be last */}
-        <Route path="/404" element={<NotFound />} />
+        {/* 404 Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>

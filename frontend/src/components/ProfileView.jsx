@@ -1,16 +1,19 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Github, ArrowLeft } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
 
-const ProfileView = ({ user, projects, onBack }) => {
+const ProfileView = ({ user, projects }) => {
   return (
     <div className="p-10 max-w-[1200px] mx-auto">
       <div className="mb-10 flex items-center gap-5">
-        <TerminalButton onClick={onBack}>
-          <ArrowLeft size={16} className="inline mr-2" />
-          [Back to Dashboard]
-        </TerminalButton>
+        <Link to="/dashboard">
+          <TerminalButton>
+            <ArrowLeft size={16} className="inline mr-2" />
+            [Back to Dashboard]
+          </TerminalButton>
+        </Link>
       </div>
 
       <div className="border border-terminal-border p-10 mb-10">
