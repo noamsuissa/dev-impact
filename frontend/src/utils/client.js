@@ -89,11 +89,11 @@ export const auth = {
   /**
    * Sign up a new user
    */
-  signUp: async (email, password) => {
+  signUp: async (email, password, captchaToken) => {
     const response = await fetch(`${API_URL}/api/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, captcha_token: captchaToken }),
     });
     
     if (!response.ok) {
