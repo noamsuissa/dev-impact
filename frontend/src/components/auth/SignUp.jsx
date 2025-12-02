@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 import TerminalButton from '../common/TerminalButton';
 import TerminalInput from '../common/TerminalInput';
 import { useAuth } from '../../hooks/useAuth';
@@ -28,6 +29,8 @@ const SignUp = () => {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [showPasswordHints, setShowPasswordHints] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const captchaRef = useRef(null);
 
   // Password validation rules
   const passwordValidation = useMemo(() => {
@@ -61,11 +64,23 @@ const SignUp = () => {
       return;
     }
 
+    const hCaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY;
+    const isCaptchaEnabled = !!hCaptchaSiteKey;
+
+    if (isCaptchaEnabled && !captchaToken) {
+      setError('Please complete the captcha');
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Sign up the user
-      const data = await authClient.signUp(email, password);
+      const data = await authClient.signUp(
+        email, 
+        password, 
+        isCaptchaEnabled ? captchaToken : 'localhost_bypass'
+      );
 
       console.log('Signup successful:', data);
 
@@ -88,9 +103,19 @@ const SignUp = () => {
     } catch (err) {
       console.error('Auth error details:', err);
       setError(err.message || 'Failed to create account');
+      // Reset captcha on error
+      if (captchaRef.current) {
+        captchaRef.current.resetCaptcha();
+        setCaptchaToken(null);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const onCaptchaVerify = (token) => {
+    setCaptchaToken(token);
+    setError(null);
   };
 
   return (
@@ -196,6 +221,18 @@ const SignUp = () => {
             )}
           </div>
 
+          {/* hCaptcha - Only render if site key is present */}
+          {import.meta.env.VITE_HCAPTCHA_SITE_KEY && (
+            <div className="fade-in flex justify-center py-2" style={{ animationDelay: '0.25s' }}>
+              <HCaptcha
+                sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY}
+                onVerify={onCaptchaVerify}
+                ref={captchaRef}
+                theme="dark"
+              />
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="fade-in text-red-400 bg-red-400/10 border border-red-400/30 p-3 rounded">
@@ -220,7 +257,8 @@ const SignUp = () => {
                 !password ||
                 !confirmPassword || 
                 !passwordValidation.isValid || 
-                password !== confirmPassword
+                password !== confirmPassword ||
+                (import.meta.env.VITE_HCAPTCHA_SITE_KEY && !captchaToken)
               }
             >
               {loading ? '[Processing...]' : '[Create Account]'}
@@ -253,4 +291,3 @@ const SignUp = () => {
 };
 
 export default SignUp;
-

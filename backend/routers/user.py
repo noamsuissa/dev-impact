@@ -95,6 +95,7 @@ async def complete_onboarding(
     
     try:
         profile_data = {
+            "username": request.username,
             "full_name": request.name,
             "github_username": request.github.username if request.github else None,
             "github_avatar_url": request.github.avatar_url if request.github else None,

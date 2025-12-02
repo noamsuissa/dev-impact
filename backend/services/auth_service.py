@@ -31,13 +31,14 @@ class AuthService:
         return create_client(url, key)
 
     @staticmethod
-    async def sign_up(email: str, password: str) -> Dict[str, Any]:
+    async def sign_up(email: str, password: str, captcha_token: Optional[str] = None) -> Dict[str, Any]:
         """
         Sign up a new user
         
         Args:
             email: User's email
             password: User's password
+            captcha_token: hCaptcha response token (optional)
             
         Returns:
             Dict containing user and session data
@@ -48,12 +49,18 @@ class AuthService:
             # Get redirect URL from environment (fallback to localhost for dev)
             redirect_url = os.getenv("AUTH_REDIRECT_URL", "http://localhost:5173")
             
+            options = {
+                "email_redirect_to": redirect_url
+            }
+            
+            # Add captcha token only if provided and not localhost bypass
+            if captcha_token and captcha_token != 'localhost_bypass':
+                options["captcha_token"] = captcha_token
+            
             response = supabase.auth.sign_up({
                 "email": email,
                 "password": password,
-                "options": {
-                    "email_redirect_to": redirect_url
-                }
+                "options": options
             })
             
             if response.user is None:
