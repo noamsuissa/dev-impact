@@ -115,31 +115,9 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
       const username = user.github?.username || 
                       user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-      // Prepare profile data
-      const profileData = {
-        username,
-        user: {
-          name: user.name,
-          github: user.github ? {
-            username: user.github.username,
-            avatar_url: user.github.avatar_url
-          } : null
-        },
-        projects: projects.map(p => ({
-          id: p.id,
-          company: p.company,
-          projectName: p.projectName,
-          role: p.role,
-          teamSize: p.teamSize,
-          problem: p.problem,
-          contributions: p.contributions,
-          techStack: p.techStack,
-          metrics: p.metrics
-        }))
-      };
-
+      // Backend fetches fresh data from database, so we only need to send username
       // Publish via API
-      await profiles.publish(profileData);
+      await profiles.publish({ username });
       
       // Copy link to clipboard
       const shareUrl = `https://dev-impact.io/${username}`;
