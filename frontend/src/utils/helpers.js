@@ -8,16 +8,20 @@ export const wrapText = (text, maxWidth) => {
   const words = text.split(' ');
   
   for (const word of words) {
-    if ((currentLine + word).length <= maxWidth) {
+    // If word itself is longer than maxWidth, send word to newline
+    if (word.length > maxWidth) {
+      if (currentLine) {
+        lines.push(currentLine);
+        currentLine = '';
+      }
+      lines.push(word);
+      continue;
+    }
+    if ((currentLine ? currentLine.length + 1 : 0) + word.length <= maxWidth) {
       currentLine += (currentLine ? ' ' : '') + word;
     } else {
       if (currentLine) lines.push(currentLine);
-      // If single word is too long, truncate it
-      if (word.length > maxWidth) {
-        lines.push(word.substring(0, maxWidth - 3) + '...');
-      } else {
-        currentLine = word;
-      }
+      currentLine = word;
     }
   }
   if (currentLine) lines.push(currentLine);

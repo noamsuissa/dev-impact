@@ -15,18 +15,22 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
   const buildMetricCard = (metric) => {
     const cardWidth = compact ? 12 : 16;
     const lines = [];
-    
+
+    // Helper to wrap and center lines for terminal card
+    const wrappedCentered = (text) =>
+      wrapText(text, cardWidth).map(line => '│' + centerText(line, cardWidth) + '│');
+
     lines.push('┌' + repeat('─', cardWidth) + '┐');
-    lines.push('│' + centerText(metric.primary, cardWidth) + '│');
-    lines.push('│' + centerText(metric.label, cardWidth) + '│');
-    
+    wrappedCentered(metric.primary).forEach(l => lines.push(l));
+    wrappedCentered(metric.label).forEach(l => lines.push(l));
+
     if (metric.detail) {
       lines.push('├' + repeat('─', cardWidth) + '┤');
-      lines.push('│' + centerText(metric.detail, cardWidth) + '│');
+      wrappedCentered(metric.detail).forEach(l => lines.push(l));
     }
-    
+
     lines.push('└' + repeat('─', cardWidth) + '┘');
-    
+
     return lines;
   };
   
