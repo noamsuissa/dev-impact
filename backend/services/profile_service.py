@@ -66,7 +66,6 @@ class ProfileService:
     @staticmethod
     async def publish_profile(
         username: str,
-        profile_data: Dict[str, Any],
         user_id: str,
         token: str
     ) -> Dict[str, Any]:
@@ -75,7 +74,6 @@ class ProfileService:
         
         Args:
             username: The desired username
-            profile_data: The profile data containing user and projects
             user_id: The authenticated user's ID
             token: The user's auth token
             
@@ -103,12 +101,46 @@ class ProfileService:
                     detail="Username is already taken"
                 )
         
-        # Insert or update published profile
+        # Fetch latest user profile from database
+        try:
+            from services.user_service import UserService
+            user_profile = await UserService.get_profile(user_id)
+        except Exception as e:
+            print(f"Error fetching user profile: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to fetch user profile"
+            )
+        
+        # Fetch latest projects from database
+        try:
+            from services.project_service import ProjectService
+            projects = await ProjectService.list_projects(user_id)
+        except Exception as e:
+            print(f"Error fetching projects: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to fetch projects"
+            )
+        
+        # Build profile_data from fresh database data
+        fresh_profile_data = {
+            "user": {
+                "name": user_profile.get("full_name", ""),
+                "github": {
+                    "username": user_profile.get("github_username"),
+                    "avatar_url": user_profile.get("github_avatar_url")
+                } if user_profile.get("github_username") else None
+            },
+            "projects": projects
+        }
+        
+        # Insert or update published profile with fresh data
         result = supabase.table("published_profiles").upsert(
             {
                 "user_id": user_id,
                 "username": username,
-                "profile_data": profile_data,
+                "profile_data": fresh_profile_data,
                 "is_published": True,
                 "updated_at": datetime.utcnow().isoformat()
             },
@@ -286,17 +318,15 @@ class ProfileService:
         try:
             supabase = ProfileService.get_supabase_client()
             
-            result = supabase.table("published_profiles")\
-                .select("username")\
-                .eq("username", username)\
-                .execute()
+            # Use RPC call to check availability (checks format, reserved names, and existing profiles)
+            result = supabase.rpc("is_username_available", {"desired_username": username}).execute()
             
-            available = not result.data or len(result.data) == 0
+            available = result.data
             
             return {
                 "available": available,
                 "valid": True,
-                "message": "Username is available" if available else "Username is taken"
+                "message": "Username is available" if available else "Username is taken or reserved"
             }
         except Exception as e:
             print(f"Error checking username: {e}")

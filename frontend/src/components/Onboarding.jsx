@@ -2,10 +2,14 @@ import React, { useState } from 'react';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
 import { completeGitHubAuth } from '../utils/githubAuth';
+import { profiles } from '../utils/client';
 
 const Onboarding = ({ onComplete }) => {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [usernameError, setUsernameError] = useState(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [githubState, setGithubState] = useState('initial'); // initial, loading, awaiting, success, error
   const [githubData, setGithubData] = useState(null);
   const [deviceCode, setDeviceCode] = useState(null);
@@ -25,18 +29,56 @@ const Onboarding = ({ onComplete }) => {
       input: 'name'
     },
     {
+      prompt: '> Choose a username:',
+      input: 'username'
+    },
+    {
       prompt: '> Connect your GitHub account (optional):',
       input: 'github'
     }
   ];
 
-  const handleNext = () => {
+  const validateUsername = (value) => {
+    if (!value) return 'Username is required';
+    if (value.length < 3) return 'Username must be at least 3 characters';
+    if (value.length > 50) return 'Username must be less than 50 characters';
+    if (!/^[a-z0-9-]+$/.test(value)) return 'Only lowercase letters, numbers, and hyphens allowed';
+    return null;
+  };
+
+  const handleNext = async () => {
+    if (steps[step].input === 'username') {
+      const validationError = validateUsername(username);
+      if (validationError) {
+        setUsernameError(validationError);
+        return;
+      }
+
+      setIsCheckingUsername(true);
+      setUsernameError(null);
+      try {
+        const result = await profiles.checkUsername(username);
+        if (!result.available) {
+          setUsernameError('Username is already taken');
+          setIsCheckingUsername(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Error checking username:', err);
+        setUsernameError('Failed to validate username. Please try again.');
+        setIsCheckingUsername(false);
+        return;
+      }
+      setIsCheckingUsername(false);
+    }
+
     if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
       // Complete onboarding
       const userData = {
         name,
+        username,
         github: githubData || null
       };
       onComplete(userData);
@@ -88,10 +130,41 @@ const Onboarding = ({ onComplete }) => {
             
             {/* Name input */}
             {i === step && s.input === 'name' && (
-              <TerminalInput value={name} onChange={setName} placeholder="John Doe" />
+              <TerminalInput 
+                value={name} 
+                onChange={setName} 
+                placeholder="John Doe" 
+                autoFocus
+              />
             )}
             {i < step && s.input === 'name' && (
               <div className="text-terminal-orange">{name}</div>
+            )}
+
+            {/* Username input */}
+            {i === step && s.input === 'username' && (
+              <div>
+                <TerminalInput 
+                  value={username} 
+                  onChange={(val) => {
+                    setUsername(val.toLowerCase());
+                    setUsernameError(null);
+                  }} 
+                  placeholder="johndoe" 
+                  autoFocus
+                />
+                <div className="mt-2 text-sm text-terminal-gray">
+                  3-50 characters, lowercase letters, numbers, and hyphens only
+                </div>
+                {usernameError && (
+                  <div className="mt-2 text-red-400">
+                    ✗ {usernameError}
+                  </div>
+                )}
+              </div>
+            )}
+            {i < step && s.input === 'username' && (
+              <div className="text-terminal-orange">@{username}</div>
             )}
 
             {/* GitHub connection */}
@@ -213,6 +286,14 @@ const Onboarding = ({ onComplete }) => {
           </div>
         )}
 
+        {step < steps.length - 1 && steps[step].input === 'username' && (
+          <div className="mt-5">
+            <TerminalButton onClick={handleNext} disabled={!username.trim() || isCheckingUsername}>
+              {isCheckingUsername ? '[Checking...]' : '[Next]'}
+            </TerminalButton>
+          </div>
+        )}
+
         {step < steps.length - 1 && !steps[step].input && (
           <div className="mt-5">
             <TerminalButton onClick={handleNext}>
@@ -226,4 +307,3 @@ const Onboarding = ({ onComplete }) => {
 };
 
 export default Onboarding;
-

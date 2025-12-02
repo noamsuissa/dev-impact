@@ -53,6 +53,7 @@ const AuthenticatedLayout = () => {
         if (data) {
           setUserProfile({
             name: data.full_name,
+            username: data.username,
             github: data.github_username ? {
               username: data.github_username,
               avatar_url: data.github_avatar_url

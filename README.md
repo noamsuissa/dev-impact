@@ -41,7 +41,7 @@ Apply the migrations in the `backend/migrations` folder *in order* using the Sup
 1. Open your Supabase project and go to the "SQL Editor".
 2. Start with the lowest migration number (e.g., `001_...`), open the file, and paste its contents into the SQL editor.
 3. Run the SQL snippet.
-4. Repeat for each next migration (`002_...`, `003_...`, etc.), **in order**, until all migrations are applied.
+4. Repeat for each next migration (`002_...`, etc.), **in order**, until all migrations are applied.
 
 This will set up the database tables and policies required for dev-impact to work!
 

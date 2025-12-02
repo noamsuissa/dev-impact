@@ -60,22 +60,9 @@ async def publish_profile(
         )
     
     try:
-        # Prepare profile data
-        profile_data = {
-            "user": {
-                "name": profile.user.name,
-                "github": {
-                    "username": profile.user.github.username if profile.user.github else None,
-                    "avatar_url": profile.user.github.avatar_url if profile.user.github else None,
-                }
-            },
-            "projects": [p.model_dump(by_alias=True) for p in profile.projects]
-        }
-        
         # Publish profile using service
         result = await ProfileService.publish_profile(
-            username=profile.username,
-            profile_data=profile_data,
+            username=profile.username,            
             user_id=user_id,
             token=token
         )

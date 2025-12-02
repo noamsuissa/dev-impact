@@ -10,6 +10,7 @@ class SignUpRequest(BaseModel):
     """Sign up request schema"""
     email: EmailStr
     password: str
+    captcha_token: Optional[str] = None
 
 
 class SignInRequest(BaseModel):

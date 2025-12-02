@@ -68,8 +68,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
     const checkPublishedStatus = async () => {
       if (!user) return;
       
-      const username = user.github?.username || 
-                      user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const username = user.username;
       
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -111,35 +110,11 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
     setError(null);
 
     try {
-      // Generate username from GitHub or name
-      const username = user.github?.username || 
-                      user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const username = user.username;
 
-      // Prepare profile data
-      const profileData = {
-        username,
-        user: {
-          name: user.name,
-          github: user.github ? {
-            username: user.github.username,
-            avatar_url: user.github.avatar_url
-          } : null
-        },
-        projects: projects.map(p => ({
-          id: p.id,
-          company: p.company,
-          projectName: p.projectName,
-          role: p.role,
-          teamSize: p.teamSize,
-          problem: p.problem,
-          contributions: p.contributions,
-          techStack: p.techStack,
-          metrics: p.metrics
-        }))
-      };
-
+      // Backend fetches fresh data from database, so we only need to send username
       // Publish via API
-      await profiles.publish(profileData);
+      await profiles.publish({ username });
       
       // Copy link to clipboard
       const shareUrl = `https://dev-impact.io/${username}`;
@@ -181,9 +156,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
     setError(null);
 
     try {
-      // Generate username from GitHub or name
-      const username = user.github?.username || 
-                      user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const username = user.username;
 
       // Unpublish via API
       await profiles.unpublish(username);
@@ -213,7 +186,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
         <div className="flex justify-between items-start">
           <div>
             <div className="text-2xl mb-2.5 flex items-center gap-3">
-              <span>&gt; {user.name}@dev-impact:~$</span>
+              <span>&gt; {user.username}@dev-impact:~$</span>
               {isPublished && (
                 <span className="flex items-center gap-2 text-sm">
                   <span className="relative flex h-3 w-3">
@@ -457,4 +430,3 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
 };
 
 export default Dashboard;
-

@@ -89,11 +89,11 @@ export const auth = {
   /**
    * Sign up a new user
    */
-  signUp: async (email, password) => {
+  signUp: async (email, password, captchaToken) => {
     const response = await fetch(`${API_URL}/api/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, captcha_token: captchaToken }),
     });
     
     if (!response.ok) {
@@ -404,6 +404,20 @@ export const profiles = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to unpublish profile');
+    }
+    
+    return response.json();
+  },
+
+  /**
+   * Check if username is available
+   */
+  checkUsername: async (username) => {
+    const response = await fetch(`${API_URL}/api/profiles/check/${username}`);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to check username');
     }
     
     return response.json();

@@ -34,8 +34,6 @@ class UserData(BaseModel):
 
 class PublishProfileRequest(BaseModel):
     username: str
-    user: UserData
-    projects: List[ProjectData]
 
 class PublishProfileResponse(BaseModel):
     success: bool

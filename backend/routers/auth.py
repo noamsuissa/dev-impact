@@ -29,7 +29,8 @@ async def sign_up(request: SignUpRequest):
     May require email verification depending on Supabase settings.
     """
     try:
-        result = await AuthService.sign_up(request.email, request.password)
+        # Pass captcha_token (can be None or bypass string)
+        result = await AuthService.sign_up(request.email, request.password, request.captcha_token)
         return result
     except HTTPException:
         raise
