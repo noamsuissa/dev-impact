@@ -40,6 +40,7 @@ class UpdateProfileRequest(BaseModel):
 
 class OnboardingRequest(BaseModel):
     """Onboarding request"""
+    username: str
     name: str
     github: Optional[GitHubInfo] = None
 

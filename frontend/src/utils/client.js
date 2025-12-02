@@ -408,6 +408,20 @@ export const profiles = {
     
     return response.json();
   },
+
+  /**
+   * Check if username is available
+   */
+  checkUsername: async (username) => {
+    const response = await fetch(`${API_URL}/api/profiles/check/${username}`);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to check username');
+    }
+    
+    return response.json();
+  },
 };
 
 /**

@@ -68,8 +68,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
     const checkPublishedStatus = async () => {
       if (!user) return;
       
-      const username = user.github?.username || 
-                      user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const username = user.username;
       
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -111,9 +110,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
     setError(null);
 
     try {
-      // Generate username from GitHub or name
-      const username = user.github?.username || 
-                      user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const username = user.username;
 
       // Backend fetches fresh data from database, so we only need to send username
       // Publish via API
@@ -159,9 +156,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
     setError(null);
 
     try {
-      // Generate username from GitHub or name
-      const username = user.github?.username || 
-                      user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const username = user.username;
 
       // Unpublish via API
       await profiles.unpublish(username);
@@ -191,7 +186,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
         <div className="flex justify-between items-start">
           <div>
             <div className="text-2xl mb-2.5 flex items-center gap-3">
-              <span>&gt; {user.name}@dev-impact:~$</span>
+              <span>&gt; {user.username}@dev-impact:~$</span>
               {isPublished && (
                 <span className="flex items-center gap-2 text-sm">
                   <span className="relative flex h-3 w-3">
@@ -435,4 +430,3 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
 };
 
 export default Dashboard;
-

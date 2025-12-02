@@ -318,17 +318,15 @@ class ProfileService:
         try:
             supabase = ProfileService.get_supabase_client()
             
-            result = supabase.table("published_profiles")\
-                .select("username")\
-                .eq("username", username)\
-                .execute()
+            # Use RPC call to check availability (checks format, reserved names, and existing profiles)
+            result = supabase.rpc("is_username_available", {"desired_username": username}).execute()
             
-            available = not result.data or len(result.data) == 0
+            available = result.data
             
             return {
                 "available": available,
                 "valid": True,
-                "message": "Username is available" if available else "Username is taken"
+                "message": "Username is available" if available else "Username is taken or reserved"
             }
         except Exception as e:
             print(f"Error checking username: {e}")
