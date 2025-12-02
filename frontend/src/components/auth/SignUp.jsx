@@ -1,28 +1,33 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import TerminalButton from './common/TerminalButton';
-import TerminalInput from './common/TerminalInput';
-import { auth } from '../utils/client';
+import React, { useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import TerminalButton from '../common/TerminalButton';
+import TerminalInput from '../common/TerminalInput';
+import { useAuth } from '../../hooks/useAuth';
+import { auth as authClient } from '../../utils/client';
 
-const ResetPassword = () => {
+// Password requirement indicator component
+const PasswordRequirement = ({ met, optional, children }) => (
+  <div className="flex items-center gap-2">
+    <span className={met ? 'text-terminal-green' : 'text-terminal-gray'}>
+      {met ? '✓' : '○'}
+    </span>
+    <span className={met ? 'text-terminal-green' : 'text-terminal-gray'}>
+      {children}
+      {optional && <span className="text-terminal-gray text-xs ml-1">(optional)</span>}
+    </span>
+  </div>
+);
+
+const SignUp = () => {
+  const { refreshSession } = useAuth();
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
-  const [recoveryToken, setRecoveryToken] = useState(null);
-
-  // Extract recovery token from URL hash on mount
-  useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const token = hashParams.get('access_token');
-    if (token) {
-      setRecoveryToken(token);
-    } else {
-      setError('Invalid or expired reset link. Please request a new one.');
-    }
-  }, []);
+  const [showPasswordHints, setShowPasswordHints] = useState(false);
 
   // Password validation rules
   const passwordValidation = useMemo(() => {
@@ -39,7 +44,7 @@ const ResetPassword = () => {
     return { rules, isValid };
   }, [password]);
 
-  const handleUpdatePassword = async (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault();
     setError(null);
     setMessage(null);
@@ -47,6 +52,7 @@ const ResetPassword = () => {
     // Validation
     if (!passwordValidation.isValid) {
       setError('Please meet all password requirements');
+      setShowPasswordHints(true);
       return;
     }
 
@@ -55,22 +61,33 @@ const ResetPassword = () => {
       return;
     }
 
-    if (!recoveryToken) {
-      setError('Invalid or expired reset link. Please request a new one.');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      await auth.updatePassword(password, recoveryToken);
+      // Sign up the user
+      const data = await authClient.signUp(email, password);
 
-      setMessage('Password updated successfully! Redirecting...');
-      setTimeout(() => {
-        navigate('/signin');
-      }, 2000);
+      console.log('Signup successful:', data);
+
+      // Check if email confirmation is required
+      if (data.requires_email_verification) {
+        setMessage('Check your email to verify your account');
+        setTimeout(() => {
+          navigate('/signin');
+        }, 1800);
+      } else if (data.user && data.session) {
+        // Successfully signed up and logged in automatically
+        setMessage('Account created! Redirecting...');
+        await refreshSession();
+        setTimeout(() => {
+            navigate('/onboarding');
+        }, 1500);
+      } else {
+        setError('Unexpected response from authentication service');
+      }
     } catch (err) {
-      setError(err.message || 'Failed to update password');
+      console.error('Auth error details:', err);
+      setError(err.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -82,30 +99,56 @@ const ResetPassword = () => {
         {/* Header */}
         <div className="fade-in mb-10">
           <div className="text-2xl mb-2">
-            &gt; Set New Password
+            &gt; Create Account
           </div>
           <div className="text-terminal-gray">
-            Choose a strong password for your account
+            Start showcasing your developer impact
           </div>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleUpdatePassword} className="space-y-5">
-          {/* New Password */}
+        <form onSubmit={handleSignUp} className="space-y-5" autoComplete="on">
+          {/* Email */}
           <div className="fade-in">
-            <div className="mb-2">&gt; New Password:</div>
+            <div className="mb-2">
+              <label htmlFor="email">&gt; Email:</label>
+            </div>
+            <TerminalInput
+              type="email"
+              name="email"
+              id="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="developer@example.com"
+              disabled={loading}
+              required
+              autoComplete="username"
+            />
+          </div>
+
+          {/* Password */}
+          <div className="fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="mb-2">
+              <label htmlFor="password">&gt; Password:</label>
+            </div>
             <TerminalInput
               type="password"
+              name="new-password"
+              id="password"
               value={password}
-              onChange={setPassword}
+              onChange={(val) => {
+                setPassword(val);
+                setShowPasswordHints(true);
+              }}
               placeholder="••••••••"
               disabled={loading}
               required
+              autoComplete="new-password"
             />
           </div>
 
           {/* Password Requirements */}
-          {password.length > 0 && (
+          {showPasswordHints && password.length > 0 && (
             <div className="fade-in mt-3 space-y-1.5 text-sm bg-terminal-bg-lighter border border-terminal-border p-3 rounded">
               <div className="text-terminal-gray mb-2">&gt; Password requirements:</div>
               <PasswordRequirement met={passwordValidation.rules.minLength}>
@@ -127,15 +170,20 @@ const ResetPassword = () => {
           )}
 
           {/* Confirm Password */}
-          <div className="fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="mb-2">&gt; Confirm New Password:</div>
+          <div className="fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="mb-2">
+              <label htmlFor="confirm-password">&gt; Confirm Password:</label>
+            </div>
             <TerminalInput
               type="password"
+              name="confirm-password"
+              id="confirm-password"
               value={confirmPassword}
               onChange={setConfirmPassword}
               placeholder="••••••••"
               disabled={loading}
               required
+              autoComplete="new-password"
             />
             {confirmPassword.length > 0 && (
               <div className="mt-2 text-sm">
@@ -163,43 +211,46 @@ const ResetPassword = () => {
           )}
 
           {/* Submit Button */}
-          <div className="fade-in flex gap-5 pt-5" style={{ animationDelay: '0.2s' }}>
+          <div className="fade-in flex gap-5 pt-5" style={{ animationDelay: '0.3s' }}>
             <TerminalButton 
               type="submit" 
               disabled={
                 loading || 
-                !password || 
+                !email || 
+                !password ||
                 !confirmPassword || 
                 !passwordValidation.isValid || 
                 password !== confirmPassword
               }
             >
-              {loading ? '[Updating...]' : '[Update Password]'}
+              {loading ? '[Processing...]' : '[Create Account]'}
             </TerminalButton>
           </div>
         </form>
 
+        {/* Navigation */}
+        <div className="fade-in mt-10 pt-10 border-t border-terminal-border" style={{ animationDelay: '0.4s' }}>
+          <div className="text-terminal-gray mb-3">
+            Already have an account?
+          </div>
+          <div className="flex gap-3">
+            <Link to="/signin">
+              <TerminalButton disabled={loading}>
+                [Sign In]
+              </TerminalButton>
+            </Link>
+          </div>
+        </div>
+
         {/* Help Text */}
-        <div className="fade-in mt-10 text-terminal-gray text-sm" style={{ animationDelay: '0.3s' }}>
-          <div className="mb-1">&gt; After updating, you'll be redirected to sign in</div>
-          <div>&gt; Use your new password to access your account</div>
+        <div className="fade-in mt-10 text-terminal-gray text-sm" style={{ animationDelay: '0.5s' }}>
+          <div className="mb-1">&gt; Secure authentication powered by Supabase</div>
+          <div>&gt; Your data is encrypted and protected</div>
         </div>
       </div>
     </div>
   );
 };
 
-// Password requirement indicator component
-const PasswordRequirement = ({ met, children }) => (
-  <div className="flex items-center gap-2">
-    <span className={met ? 'text-terminal-green' : 'text-terminal-gray'}>
-      {met ? '✓' : '○'}
-    </span>
-    <span className={met ? 'text-terminal-green' : 'text-terminal-gray'}>
-      {children}
-    </span>
-  </div>
-);
-
-export default ResetPassword;
+export default SignUp;
 

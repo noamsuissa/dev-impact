@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Eye, Download, LogOut, Github, Share2, CheckCircle, ExternalLink, Copy } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
@@ -6,7 +7,8 @@ import { useAuth } from '../hooks/useAuth';
 import { completeGitHubAuth } from '../utils/githubAuth';
 import { profiles } from '../utils/client';
 
-const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProject, onViewProfile, onExport, onGitHubConnect }) => {
+const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
+  const navigate = useNavigate();
   const { signOut } = useAuth();
   const [githubState, setGithubState] = useState('initial'); // initial, loading, awaiting, success, error
   const [deviceCode, setDeviceCode] = useState(null);
@@ -316,11 +318,11 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
           &gt; Actions
         </div>
         <div className="flex gap-5 flex-wrap">
-          <TerminalButton onClick={onAddProject}>
+          <TerminalButton onClick={() => navigate('/project/new')}>
             <Plus size={16} className="inline mr-2" />
             [Add Project]
           </TerminalButton>
-          <TerminalButton onClick={onViewProfile}>
+          <TerminalButton onClick={() => navigate('/profile')}>
             <Eye size={16} className="inline mr-2" />
             [Preview Profile]
           </TerminalButton>
@@ -367,7 +369,7 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
             </TerminalButton>
           )}
           
-          <TerminalButton onClick={onExport}>
+          <TerminalButton onClick={() => navigate('/export')}>
             <Download size={16} className="inline mr-2" />
             [Export]
           </TerminalButton>
@@ -440,7 +442,7 @@ const Dashboard = ({ user, projects, onAddProject, onEditProject, onDeleteProjec
                 <div key={project.id} className="min-w-0 h-full">
                   <ProjectCard
                     project={project}
-                    onEdit={onEditProject}
+                    onEdit={(p) => navigate(`/project/${p.id}/edit`)}
                     onDelete={onDeleteProject}
                     compact
                   />
