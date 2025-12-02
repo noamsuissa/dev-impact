@@ -222,7 +222,7 @@ const SignUp = () => {
           </div>
 
           {/* hCaptcha - Only render if site key is present */}
-          {import.meta.env.VITE_HCAPTCHA_SITE_KEY && (
+          {import.meta.env.VITE_HCAPTCHA_SITE_KEY ? (
             <div className="fade-in flex justify-center py-2" style={{ animationDelay: '0.25s' }}>
               <HCaptcha
                 sitekey={import.meta.env.VITE_HCAPTCHA_SITE_KEY}
@@ -230,6 +230,10 @@ const SignUp = () => {
                 ref={captchaRef}
                 theme="dark"
               />
+            </div>
+          ) : (
+            <div className="fade-in text-terminal-orange text-xs py-2" style={{ animationDelay: '0.25s' }}>
+              ⚠ CAPTCHA not configured (VITE_HCAPTCHA_SITE_KEY missing)
             </div>
           )}
 
