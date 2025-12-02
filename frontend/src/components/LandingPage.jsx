@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import TerminalButton from './common/TerminalButton';
 
-const LandingPage = ({ onStart }) => {
+const LandingPage = () => {
   const [lines, setLines] = useState([]);
   const [showButtons, setShowButtons] = useState(false);
 
@@ -37,9 +38,11 @@ const LandingPage = ({ onStart }) => {
         ))}
         {showButtons && (
           <div className="fade-in mt-10 flex gap-5">
-            <TerminalButton onClick={onStart}>
-              [Start Building]
-            </TerminalButton>
+            <Link to="/signin">
+              <TerminalButton>
+                [Start Building]
+              </TerminalButton>
+            </Link>
             <TerminalButton onClick={() => alert('Example coming soon!')}>
               [View Example]
             </TerminalButton>
