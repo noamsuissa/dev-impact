@@ -89,7 +89,7 @@ async def complete_onboarding(
     """
     Complete user onboarding
     
-    Creates or updates user profile with onboarding data. 
+    Creates or updates user profile with onboarding data.
     """
     user_id = await get_user_id_from_header(authorization)
     
