@@ -86,6 +86,9 @@ class ProfileService:
                 detail="Username must be 3-50 characters, lowercase letters, numbers, and hyphens only"
             )
         
+        # Ensure username consistency (lowercase)
+        username = username.lower()
+        
         supabase = ProfileService.get_supabase_client(user_token=token)
         
         # Check if username is already taken by another user

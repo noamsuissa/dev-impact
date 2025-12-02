@@ -130,7 +130,7 @@ class UserService:
             
             # Generate username if not provided
             if "username" not in upsert_data and "full_name" in profile_data:
-                username = profile_data["full_name"].lower().replace(" ", "-")
+                username = profile_data["full_name"].lower().replace(" ", "")
                 # Remove special characters
                 username = "".join(c for c in username if c.isalnum() or c == "-")
                 upsert_data["username"] = username
