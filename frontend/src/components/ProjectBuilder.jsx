@@ -219,14 +219,43 @@ const ProjectBuilder = ({ onSave, projects = [] }) => {
     : null;
 
   // If editing but project not found yet (and projects likely loading or empty),
-  // we can show a loading state or just wait. 
-  // But if projects array is populated and still not found, it's a 404 case.
+  // we can show a loading state or just wait.
   const isLoading = isEditing && !project && projects.length === 0;
+  
+  // If projects have loaded but the specific project isn't found, it's a 404 case.
+  const isNotFound = isEditing && !project && projects.length > 0;
   
   if (isLoading) {
     return (
       <div className="p-10 text-center">
         <div className="fade-in">&gt; Loading project...</div>
+      </div>
+    );
+  }
+
+  if (isNotFound) {
+    return (
+      <div className="p-10 max-w-[800px] mx-auto">
+        <div className="mb-10 flex items-center gap-5">
+          <TerminalButton onClick={() => navigate('/dashboard')}>
+            <ArrowLeft size={16} className="inline mr-2" />
+            [Back]
+          </TerminalButton>
+          <div className="text-xl">
+            &gt; Project Not Found
+          </div>
+        </div>
+        <div className="border border-terminal-border p-10 text-center">
+          <div className="text-terminal-orange mb-5 text-lg">
+            ✗ Project with ID "{projectId}" not found
+          </div>
+          <div className="text-terminal-gray mb-5">
+            The project you're trying to edit doesn't exist or may have been deleted.
+          </div>
+          <TerminalButton onClick={() => navigate('/dashboard')}>
+            [Return to Dashboard]
+          </TerminalButton>
+        </div>
       </div>
     );
   }
@@ -240,7 +269,7 @@ const ProjectBuilder = ({ onSave, projects = [] }) => {
         try {
           await onSave(data);
           navigate('/dashboard');
-        } catch (err) {
+        } catch {
           // Error is already handled in handleSaveProject (alert shown)
           // Don't navigate on error - stay on the form so user can retry
         }
