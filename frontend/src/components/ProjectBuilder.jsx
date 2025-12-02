@@ -236,9 +236,14 @@ const ProjectBuilder = ({ onSave, projects = [] }) => {
     <ProjectForm
       key={project?.id || 'new'}
       initialData={project}
-      onSave={(data) => {
-        onSave(data);
-        navigate('/dashboard');
+      onSave={async (data) => {
+        try {
+          await onSave(data);
+          navigate('/dashboard');
+        } catch (err) {
+          // Error is already handled in handleSaveProject (alert shown)
+          // Don't navigate on error - stay on the form so user can retry
+        }
       }}
       onCancel={() => navigate('/dashboard')}
       isEditing={isEditing}
