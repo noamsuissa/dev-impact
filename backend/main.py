@@ -26,7 +26,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configure CORS
 cors_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "")
+cors_origin_regex = os.getenv("CORS_ALLOWED_ORIGIN_REGEX", "")
 print(f"DEBUG: CORS_ALLOWED_ORIGINS env var = '{cors_origins_str}'")
+print(f"DEBUG: CORS_ALLOWED_ORIGIN_REGEX env var = '{cors_origin_regex}'")
 
 # Strip whitespace from each origin and filter out empty ones
 cors_origins = [o.strip() for o in cors_origins_str.split(",") if o.strip()]
@@ -44,6 +46,7 @@ print(f"INFO: CORS allowed origins: {cors_origins}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
+    allow_origin_regex=cors_origin_regex,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
