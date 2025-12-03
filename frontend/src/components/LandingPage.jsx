@@ -55,11 +55,11 @@ const LandingPage = () => {
         {showButtons && (
           <div className="fade-in mt-10">
             <div className="flex gap-5 mb-5">
-            <Link to="/signin">
-              <TerminalButton>
-                [Start Building]
-              </TerminalButton>
-            </Link>
+              <Link to="/signin">
+                <TerminalButton>
+                  [Start Building]
+                </TerminalButton>
+              </Link>
               <Link to="/about">
                 <TerminalButton>
                   [About Us]
@@ -67,8 +67,8 @@ const LandingPage = () => {
               </Link>
               <Link to="/example">
                 <TerminalButton>
-              [View Example]
-            </TerminalButton>
+                  [View Example]
+                </TerminalButton>
               </Link>
             </div>
           </div>
