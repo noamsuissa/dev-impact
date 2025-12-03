@@ -14,9 +14,12 @@ import Dashboard from './components/Dashboard';
 import ProjectBuilder from './components/ProjectBuilder';
 import ProfileView from './components/ProfileView';
 import ExportPage from './components/ExportPage';
+import AccountPage from './components/AccountPage';
 import PublicProfile from './components/PublicProfile';
 import NotFound from './components/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
+import AboutPage from './components/AboutPage';
+import ExamplePage from './components/ExamplePage';
 
 import './index.css';
 
@@ -253,6 +256,18 @@ const ExportPageRoute = () => {
     return <ExportPage user={userProfile} projects={projects} />;
 }
 
+const AccountPageRoute = () => {
+    const { userProfile, projects } = useOutletContext();
+    const navigate = useNavigate();
+    
+    if (!userProfile) {
+        navigate('/onboarding');
+        return null;
+    }
+
+    return <AccountPage user={userProfile} projects={projects} />;
+}
+
 export default function App() {
   const { loading: authLoading } = useAuth();
   
@@ -277,6 +292,8 @@ export default function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/example" element={<ExamplePage />} />
         
         {/* Protected Routes - All nested under a Layout */}
         <Route element={<ProtectedRoute><AuthenticatedLayout /></ProtectedRoute>}>
@@ -286,6 +303,7 @@ export default function App() {
             <Route path="/project/:projectId/edit" element={<ProjectBuilderRoute />} />
             <Route path="/profile" element={<ProfileViewRoute />} />
             <Route path="/export" element={<ExportPageRoute />} />
+            <Route path="/account" element={<AccountPageRoute />} />
         </Route>
         
         {/* Public Profile Route */}

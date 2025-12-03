@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import TerminalButton from '../common/TerminalButton';
 import TerminalInput from '../common/TerminalInput';
 import { useAuth } from '../../hooks/useAuth';
@@ -41,6 +42,14 @@ const SignIn = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-5">
       <div className="max-w-[500px] w-full">
+        {/* Back to Home */}
+        <div className="mb-5">
+          <Link to="/" className="inline-flex items-center gap-2 text-terminal-text hover:text-terminal-orange transition-colors">
+            <ArrowLeft size={16} />
+            <span>Back to home</span>
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="fade-in mb-10">
           <div className="text-2xl mb-2">

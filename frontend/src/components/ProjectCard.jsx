@@ -37,36 +37,89 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
   const metricCards = project.metrics.map(m => buildMetricCard(m));
   const maxMetricLines = Math.max(...metricCards.map(c => c.length), 0);
   
-  const combinedMetrics = [];
+  // Calculate how many metrics fit per line
   const metricSpacing = compact ? 14 : 18; // card width + 2 for padding
+  const metricsPerLine = Math.floor((maxWidth - 4) / metricSpacing); // -4 for borders and padding
   
-  for (let i = 0; i < maxMetricLines; i++) {
-    let line = '│ ';
-    metricCards.forEach((card, idx) => {
-      line += (card[i] || repeat(' ', metricSpacing));
-      if (idx < metricCards.length - 1) line += '  ';
-    });
-    const currentLength = line.length - 2;
-    line += repeat(' ', maxWidth - currentLength - 1) + '│';
-    combinedMetrics.push(line);
+  // Group metrics into rows that fit within maxWidth
+  const metricRows = [];
+  for (let i = 0; i < metricCards.length; i += metricsPerLine) {
+    metricRows.push(metricCards.slice(i, i + metricsPerLine));
   }
+  
+  // Build combined metrics with wrapping
+  const combinedMetrics = [];
+  metricRows.forEach((row) => {
+    for (let i = 0; i < maxMetricLines; i++) {
+      let line = '│ ';
+      row.forEach((card, idx) => {
+        line += (card[i] || repeat(' ', metricSpacing));
+        if (idx < row.length - 1) line += '  ';
+      });
+      const currentLength = line.length - 2;
+      line += repeat(' ', maxWidth - currentLength - 1) + '│';
+      combinedMetrics.push(line);
+    }
+  });
+
+  // Helper to render line with highlighted label
+  const renderLineWithLabel = (label, content, maxWidth) => {
+    const fullText = `${label} ${content}`;
+    const padded = padLine(fullText, maxWidth);
+    const labelIndex = padded.indexOf(label);
+    if (labelIndex !== -1) {
+      const beforeLabel = padded.substring(0, labelIndex);
+      const afterLabel = padded.substring(labelIndex + label.length);
+      return (
+        <>
+          {beforeLabel}
+          <span className="text-terminal-orange inline">{label}</span>
+          {afterLabel}
+        </>
+      );
+    }
+    return padded;
+  };
+
+  // Helper to render multiline with highlighted label (first line only)
+  const renderMultiLineWithLabel = (label, content, maxWidth) => {
+    const wrapped = wrapText(`${label} ${content}`, maxWidth - 2);
+    return wrapped.map((line, idx) => {
+      const padded = padLine(line, maxWidth);
+      if (idx === 0 && line.includes(label)) {
+        const labelIndex = padded.indexOf(label);
+        if (labelIndex !== -1) {
+          const beforeLabel = padded.substring(0, labelIndex);
+          const afterLabel = padded.substring(labelIndex + label.length);
+          return (
+            <React.Fragment key={idx}>
+              {beforeLabel}
+              <span className="text-terminal-orange inline">{label}</span>
+              {afterLabel}
+            </React.Fragment>
+          );
+        }
+      }
+      return <React.Fragment key={idx}>{padded}</React.Fragment>;
+    });
+  };
 
   return (
     <div className={`font-mono ${compact ? 'text-xs' : 'text-sm'} leading-normal text-terminal-text whitespace-pre overflow-x-auto flex flex-col h-full`}>
       <div className="inline-block min-w-fit flex-grow">
       <div>┌{repeat('─', maxWidth)}┐</div>
-      <div>{padLineLocal(`Company: ${project.company}`)}</div>
+      <div>{renderLineWithLabel('Company:', project.company, maxWidth)}</div>
       {padMultiLine(project.projectName, maxWidth).map((line, idx) => (
         <div key={idx}>{line}</div>
       ))}
       <div>{padLineLocal(`${project.role} • Team of ${project.teamSize}`)}</div>
       <div>├{repeat('─', maxWidth)}┤</div>
       <div>{padLineLocal('')}</div>
-      {padMultiLine(`Problem: ${project.problem}`, maxWidth).map((line, idx) => (
+      {renderMultiLineWithLabel('Problem:', project.problem, maxWidth).map((line, idx) => (
         <div key={`prob-${idx}`}>{line}</div>
       ))}
       <div>{padLineLocal('')}</div>
-      <div>{padLineLocal('Solution:')}</div>
+      <div>{renderLineWithLabel('Solution:', '', maxWidth)}</div>
       {project.contributions.map((contrib, idx) => 
         padMultiLine(`• ${contrib}`, maxWidth).map((line, lineIdx) => (
           <div key={`${idx}-${lineIdx}`}>{line}</div>

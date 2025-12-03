@@ -273,6 +273,22 @@ export const user = {
     
     return response.json();
   },
+  
+  /**
+   * Delete current user's account
+   */
+  deleteAccount: async () => {
+    const response = await fetchWithAuth('/api/user/account', {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to delete account');
+    }
+    
+    return response.json();
+  },
 };
 
 /**

@@ -1,7 +1,7 @@
 """
 User Router - Handle user profile endpoints
 """
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Request
 from typing import Optional
 from schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest
 from services.user_service import UserService
@@ -110,5 +110,28 @@ async def complete_onboarding(
         raise HTTPException(
             status_code=500,
             detail="Failed to complete onboarding"
+        )
+
+
+@router.delete("/account")
+async def delete_account(authorization: Optional[str] = Header(None)):
+    """
+    Delete current user's account
+    
+    Permanently deletes the user's profile and authentication account.
+    This action cannot be undone.
+    """
+    user_id = await get_user_id_from_header(authorization)
+    
+    try:
+        result = await UserService.delete_account(user_id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Delete account error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete account"
         )
 
