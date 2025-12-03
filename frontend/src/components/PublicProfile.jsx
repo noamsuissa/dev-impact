@@ -139,6 +139,12 @@ const PublicProfile = () => {
           <div>
             Published on dev-impact.io
           </div>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <span className="text-terminal-gray">Powered by</span>
+            <Link to="/" className="inline-flex items-center gap-1 px-2 py-1 rounded bg-terminal-orange/10 border border-terminal-orange/30 hover:bg-terminal-orange/20 transition-colors">
+              <span className="text-terminal-orange font-semibold">dev-impact</span>
+            </Link>
+          </div>
           <div className="mt-2">
             <Link to="/" className="text-terminal-orange hover:underline">
               Create your own developer profile
