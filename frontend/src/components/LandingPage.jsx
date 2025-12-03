@@ -18,34 +18,59 @@ const LandingPage = () => {
       ''
     ];
 
+    // Check if landing page has been loaded before
+    const hasLoadedBefore = localStorage.getItem('dev-impact-landing-loaded');
+    
+    if (hasLoadedBefore) {
+      // Show all lines immediately (defer to avoid lint warning)
+      setTimeout(() => {
+        setLines(bootSequence);
+        setShowButtons(true);
+      }, 0);
+    } else {
+      // First time - animate the boot sequence
     bootSequence.forEach((line, i) => {
       setTimeout(() => {
         setLines(prev => [...prev, line]);
         if (i === bootSequence.length - 1) {
-          setTimeout(() => setShowButtons(true), 500);
+            setTimeout(() => {
+              setShowButtons(true);
+              // Mark as loaded after animation completes
+              localStorage.setItem('dev-impact-landing-loaded', 'true');
+            }, 500);
         }
       }, i * 300);
     });
+    }
   }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-5">
-      <div className="max-w-[600px] w-full">
+      <div className="max-w-[630px] w-full">
         {lines.map((line, i) => (
           <div key={i} className="fade-in mb-2.5">
             {line}
           </div>
         ))}
         {showButtons && (
-          <div className="fade-in mt-10 flex gap-5">
+          <div className="fade-in mt-10">
+            <div className="flex gap-5 mb-5">
             <Link to="/signin">
               <TerminalButton>
                 [Start Building]
               </TerminalButton>
             </Link>
-            <TerminalButton onClick={() => alert('Example coming soon!')}>
+              <Link to="/about">
+                <TerminalButton>
+                  [About Us]
+                </TerminalButton>
+              </Link>
+              <Link to="/example">
+                <TerminalButton>
               [View Example]
             </TerminalButton>
+              </Link>
+            </div>
           </div>
         )}
       </div>
