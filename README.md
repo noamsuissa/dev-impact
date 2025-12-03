@@ -112,17 +112,17 @@ We welcome contributions 🫶! Here's how you can help:
    ```
 
 2. **Create a feature branch**
-   - Make sure your fork is up to date with the upstream repository. By default, all contributions should branch from the `dev` branch (not `main`, which is production).
+   - Make sure your fork is up to date with the upstream repository. By default, all contributions should branch from the `main` branch.
    - Add the upstream remote and fetch the latest branches:
      ```bash
      git remote add upstream https://github.com/noamsuissa/dev-impact.git
      git fetch upstream
-     git checkout dev
-     git pull upstream dev
+     git checkout main
+     git pull upstream main
      ```
-   - Create your feature or fix branch from `dev`:
+   - Create your feature or fix branch from `main`:
      ```bash
-     git checkout -b feat/your-feature-name
+     git checkout -b feat/your-feature-name # or fix/ bug/ etc.
      ```
 
 3. **Make your changes**
@@ -140,12 +140,12 @@ We welcome contributions 🫶! Here's how you can help:
      ```bash
      git push origin feat/your-feature-name
      ```
-   - Open a pull request **from your fork’s feature branch to the `dev` branch on the main repository**.
+   - Open a pull request **from your fork’s feature branch to the `main` branch on the main repository**.
    - Describe what you changed and why.
    - Reference any related issues.
    - Wait for review and feedback.
 
-> **Note:** Only maintainers merge to `main` (connected to the production platform). Please always PR into `dev`.
+> **Note:** Only maintainers merge to `main` (connected to the production platform).
 
 ### Development Guidelines
 
