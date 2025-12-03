@@ -18,6 +18,8 @@ import AccountPage from './components/AccountPage';
 import PublicProfile from './components/PublicProfile';
 import NotFound from './components/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
+import AboutPage from './components/AboutPage';
+import ExamplePage from './components/ExamplePage';
 
 import './index.css';
 
@@ -290,6 +292,8 @@ export default function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/example" element={<ExamplePage />} />
         
         {/* Protected Routes - All nested under a Layout */}
         <Route element={<ProtectedRoute><AuthenticatedLayout /></ProtectedRoute>}>
