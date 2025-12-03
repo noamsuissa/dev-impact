@@ -155,3 +155,64 @@ class UserService:
                 detail="Failed to create/update profile"
             )
 
+    @staticmethod
+    async def delete_account(user_id: str) -> Dict[str, Any]:
+        """
+        Delete user account (profile and auth user)
+        
+        Args:
+            user_id: User's ID
+            
+        Returns:
+            Dict with success message
+        """
+        try:
+            supabase = UserService.get_supabase_client()
+            
+            # Delete profile (this will cascade delete related data if FK constraints are set)
+            supabase.table("profiles")\
+                .delete()\
+                .eq("id", user_id)\
+                .execute()
+            
+            # Delete auth user using Admin API
+            url = os.getenv("SUPABASE_URL")
+            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            
+            if not url or not service_key:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Server configuration error"
+                )
+            
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.delete(
+                    f"{url}/auth/v1/admin/users/{user_id}",
+                    headers={
+                        "apikey": service_key,
+                        "Authorization": f"Bearer {service_key}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                
+                if response.status_code not in [200, 204]:
+                    print(f"Supabase delete user failed: {response.text}")
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Failed to delete user account"
+                    )
+            
+            return {
+                "success": True,
+                "message": "Account deleted successfully"
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"Delete account error: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to delete account"
+            )
+

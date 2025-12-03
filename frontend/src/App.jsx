@@ -14,6 +14,7 @@ import Dashboard from './components/Dashboard';
 import ProjectBuilder from './components/ProjectBuilder';
 import ProfileView from './components/ProfileView';
 import ExportPage from './components/ExportPage';
+import AccountPage from './components/AccountPage';
 import PublicProfile from './components/PublicProfile';
 import NotFound from './components/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -253,6 +254,18 @@ const ExportPageRoute = () => {
     return <ExportPage user={userProfile} projects={projects} />;
 }
 
+const AccountPageRoute = () => {
+    const { userProfile, projects } = useOutletContext();
+    const navigate = useNavigate();
+    
+    if (!userProfile) {
+        navigate('/onboarding');
+        return null;
+    }
+
+    return <AccountPage user={userProfile} projects={projects} />;
+}
+
 export default function App() {
   const { loading: authLoading } = useAuth();
   
@@ -286,6 +299,7 @@ export default function App() {
             <Route path="/project/:projectId/edit" element={<ProjectBuilderRoute />} />
             <Route path="/profile" element={<ProfileViewRoute />} />
             <Route path="/export" element={<ExportPageRoute />} />
+            <Route path="/account" element={<AccountPageRoute />} />
         </Route>
         
         {/* Public Profile Route */}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Eye, Download, LogOut, Github, Share2, CheckCircle, ExternalLink, Copy } from 'lucide-react';
+import { Plus, Eye, Download, LogOut, Github, Share2, CheckCircle, ExternalLink, Copy, User } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
 import { useAuth } from '../hooks/useAuth';
@@ -345,6 +345,10 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
           <TerminalButton onClick={() => navigate('/export')}>
             <Download size={16} className="inline mr-2" />
             [Export]
+          </TerminalButton>
+          <TerminalButton onClick={() => navigate('/account')}>
+            <User size={16} className="inline mr-2" />
+            [Account]
           </TerminalButton>
         </div>
         
