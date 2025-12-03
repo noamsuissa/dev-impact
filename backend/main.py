@@ -7,6 +7,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import uvicorn
+import re
 
 # Load environment variables from .env file
 load_dotenv()
@@ -46,7 +47,7 @@ print(f"INFO: CORS allowed origins: {cors_origins}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_origin_regex=cors_origin_regex,
+    allow_origin_regex=re.compile(cors_origin_regex),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
