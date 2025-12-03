@@ -46,7 +46,7 @@ const SignIn = () => {
         <div className="mb-5">
           <Link to="/" className="inline-flex items-center gap-2 text-terminal-text hover:text-terminal-orange transition-colors">
             <ArrowLeft size={16} />
-            <span>&gt; Back to home</span>
+            <span>Back to home</span>
           </Link>
         </div>
 

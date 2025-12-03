@@ -34,7 +34,7 @@ const AboutPage = () => {
         <div className="mb-10">
           <Link to="/" className="inline-flex items-center gap-2 text-terminal-text hover:text-terminal-orange transition-colors mb-5">
             <ArrowLeft size={16} />
-            <span>&gt; Back to home</span>
+            <span>Back to home</span>
           </Link>
           <div className="fade-in">
             <div className="text-2xl mb-2">&gt; About dev-impact</div>
@@ -100,7 +100,7 @@ const AboutPage = () => {
           <div className="text-xl mb-4 text-terminal-orange">&gt; Our Mission</div>
           <div className="text-terminal-text space-y-3">
             <p>
-              We're building a platform where developers can showcase their work in a way that truly represents 
+              We're building an open source platform where developers can showcase their work in a way that truly represents 
               their skills and impact. No more one-page constraints. No more ATS-friendly keyword stuffing. 
               No more hiding your best work.
             </p>
@@ -131,6 +131,11 @@ const AboutPage = () => {
             <Link to="/pricing">
               <TerminalButton>
                 [View Pricing]
+              </TerminalButton>
+            </Link>
+            <Link to="https://github.com/noamsuissa/dev-impact" target="_blank">
+              <TerminalButton>
+                [Contribute]
               </TerminalButton>
             </Link>
           </div>
