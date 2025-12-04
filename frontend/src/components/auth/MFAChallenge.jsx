@@ -20,19 +20,21 @@ const MFAChallenge = ({ challengeId, onSuccess, onCancel }) => {
     setLoading(true);
 
     try {
-      // Get email and password from session storage (stored during initial sign-in)
+      // Get email, password, and factor_id from session storage (stored during initial sign-in)
       const email = sessionStorage.getItem('mfa_email');
       const password = sessionStorage.getItem('mfa_password');
+      const factorId = sessionStorage.getItem('mfa_factor_id');
       
-      if (!email || !password) {
+      if (!email || !password || !factorId) {
         throw new Error('Session expired. Please sign in again.');
       }
 
-      const data = await authClient.signIn(email, password, challengeId, code);
+      const data = await authClient.signIn(email, password, challengeId, code, factorId);
       
       // Clear stored credentials
       sessionStorage.removeItem('mfa_email');
       sessionStorage.removeItem('mfa_password');
+      sessionStorage.removeItem('mfa_factor_id');
       
       if (data.session) {
         onSuccess(data);

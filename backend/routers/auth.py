@@ -61,7 +61,8 @@ async def sign_in(request: SignInRequest):
             request.email, 
             request.password,
             request.mfa_challenge_id,
-            request.mfa_code
+            request.mfa_code,
+            request.mfa_factor_id
         )
         return result
     except HTTPException:

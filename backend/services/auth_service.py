@@ -95,7 +95,7 @@ class AuthService:
             )
 
     @staticmethod
-    async def sign_in(email: str, password: str, mfa_challenge_id: Optional[str] = None, mfa_code: Optional[str] = None) -> Dict[str, Any]:
+    async def sign_in(email: str, password: str, mfa_challenge_id: Optional[str] = None, mfa_code: Optional[str] = None, mfa_factor_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Sign in an existing user
         
@@ -104,6 +104,7 @@ class AuthService:
             password: User's password
             mfa_challenge_id: MFA challenge ID if verifying MFA code
             mfa_code: MFA code if verifying MFA challenge
+            mfa_factor_id: MFA factor ID if verifying MFA challenge
             
         Returns:
             Dict containing user and session data, or MFA challenge info
@@ -113,6 +114,12 @@ class AuthService:
             
             # If MFA challenge ID and code provided, verify MFA
             if mfa_challenge_id and mfa_code:
+                if not mfa_factor_id:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Factor ID is required for MFA verification"
+                    )
+                
                 # First sign in with password to get a session token
                 password_response = supabase.auth.sign_in_with_password({
                     "email": email,
@@ -125,7 +132,7 @@ class AuthService:
                         detail="Invalid email or password"
                     )
                 
-                # Create a new client with the session token set
+                # Use user API endpoint directly to verify MFA challenge
                 url = os.getenv("SUPABASE_URL")
                 anon_key = os.getenv("SUPABASE_ANON_KEY")
                 
@@ -135,36 +142,54 @@ class AuthService:
                         detail="Supabase configuration not found"
                     )
                 
-                # Create authenticated client with the session token
-                authenticated_client = create_client(url, anon_key)
-                authenticated_client.postgrest.auth(password_response.session.access_token)
-                
                 try:
-                    # Verify MFA using the authenticated client
-                    verify_response = authenticated_client.auth.mfa.verify({
-                        "challenge_id": mfa_challenge_id,
-                        "code": mfa_code
-                    })
-                    
-                    if verify_response.user is None or verify_response.session is None:
-                        raise HTTPException(
-                            status_code=401,
-                            detail="Invalid MFA code"
+                    # Verify using the user API endpoint with factor_id
+                    async with httpx.AsyncClient() as client:
+                        verify_response = await client.post(
+                            f"{url}/auth/v1/factors/{mfa_factor_id}/verify",
+                            headers={
+                                "apikey": anon_key,
+                                "Authorization": f"Bearer {password_response.session.access_token}",
+                                "Content-Type": "application/json"
+                            },
+                            json={
+                                "challenge_id": mfa_challenge_id,
+                                "code": mfa_code
+                            }
                         )
-                    
-                    return {
-                        "user": {
-                            "id": verify_response.user.id,
-                            "email": verify_response.user.email,
-                            "created_at": verify_response.user.created_at
-                        },
-                        "session": {
-                            "access_token": verify_response.session.access_token,
-                            "refresh_token": verify_response.session.refresh_token,
-                            "expires_at": verify_response.session.expires_at,
-                        },
-                        "requires_mfa": False
-                    }
+                        
+                        if verify_response.status_code != 200:
+                            error_text = verify_response.text
+                            print(f"MFA verify API error: {verify_response.status_code} - {error_text}")
+                            raise HTTPException(
+                                status_code=401,
+                                detail="Invalid MFA code"
+                            )
+                        
+                        verify_data = verify_response.json()
+                        
+                        # After successful verification, refresh the session to get AAL2 tokens
+                        session_response = supabase.auth.refresh_session(password_response.session.refresh_token)
+                        
+                        if session_response.user is None or session_response.session is None:
+                            raise HTTPException(
+                                status_code=401,
+                                detail="Failed to complete MFA verification"
+                            )
+                        
+                        return {
+                            "user": {
+                                "id": session_response.user.id,
+                                "email": session_response.user.email,
+                                "created_at": session_response.user.created_at
+                            },
+                            "session": {
+                                "access_token": session_response.session.access_token,
+                                "refresh_token": session_response.session.refresh_token,
+                                "expires_at": session_response.session.expires_at,
+                            },
+                            "requires_mfa": False
+                        }
                 except HTTPException:
                     raise
                 except Exception as verify_err:
@@ -245,6 +270,7 @@ class AuthService:
                                                                 "session": None,  # Don't return session until MFA verified
                                                                 "requires_mfa": True,
                                                                 "mfa_challenge_id": challenge_id,
+                                                                "mfa_factor_id": factor_id,  # Include factor_id for verification
                                                                 "mfa_factors": [
                                                                     {
                                                                         "id": f.get("id", ""),

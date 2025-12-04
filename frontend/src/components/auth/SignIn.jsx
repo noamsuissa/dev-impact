@@ -32,6 +32,9 @@ const SignIn = () => {
         // Store credentials temporarily for MFA verification
         sessionStorage.setItem('mfa_email', email);
         sessionStorage.setItem('mfa_password', password);
+        if (data.mfa_factor_id) {
+          sessionStorage.setItem('mfa_factor_id', data.mfa_factor_id);
+        }
         
         setMfaChallengeId(data.mfa_challenge_id);
         setLoading(false);

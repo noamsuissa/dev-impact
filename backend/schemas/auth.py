@@ -21,6 +21,7 @@ class SignInRequest(BaseModel):
     password: str
     mfa_challenge_id: Optional[str] = None
     mfa_code: Optional[str] = None
+    mfa_factor_id: Optional[str] = None
 
 
 class RefreshTokenRequest(BaseModel):
@@ -74,6 +75,7 @@ class AuthResponse(BaseModel):
     requires_email_verification: Optional[bool] = False
     requires_mfa: Optional[bool] = False
     mfa_challenge_id: Optional[str] = None
+    mfa_factor_id: Optional[str] = None
     mfa_factors: Optional[list[MFAFactorResponse]] = None
 
 

@@ -117,7 +117,7 @@ export const auth = {
   /**
    * Sign in an existing user
    */
-  signIn: async (email, password, mfaChallengeId = null, mfaCode = null) => {
+  signIn: async (email, password, mfaChallengeId = null, mfaCode = null, mfaFactorId = null) => {
     const response = await fetch(`${API_URL}/api/auth/signin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -125,7 +125,8 @@ export const auth = {
         email, 
         password,
         mfa_challenge_id: mfaChallengeId,
-        mfa_code: mfaCode
+        mfa_code: mfaCode,
+        mfa_factor_id: mfaFactorId
       }),
     });
     
