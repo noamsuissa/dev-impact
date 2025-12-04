@@ -63,23 +63,23 @@ const MFAChallenge = ({ challengeId, onSuccess, onCancel }) => {
           <div className="mb-2">
             <label htmlFor="mfa-code">&gt; Verification Code:</label>
           </div>
-          <TerminalInput
-            type="text"
-            name="mfa-code"
-            id="mfa-code"
-            value={code}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-              setCode(value);
-              setError(null);
-            }}
-            placeholder="000000"
-            disabled={loading}
-            required
-            autoComplete="one-time-code"
-            maxLength={6}
-            className="text-center text-2xl tracking-widest"
-          />
+              <TerminalInput
+                type="text"
+                name="mfa-code"
+                id="mfa-code"
+                value={code}
+                onChange={(value) => {
+                  const cleanedValue = value.replace(/\D/g, '').slice(0, 6);
+                  setCode(cleanedValue);
+                  setError(null);
+                }}
+                placeholder="000000"
+                disabled={loading}
+                required
+                autoComplete="one-time-code"
+                maxLength={6}
+                className="text-center text-2xl tracking-widest"
+              />
         </div>
 
         {error && (

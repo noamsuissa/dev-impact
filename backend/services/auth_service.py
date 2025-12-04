@@ -530,16 +530,37 @@ class AuthService:
                 
                 data = response.json()
                 
+                # Debug: print full response
+                print(f"DEBUG - MFA enroll response: {data}")
+                
                 # Handle different response structures
                 if isinstance(data, dict):
-                    # Check for totp object
-                    totp_data = data.get("totp", data)
+                    # Supabase returns: { "id": "...", "type": "totp", "totp": { "qr_code": "...", "secret": "..." } }
+                    factor_id = data.get("id", "")
+                    factor_type = data.get("type", data.get("factor_type", ""))
+                    
+                    # Get TOTP data - could be nested in "totp" key or at root
+                    totp_data = data.get("totp", {})
+                    if not totp_data:
+                        # Try root level
+                        totp_data = data
+                    
+                    qr_code = totp_data.get("qr_code") or data.get("qr_code")
+                    secret = totp_data.get("secret") or data.get("secret")
+                    
+                    if not qr_code or not secret:
+                        print(f"DEBUG - Missing QR code or secret. Full data: {data}")
+                        raise HTTPException(
+                            status_code=400,
+                            detail="MFA enrollment response missing QR code or secret"
+                        )
+                    
                     return {
-                        "id": totp_data.get("id", data.get("id", "")),
-                        "type": totp_data.get("factor_type", totp_data.get("type", data.get("type", ""))),
-                        "qr_code": totp_data.get("qr_code", data.get("qr_code", "")),
-                        "secret": totp_data.get("secret", data.get("secret", "")),
-                        "friendly_name": totp_data.get("friendly_name", data.get("friendly_name", friendly_name or "Authenticator App"))
+                        "id": factor_id,
+                        "type": factor_type,
+                        "qr_code": qr_code,
+                        "secret": secret,
+                        "friendly_name": data.get("friendly_name", friendly_name or "Authenticator App")
                     }
                 else:
                     raise HTTPException(

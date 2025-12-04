@@ -25,11 +25,24 @@ const MFASetup = ({ onComplete, onCancel }) => {
 
     try {
       const data = await authClient.mfaEnroll(friendlyName);
-      setQrCode(data.qr_code);
-      setSecret(data.secret);
-      setFactorId(data.id);
+      console.log('MFA enroll response:', data);
+      
+      // Handle different response structures
+      const qrCodeValue = data.qr_code || data.totp?.qr_code || data.qrCode;
+      const secretValue = data.secret || data.totp?.secret;
+      const factorIdValue = data.id || data.factor_id;
+      
+      if (!qrCodeValue || !secretValue || !factorIdValue) {
+        console.error('Missing required MFA data:', { qrCodeValue, secretValue, factorIdValue, fullData: data });
+        throw new Error('MFA enrollment response missing required data');
+      }
+      
+      setQrCode(qrCodeValue);
+      setSecret(secretValue);
+      setFactorId(factorIdValue);
       setStep('verify');
     } catch (err) {
+      console.error('MFA enroll error:', err);
       setError(err.message || 'Failed to start MFA enrollment');
     } finally {
       setLoading(false);
@@ -106,11 +119,21 @@ const MFASetup = ({ onComplete, onCancel }) => {
           {/* QR Code */}
           <div className="flex justify-center">
             <div className="border border-terminal-border p-4 bg-white rounded">
-              <img 
-                src={qrCode} 
-                alt="MFA QR Code" 
-                className="w-64 h-64"
-              />
+              {qrCode ? (
+                <img 
+                  src={qrCode} 
+                  alt="MFA QR Code" 
+                  className="w-64 h-64"
+                  onError={(e) => {
+                    console.error('QR code image failed to load:', qrCode);
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+              ) : null}
+              <div style={{ display: qrCode ? 'none' : 'block' }} className="w-64 h-64 flex items-center justify-center text-terminal-gray">
+                QR code not available
+              </div>
             </div>
           </div>
 
@@ -142,9 +165,9 @@ const MFASetup = ({ onComplete, onCancel }) => {
                 name="verify-code"
                 id="verify-code"
                 value={verificationCode}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  setVerificationCode(value);
+                onChange={(value) => {
+                  const cleanedValue = value.replace(/\D/g, '').slice(0, 6);
+                  setVerificationCode(cleanedValue);
                   setError(null);
                 }}
                 placeholder="000000"

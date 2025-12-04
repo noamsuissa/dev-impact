@@ -185,10 +185,17 @@ const AccountPage = ({ user, projects }) => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-terminal-green">
-                      <ShieldCheck size={16} />
-                      <span>Two-factor authentication is enabled</span>
-                    </div>
+                    {mfaFactors.some(f => f.status === 'verified') ? (
+                      <div className="flex items-center gap-2 text-terminal-green">
+                        <ShieldCheck size={16} />
+                        <span>Two-factor authentication is enabled</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-yellow-400">
+                        <Shield size={16} />
+                        <span>Two-factor authentication setup incomplete - please verify your authenticator app</span>
+                      </div>
+                    )}
                     
                     <div className="space-y-3">
                       {mfaFactors.map((factor) => (
@@ -202,15 +209,34 @@ const AccountPage = ({ user, projects }) => {
                             </div>
                             <div className="text-terminal-gray text-sm">
                               {factor.type.toUpperCase()} • {factor.status}
+                              {factor.status !== 'verified' && (
+                                <span className="text-yellow-400 ml-2">(Not verified)</span>
+                              )}
                             </div>
                           </div>
-                          <TerminalButton
-                            onClick={() => handleUnenrollMFA(factor.id)}
-                            disabled={loadingMFA}
-                            className="bg-red-500/20 hover:bg-red-500/30 border-red-500/50 text-red-400"
-                          >
-                            [Remove]
-                          </TerminalButton>
+                          <div className="flex gap-2">
+                            {factor.status !== 'verified' && (
+                              <TerminalButton
+                                onClick={() => {
+                                  // Remove unverified factor and start fresh
+                                  handleUnenrollMFA(factor.id).then(() => {
+                                    setShowMFASetup(true);
+                                  });
+                                }}
+                                disabled={loadingMFA}
+                                className="bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/50 text-yellow-400"
+                              >
+                                [Retry Setup]
+                              </TerminalButton>
+                            )}
+                            <TerminalButton
+                              onClick={() => handleUnenrollMFA(factor.id)}
+                              disabled={loadingMFA}
+                              className="bg-red-500/20 hover:bg-red-500/30 border-red-500/50 text-red-400"
+                            >
+                              [Remove]
+                            </TerminalButton>
+                          </div>
                         </div>
                       ))}
                     </div>
