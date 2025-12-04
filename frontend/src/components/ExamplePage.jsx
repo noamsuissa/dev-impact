@@ -10,8 +10,8 @@ const ExamplePage = () => {
   useMetaTags({
     title: 'Example Developer Profile - dev-impact',
     description: 'View an example developer profile on dev-impact. See how developers showcase their impact with quantifiable metrics, project details, and achievements.',
-    image: 'https://dev-impact.io/api/og?title=Example%20Profile&description=View%20an%20example%20developer%20profile',
-    url: 'https://dev-impact.io/example',
+    image: 'https://www.dev-impact.io/api/og?title=Example%20Profile&description=View%20an%20example%20developer%20profile',
+    url: 'https://www.dev-impact.io/example',
     type: 'website'
   });
 
