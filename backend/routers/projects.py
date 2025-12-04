@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Header
 from typing import Optional, List
 from schemas.project import Project, CreateProjectRequest, UpdateProjectRequest
 from services.project_service import ProjectService
-from services.auth_service import AuthService
+from services.auth.auth_service import AuthService
 
 router = APIRouter(
     prefix="/api/projects",

@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Header, Request
 from typing import Optional
 from schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest
 from services.user_service import UserService
-from services.auth_service import AuthService
+from services.auth.auth_service import AuthService
 
 router = APIRouter(
     prefix="/api/user",

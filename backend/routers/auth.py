@@ -17,7 +17,7 @@ from schemas.auth import (
     MFAEnrollResponse,
     MFAListResponse
 )
-from services.auth_service import AuthService
+from services.auth.auth_service import AuthService
 
 router = APIRouter(
     prefix="/api/auth",
