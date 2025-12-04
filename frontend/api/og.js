@@ -6,8 +6,27 @@ export const config = {
 
 export default async function handler(req) {
   try {
-    // Extract URL from request - Vercel serverless functions provide req.url
-    const url = new URL(req.url || `https://${req.headers?.host || 'dev-impact.io'}/api/og`);
+    // Handle Vercel serverless function request format
+    // In dev mode, req might be a Request object; in production it's a serverless function request
+    let requestUrl;
+    
+    if (req instanceof Request) {
+      requestUrl = req.url;
+    } else if (req?.url) {
+      requestUrl = req.url;
+    } else if (req?.headers) {
+      // Build URL from request components
+      const protocol = req.headers['x-forwarded-proto'] || (req.headers['x-forwarded-ssl'] === 'on' ? 'https' : 'http');
+      const host = req.headers.host || req.headers['x-forwarded-host'] || 'localhost:3000';
+      const path = req.url || '/api/og';
+      const query = req.query ? '?' + new URLSearchParams(req.query).toString() : '';
+      requestUrl = `${protocol}://${host}${path}${query}`;
+    } else {
+      // Last resort fallback
+      requestUrl = 'http://localhost:3000/api/og';
+    }
+    
+    const url = new URL(requestUrl);
     const { searchParams } = url;
     
     // Get query parameters
@@ -181,10 +200,40 @@ export default async function handler(req) {
     return imageResponse;
   } catch (e) {
     console.error('Error generating OG image:', e);
-    return new Response('Failed to generate OG image', { 
-      status: 500,
-      headers: { 'Content-Type': 'text/plain' }
-    });
+    console.error('Error stack:', e.stack);
+    console.error('Request:', JSON.stringify(req, null, 2));
+    
+    // Return a simple error image instead of text
+    try {
+      return new ImageResponse(
+        (
+          <div
+            style={{
+              height: '100%',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#2d2d2d',
+              color: '#ff6b35',
+              fontSize: '40px',
+            }}
+          >
+            Error generating image
+          </div>
+        ),
+        {
+          width: 1200,
+          height: 630,
+        }
+      );
+    } catch {
+      return new Response(`Failed to generate OG image: ${e.message}`, { 
+        status: 500,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    }
   }
 }
 
