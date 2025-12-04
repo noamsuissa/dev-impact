@@ -1,24 +1,14 @@
 import { ImageResponse } from '@vercel/og';
 
 export const config = {
-  runtime: 'nodejs',
+  runtime: 'edge',
 };
 
-export default async function handler(req) {
+export default async function handler(request) {
   try {
-    // Extract URL from request - handle both Vercel serverless and standard formats
-    let requestUrl;
-    if (req.url) {
-      requestUrl = req.url;
-    } else if (req.headers && req.headers.host) {
-      const path = req.path || '/api/og';
-      const query = req.query ? '?' + new URLSearchParams(req.query).toString() : '';
-      requestUrl = `https://${req.headers.host}${path}${query}`;
-    } else {
-      requestUrl = 'https://dev-impact.io/api/og';
-    }
-    
-    const { searchParams } = new URL(requestUrl);
+    // Extract URL from request
+    const url = new URL(request.url);
+    const { searchParams } = url;
     
     // Get query parameters
     const title = searchParams.get('title');
@@ -33,7 +23,7 @@ export default async function handler(req) {
     const isProfile = username && name;
     const isCustomPage = title && !isProfile;
 
-    return new ImageResponse(
+    const imageResponse = new ImageResponse(
       (
         <div
           style={{
@@ -187,9 +177,14 @@ export default async function handler(req) {
         height: 630,
       }
     );
+
+    return imageResponse;
   } catch (e) {
     console.error('Error generating OG image:', e);
-    return new Response('Failed to generate OG image', { status: 500 });
+    return new Response('Failed to generate OG image', { 
+      status: 500,
+      headers: { 'Content-Type': 'text/plain' }
+    });
   }
 }
 
