@@ -31,6 +31,40 @@ class AuthService:
         return create_client(url, key)
 
     @staticmethod
+    def get_user_authenticated_client(access_token: str) -> Client:
+        """
+        Get Supabase client authenticated for a specific user
+        Required for MFA operations which are user-scoped
+        
+        Args:
+            access_token: User's access token
+            
+        Returns:
+            Authenticated Supabase client
+        """
+        url = os.getenv("SUPABASE_URL")
+        anon_key = os.getenv("SUPABASE_ANON_KEY")
+        
+        if not url or not anon_key:
+            raise HTTPException(
+                status_code=500,
+                detail="Supabase configuration not found"
+            )
+        
+        # Create client with anon key (not service role - MFA needs user context)
+        client = create_client(url, anon_key)
+        
+        # Verify user and authenticate session
+        user_response = client.auth.get_user(access_token)
+        if not user_response or not user_response.user:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid or expired token"
+            )
+        
+        return client
+
+    @staticmethod
     async def sign_up(email: str, password: str, captcha_token: Optional[str] = None) -> Dict[str, Any]:
         """
         Sign up a new user
@@ -493,8 +527,8 @@ class AuthService:
             Dict containing factor ID, QR code, and secret
         """
         try:
-            supabase = AuthService.get_supabase_client()
-            supabase.postgrest.auth(access_token)
+            # MFA operations require user authentication (not service role)
+            supabase = AuthService.get_user_authenticated_client(access_token)
             
             enroll_response = supabase.auth.mfa.enroll({
                 "factor_type": "totp",
@@ -508,6 +542,8 @@ class AuthService:
                 "secret": enroll_response.secret,
                 "friendly_name": getattr(enroll_response, 'friendly_name', friendly_name or "Authenticator App")
             }
+        except HTTPException:
+            raise
         except Exception as e:
             print(f"MFA enroll error: {e}")
             raise HTTPException(
@@ -529,8 +565,8 @@ class AuthService:
             Dict with success status
         """
         try:
-            supabase = AuthService.get_supabase_client()
-            supabase.postgrest.auth(access_token)
+            # MFA operations require user authentication (not service role)
+            supabase = AuthService.get_user_authenticated_client(access_token)
             
             # Create challenge and verify
             challenge_response = supabase.auth.mfa.challenge({"factor_id": factor_id})
@@ -572,8 +608,8 @@ class AuthService:
             Dict containing list of factors
         """
         try:
-            supabase = AuthService.get_supabase_client()
-            supabase.postgrest.auth(access_token)
+            # MFA operations require user authentication (not service role)
+            supabase = AuthService.get_user_authenticated_client(access_token)
             
             factors_response = supabase.auth.mfa.list_factors()
             factors = factors_response.factors if hasattr(factors_response, 'factors') else []
@@ -581,14 +617,16 @@ class AuthService:
             return {
                 "factors": [
                     {
-                        "id": f.id,
-                        "type": f.factor_type,
+                        "id": getattr(f, 'id', ''),
+                        "type": getattr(f, 'factor_type', getattr(f, 'type', '')),
                         "friendly_name": getattr(f, 'friendly_name', None),
                         "status": getattr(f, 'status', 'verified')
                     }
                     for f in factors
                 ]
             }
+        except HTTPException:
+            raise
         except Exception as e:
             print(f"MFA list factors error: {e}")
             raise HTTPException(
@@ -609,8 +647,8 @@ class AuthService:
             Dict with success status
         """
         try:
-            supabase = AuthService.get_supabase_client()
-            supabase.postgrest.auth(access_token)
+            # MFA operations require user authentication (not service role)
+            supabase = AuthService.get_user_authenticated_client(access_token)
             
             supabase.auth.mfa.unenroll({"factor_id": factor_id})
             
@@ -618,6 +656,8 @@ class AuthService:
                 "success": True,
                 "message": "MFA factor removed successfully"
             }
+        except HTTPException:
+            raise
         except Exception as e:
             print(f"MFA unenroll error: {e}")
             raise HTTPException(
