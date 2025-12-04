@@ -9,6 +9,7 @@ const MFASetup = ({ onComplete, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [qrCode, setQrCode] = useState(null);
+  const [qrCodeBlobUrl, setQrCodeBlobUrl] = useState(null);
   const [secret, setSecret] = useState(null);
   const [factorId, setFactorId] = useState(null);
   const [verificationCode, setVerificationCode] = useState('');
@@ -18,6 +19,15 @@ const MFASetup = ({ onComplete, onCancel }) => {
     // Start enrollment when component mounts
     handleEnroll();
   }, []);
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (qrCodeBlobUrl) {
+        URL.revokeObjectURL(qrCodeBlobUrl);
+      }
+    };
+  }, [qrCodeBlobUrl]);
 
   const handleEnroll = async () => {
     setLoading(true);
@@ -32,12 +42,34 @@ const MFASetup = ({ onComplete, onCancel }) => {
       const secretValue = data.secret || data.totp?.secret;
       const factorIdValue = data.id || data.factor_id;
       
-      if (!qrCodeValue || !secretValue || !factorIdValue) {
+      // QR code is optional, but secret and factorId are required
+      if (!secretValue || !factorIdValue) {
         console.error('Missing required MFA data:', { qrCodeValue, secretValue, factorIdValue, fullData: data });
-        throw new Error('MFA enrollment response missing required data');
+        throw new Error('MFA enrollment response missing required data (secret or factor ID)');
       }
       
-      setQrCode(qrCodeValue);
+      // Set QR code if available (it's optional)
+      if (qrCodeValue) {
+        setQrCode(qrCodeValue);
+        
+        // Convert data URI to blob URL to bypass CSP restrictions
+        try {
+          if (qrCodeValue.startsWith('data:')) {
+            const response = await fetch(qrCodeValue);
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            setQrCodeBlobUrl(blobUrl);
+          } else {
+            setQrCodeBlobUrl(qrCodeValue);
+          }
+        } catch (err) {
+          console.warn('Failed to convert QR code to blob URL:', err);
+          // Fallback to original data URI
+        }
+      } else {
+        console.warn('QR code not provided in response, user will need to use secret key');
+      }
+      
       setSecret(secretValue);
       setFactorId(factorIdValue);
       setStep('verify');
@@ -114,28 +146,35 @@ const MFASetup = ({ onComplete, onCancel }) => {
         </div>
       )}
 
-      {step === 'verify' && qrCode && (
+      {step === 'verify' && secret && factorId && (
         <div className="space-y-5">
-          {/* QR Code */}
-          <div className="flex justify-center">
-            <div className="border border-terminal-border p-4 bg-white rounded">
-              {qrCode ? (
+          {/* QR Code - Optional, show if available */}
+          {(qrCode || qrCodeBlobUrl) && (
+            <div className="flex justify-center">
+              <div className="border border-terminal-border p-4 bg-white rounded">
                 <img 
-                  src={qrCode} 
+                  src={qrCodeBlobUrl || qrCode} 
                   alt="MFA QR Code" 
                   className="w-64 h-64"
                   onError={(e) => {
-                    console.error('QR code image failed to load:', qrCode);
+                    console.error('QR code image failed to load:', qrCodeBlobUrl || qrCode);
                     e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'block';
+                    const fallback = e.target.nextElementSibling;
+                    if (fallback) fallback.style.display = 'block';
                   }}
                 />
-              ) : null}
-              <div style={{ display: qrCode ? 'none' : 'block' }} className="w-64 h-64 flex items-center justify-center text-terminal-gray">
-                QR code not available
+                <div style={{ display: 'none' }} className="w-64 h-64 flex items-center justify-center text-terminal-gray text-sm">
+                  QR code failed to load. Use the secret key below instead.
+                </div>
               </div>
             </div>
-          </div>
+          )}
+          
+          {!qrCode && !qrCodeBlobUrl && (
+            <div className="text-yellow-400 bg-yellow-400/10 border border-yellow-400/30 p-3 rounded text-sm">
+              ⚠ QR code not available. Please use the secret key below to manually add to your authenticator app.
+            </div>
+          )}
 
           {/* Secret Key (for manual entry) */}
           <div className="border border-terminal-border p-4 rounded bg-terminal-bg-lighter">
