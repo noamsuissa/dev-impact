@@ -495,30 +495,24 @@ class AuthService:
             Dict containing factor ID, QR code, and secret
         """
         try:
-            # Get user ID from token
-            user_id = await AuthService.verify_token(access_token)
-            if not user_id:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Invalid or expired token"
-                )
-            
-            # Use Admin API to enroll MFA factor
+            # MFA enrollment must be done via user API (not Admin API)
+            # Use the user's access token directly
             url = os.getenv("SUPABASE_URL")
-            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            anon_key = os.getenv("SUPABASE_ANON_KEY")
             
-            if not url or not service_key:
+            if not url or not anon_key:
                 raise HTTPException(
                     status_code=500,
                     detail="Supabase configuration not found"
                 )
             
+            # Use user API endpoint with user's access token
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    f"{url}/auth/v1/admin/users/{user_id}/factors",
+                    f"{url}/auth/v1/factors",
                     headers={
-                        "apikey": service_key,
-                        "Authorization": f"Bearer {service_key}",
+                        "apikey": anon_key,
+                        "Authorization": f"Bearer {access_token}",
                         "Content-Type": "application/json"
                     },
                     json={
@@ -528,25 +522,35 @@ class AuthService:
                 )
                 
                 if response.status_code != 200:
-                    print(f"Admin API error: {response.status_code} - {response.text}")
+                    print(f"User API error: {response.status_code} - {response.text}")
                     raise HTTPException(
                         status_code=400,
-                        detail="Failed to enroll in MFA"
+                        detail=f"Failed to enroll in MFA: {response.text}"
                     )
                 
                 data = response.json()
                 
-                return {
-                    "id": data.get("id", ""),
-                    "type": data.get("factor_type", data.get("type", "")),
-                    "qr_code": data.get("qr_code", ""),
-                    "secret": data.get("secret", ""),
-                    "friendly_name": data.get("friendly_name", friendly_name or "Authenticator App")
-                }
+                # Handle different response structures
+                if isinstance(data, dict):
+                    # Check for totp object
+                    totp_data = data.get("totp", data)
+                    return {
+                        "id": totp_data.get("id", data.get("id", "")),
+                        "type": totp_data.get("factor_type", totp_data.get("type", data.get("type", ""))),
+                        "qr_code": totp_data.get("qr_code", data.get("qr_code", "")),
+                        "secret": totp_data.get("secret", data.get("secret", "")),
+                        "friendly_name": totp_data.get("friendly_name", data.get("friendly_name", friendly_name or "Authenticator App"))
+                    }
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Unexpected response format from MFA enrollment"
+                    )
         except HTTPException:
             raise
         except Exception as e:
             print(f"MFA enroll error: {e}")
+            traceback.print_exc()
             raise HTTPException(
                 status_code=400,
                 detail=f"Failed to enroll in MFA: {str(e)}"
@@ -566,19 +570,11 @@ class AuthService:
             Dict with success status
         """
         try:
-            # Get user ID from token
-            user_id = await AuthService.verify_token(access_token)
-            if not user_id:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Invalid or expired token"
-                )
-            
-            # Use Admin API to verify MFA factor
+            # MFA verification must be done via user API (not Admin API)
             url = os.getenv("SUPABASE_URL")
-            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            anon_key = os.getenv("SUPABASE_ANON_KEY")
             
-            if not url or not service_key:
+            if not url or not anon_key:
                 raise HTTPException(
                     status_code=500,
                     detail="Supabase configuration not found"
@@ -587,10 +583,10 @@ class AuthService:
             async with httpx.AsyncClient() as client:
                 # First create a challenge
                 challenge_response = await client.post(
-                    f"{url}/auth/v1/admin/users/{user_id}/factors/{factor_id}/challenge",
+                    f"{url}/auth/v1/factors/{factor_id}/challenge",
                     headers={
-                        "apikey": service_key,
-                        "Authorization": f"Bearer {service_key}",
+                        "apikey": anon_key,
+                        "Authorization": f"Bearer {access_token}",
                         "Content-Type": "application/json"
                     }
                 )
@@ -613,10 +609,10 @@ class AuthService:
                 
                 # Then verify the challenge
                 verify_response = await client.post(
-                    f"{url}/auth/v1/admin/users/{user_id}/factors/{factor_id}/verify",
+                    f"{url}/auth/v1/factors/{factor_id}/verify",
                     headers={
-                        "apikey": service_key,
-                        "Authorization": f"Bearer {service_key}",
+                        "apikey": anon_key,
+                        "Authorization": f"Bearer {access_token}",
                         "Content-Type": "application/json"
                     },
                     json={
@@ -640,6 +636,7 @@ class AuthService:
             raise
         except Exception as e:
             print(f"MFA verify enrollment error: {e}")
+            traceback.print_exc()
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid verification code: {str(e)}"
