@@ -5,6 +5,7 @@ import TerminalButton from '../common/TerminalButton';
 import TerminalInput from '../common/TerminalInput';
 import { useAuth } from '../../hooks/useAuth';
 import { auth as authClient } from '../../utils/client';
+import MFAChallenge from './MFAChallenge';
 
 const SignIn = () => {
   const { refreshSession } = useAuth();
@@ -15,6 +16,7 @@ const SignIn = () => {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [rememberMe, setRememberMe] = useState(true);
+  const [mfaChallengeId, setMfaChallengeId] = useState(null);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -23,12 +25,22 @@ const SignIn = () => {
     setLoading(true);
 
     try {
-      await authClient.signIn(email, password);
+      const data = await authClient.signIn(email, password);
 
+      // Check if MFA is required
+      if (data.requires_mfa && data.mfa_challenge_id) {
+        // Store credentials temporarily for MFA verification
+        sessionStorage.setItem('mfa_email', email);
+        sessionStorage.setItem('mfa_password', password);
+        
+        setMfaChallengeId(data.mfa_challenge_id);
+        setLoading(false);
+        return;
+      }
+
+      // Normal sign-in success
       setMessage('Signed in! Redirecting...');
       await refreshSession();
-      // Use replace: true to prevent going back to signin page
-      // And ensure we navigate to dashboard specifically
       setTimeout(() => {
         navigate('/dashboard', { replace: true });
       }, 1000);
@@ -37,6 +49,21 @@ const SignIn = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleMFASuccess = async () => {
+    setMessage('Signed in! Redirecting...');
+    await refreshSession();
+    setTimeout(() => {
+      navigate('/dashboard', { replace: true });
+    }, 1000);
+  };
+
+  const handleMFACancel = () => {
+    sessionStorage.removeItem('mfa_email');
+    sessionStorage.removeItem('mfa_password');
+    setMfaChallengeId(null);
+    setPassword('');
   };
 
   return (
@@ -60,8 +87,16 @@ const SignIn = () => {
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSignIn} className="space-y-5" autoComplete="on">
+        {/* MFA Challenge */}
+        {mfaChallengeId ? (
+          <MFAChallenge
+            challengeId={mfaChallengeId}
+            onSuccess={handleMFASuccess}
+            onCancel={handleMFACancel}
+          />
+        ) : (
+          /* Form */
+          <form onSubmit={handleSignIn} className="space-y-5" autoComplete="on">
           {/* Email */}
           <div className="fade-in">
             <div className="mb-2">
@@ -142,6 +177,7 @@ const SignIn = () => {
             </TerminalButton>
           </div>
         </form>
+        )}
 
         {/* Navigation */}
         <div className="fade-in mt-10 pt-10 border-t border-terminal-border" style={{ animationDelay: '0.3s' }}>

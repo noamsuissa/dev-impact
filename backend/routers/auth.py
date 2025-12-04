@@ -10,7 +10,12 @@ from schemas.auth import (
     ResetPasswordRequest,
     UpdatePasswordRequest,
     AuthResponse,
-    MessageResponse
+    MessageResponse,
+    MFAEnrollRequest,
+    MFAVerifyRequest,
+    MFAChallengeRequest,
+    MFAEnrollResponse,
+    MFAListResponse
 )
 from services.auth_service import AuthService
 
@@ -48,10 +53,16 @@ async def sign_in(request: SignInRequest):
     Sign in an existing user
     
     Authenticates user with email and password.
+    If MFA is enabled, returns MFA challenge info instead of session.
     Returns user data and session tokens.
     """
     try:
-        result = await AuthService.sign_in(request.email, request.password)
+        result = await AuthService.sign_in(
+            request.email, 
+            request.password,
+            request.mfa_challenge_id,
+            request.mfa_code
+        )
         return result
     except HTTPException:
         raise
@@ -178,5 +189,130 @@ async def update_password(
         raise HTTPException(
             status_code=400,
             detail="Failed to update password"
+        )
+
+
+@router.post("/mfa/enroll", response_model=MFAEnrollResponse)
+async def mfa_enroll(
+    request: MFAEnrollRequest,
+    authorization: Optional[str] = Header(None)
+):
+    """
+    Enroll user in MFA (TOTP)
+    
+    Creates a new TOTP factor and returns QR code for setup.
+    Requires valid access token.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required"
+        )
+    
+    access_token = authorization.replace("Bearer ", "")
+    
+    try:
+        result = await AuthService.mfa_enroll(access_token, request.friendly_name)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"MFA enroll error: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to enroll in MFA"
+        )
+
+
+@router.post("/mfa/verify", response_model=MessageResponse)
+async def mfa_verify_enrollment(
+    request: MFAVerifyRequest,
+    authorization: Optional[str] = Header(None)
+):
+    """
+    Verify MFA enrollment with a code
+    
+    Verifies the TOTP code to complete enrollment.
+    Requires valid access token.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required"
+        )
+    
+    access_token = authorization.replace("Bearer ", "")
+    
+    try:
+        result = await AuthService.mfa_verify_enrollment(access_token, request.factor_id, request.code)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"MFA verify error: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid verification code"
+        )
+
+
+@router.get("/mfa/factors", response_model=MFAListResponse)
+async def mfa_list_factors(authorization: Optional[str] = Header(None)):
+    """
+    List all MFA factors for the current user
+    
+    Returns list of enrolled MFA factors.
+    Requires valid access token.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required"
+        )
+    
+    access_token = authorization.replace("Bearer ", "")
+    
+    try:
+        result = await AuthService.mfa_list_factors(access_token)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"MFA list factors error: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to list MFA factors"
+        )
+
+
+@router.delete("/mfa/factors/{factor_id}", response_model=MessageResponse)
+async def mfa_unenroll(
+    factor_id: str,
+    authorization: Optional[str] = Header(None)
+):
+    """
+    Unenroll (remove) an MFA factor
+    
+    Removes the specified MFA factor from the user's account.
+    Requires valid access token.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required"
+        )
+    
+    access_token = authorization.replace("Bearer ", "")
+    
+    try:
+        result = await AuthService.mfa_unenroll(access_token, factor_id)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"MFA unenroll error: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to remove MFA factor"
         )
 

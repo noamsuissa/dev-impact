@@ -117,11 +117,16 @@ export const auth = {
   /**
    * Sign in an existing user
    */
-  signIn: async (email, password) => {
+  signIn: async (email, password, mfaChallengeId = null, mfaCode = null) => {
     const response = await fetch(`${API_URL}/api/auth/signin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ 
+        email, 
+        password,
+        mfa_challenge_id: mfaChallengeId,
+        mfa_code: mfaCode
+      }),
     });
     
     if (!response.ok) {
@@ -131,10 +136,12 @@ export const auth = {
     
     const data = await response.json();
     
-    // Store tokens
-    storage.setToken(data.session.access_token);
-    if (data.session.refresh_token) {
-      storage.setRefreshToken(data.session.refresh_token);
+    // Store tokens only if session exists (not MFA challenge)
+    if (data.session) {
+      storage.setToken(data.session.access_token);
+      if (data.session.refresh_token) {
+        storage.setRefreshToken(data.session.refresh_token);
+      }
     }
     
     return data;
@@ -216,6 +223,70 @@ export const auth = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to update password');
+    }
+    
+    return response.json();
+  },
+  
+  /**
+   * MFA: Enroll in TOTP MFA
+   */
+  mfaEnroll: async (friendlyName = 'Authenticator App') => {
+    const response = await fetchWithAuth('/api/auth/mfa/enroll', {
+      method: 'POST',
+      body: JSON.stringify({ friendly_name: friendlyName }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to enroll in MFA');
+    }
+    
+    return response.json();
+  },
+  
+  /**
+   * MFA: Verify enrollment with TOTP code
+   */
+  mfaVerifyEnrollment: async (factorId, code) => {
+    const response = await fetchWithAuth('/api/auth/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ factor_id: factorId, code }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Invalid verification code');
+    }
+    
+    return response.json();
+  },
+  
+  /**
+   * MFA: List all factors
+   */
+  mfaListFactors: async () => {
+    const response = await fetchWithAuth('/api/auth/mfa/factors');
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to list MFA factors');
+    }
+    
+    return response.json();
+  },
+  
+  /**
+   * MFA: Unenroll (remove) a factor
+   */
+  mfaUnenroll: async (factorId) => {
+    const response = await fetchWithAuth(`/api/auth/mfa/factors/${factorId}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to remove MFA factor');
     }
     
     return response.json();

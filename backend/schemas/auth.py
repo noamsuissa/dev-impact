@@ -1,6 +1,8 @@
 """
 Auth Schemas - Pydantic models for authentication
 """
+from __future__ import annotations
+
 from pydantic import BaseModel, EmailStr, field_serializer
 from typing import Optional, Union
 from datetime import datetime
@@ -17,6 +19,8 @@ class SignInRequest(BaseModel):
     """Sign in request schema"""
     email: EmailStr
     password: str
+    mfa_challenge_id: Optional[str] = None
+    mfa_code: Optional[str] = None
 
 
 class RefreshTokenRequest(BaseModel):
@@ -55,15 +59,63 @@ class SessionResponse(BaseModel):
     expires_at: Optional[int] = None
 
 
+class MFAFactorResponse(BaseModel):
+    """MFA factor response schema"""
+    id: str
+    type: str
+    friendly_name: Optional[str] = None
+    status: str
+
+
 class AuthResponse(BaseModel):
     """Authentication response schema"""
-    user: UserResponse
+    user: Optional[UserResponse] = None
     session: Optional[SessionResponse] = None
     requires_email_verification: Optional[bool] = False
+    requires_mfa: Optional[bool] = False
+    mfa_challenge_id: Optional[str] = None
+    mfa_factors: Optional[list[MFAFactorResponse]] = None
 
 
 class MessageResponse(BaseModel):
     """Generic message response"""
     success: bool
     message: str
+
+
+class MFAEnrollRequest(BaseModel):
+    """MFA enroll request schema"""
+    friendly_name: Optional[str] = "Authenticator App"
+
+
+class MFAVerifyRequest(BaseModel):
+    """MFA verify enrollment request schema"""
+    factor_id: str
+    code: str
+
+
+class MFAChallengeRequest(BaseModel):
+    """MFA challenge request schema"""
+    factor_id: str
+    code: str
+
+
+class SignInMFARequest(BaseModel):
+    """Sign in with MFA challenge request schema"""
+    challenge_id: str
+    code: str
+
+
+class MFAEnrollResponse(BaseModel):
+    """MFA enroll response schema"""
+    id: str
+    type: str
+    qr_code: str
+    secret: str
+    friendly_name: Optional[str] = None
+
+
+class MFAListResponse(BaseModel):
+    """MFA list factors response schema"""
+    factors: list[MFAFactorResponse]
 

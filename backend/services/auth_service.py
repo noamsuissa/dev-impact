@@ -92,23 +92,126 @@ class AuthService:
             )
 
     @staticmethod
-    async def sign_in(email: str, password: str) -> Dict[str, Any]:
+    async def sign_in(email: str, password: str, mfa_challenge_id: Optional[str] = None, mfa_code: Optional[str] = None) -> Dict[str, Any]:
         """
         Sign in an existing user
         
         Args:
             email: User's email
             password: User's password
+            mfa_challenge_id: MFA challenge ID if verifying MFA code
+            mfa_code: MFA code if verifying MFA challenge
             
         Returns:
-            Dict containing user and session data
+            Dict containing user and session data, or MFA challenge info
         """
         try:
             supabase = AuthService.get_supabase_client()
+            
+            # If MFA challenge ID and code provided, verify MFA
+            if mfa_challenge_id and mfa_code:
+                response = supabase.auth.mfa.verify({
+                    "challenge_id": mfa_challenge_id,
+                    "code": mfa_code
+                })
+                
+                if response.user is None or response.session is None:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Invalid MFA code"
+                    )
+                
+                return {
+                    "user": {
+                        "id": response.user.id,
+                        "email": response.user.email,
+                        "created_at": response.user.created_at
+                    },
+                    "session": {
+                        "access_token": response.session.access_token,
+                        "refresh_token": response.session.refresh_token,
+                        "expires_at": response.session.expires_at,
+                    },
+                    "requires_mfa": False
+                }
+            
+            # Initial sign in with password
             response = supabase.auth.sign_in_with_password({
                 "email": email,
                 "password": password
             })
+            
+            # Check if MFA is required (user exists but no session)
+            if response.user is not None and response.session is None:
+                # MFA is required - need to use anon key client with user's access token
+                # The response might have an access_token even without a full session
+                # Create a new client with anon key for MFA operations
+                url = os.getenv("SUPABASE_URL")
+                anon_key = os.getenv("SUPABASE_ANON_KEY")
+                
+                if not url or not anon_key:
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Supabase configuration not found"
+                    )
+                
+                # Create client with anon key and set auth header if we have a token
+                mfa_client = create_client(url, anon_key)
+                
+                # Try to get access token from response (might be in different location)
+                # If not available, we'll need to use the user ID to create challenge
+                # For now, try to list factors - this might fail if we need auth
+                try:
+                    # Set auth header if there's an access_token in response
+                    if hasattr(response, 'access_token') and response.access_token:
+                        mfa_client.postgrest.auth(response.access_token)
+                    
+                    factors_response = mfa_client.auth.mfa.list_factors()
+                    factors = factors_response.factors if hasattr(factors_response, 'factors') else []
+                    
+                    if factors and len(factors) > 0:
+                        # Create challenge for first TOTP factor
+                        totp_factor = next((f for f in factors if getattr(f, 'factor_type', getattr(f, 'type', None)) == 'totp'), None)
+                        if totp_factor:
+                            factor_id = getattr(totp_factor, 'id', None)
+                            if factor_id:
+                                challenge_response = mfa_client.auth.mfa.challenge({"factor_id": factor_id})
+                                challenge_id = getattr(challenge_response, 'id', None)
+                                
+                                return {
+                                    "user": {
+                                        "id": response.user.id,
+                                        "email": response.user.email,
+                                        "created_at": response.user.created_at
+                                    },
+                                    "session": None,
+                                    "requires_mfa": True,
+                                    "mfa_challenge_id": challenge_id,
+                                    "mfa_factors": [
+                                        {
+                                            "id": getattr(f, 'id', ''),
+                                            "type": getattr(f, 'factor_type', getattr(f, 'type', '')),
+                                            "friendly_name": getattr(f, 'friendly_name', None),
+                                            "status": getattr(f, 'status', 'verified')
+                                        }
+                                        for f in factors
+                                    ]
+                                }
+                except Exception as mfa_error:
+                    print(f"MFA setup error: {mfa_error}")
+                    # If we can't get factors, still return MFA required
+                    # The frontend will need to handle this case
+                    return {
+                        "user": {
+                            "id": response.user.id,
+                            "email": response.user.email,
+                            "created_at": response.user.created_at
+                        },
+                        "session": None,
+                        "requires_mfa": True,
+                        "mfa_challenge_id": None,
+                        "mfa_factors": []
+                    }
             
             if response.user is None or response.session is None:
                 raise HTTPException(
@@ -126,12 +229,19 @@ class AuthService:
                     "access_token": response.session.access_token,
                     "refresh_token": response.session.refresh_token,
                     "expires_at": response.session.expires_at,
-                }
+                },
+                "requires_mfa": False
             }
         except HTTPException:
             raise
         except Exception as e:
             print(f"Sign in error: {e}")
+            error_str = str(e).lower()
+            if "mfa" in error_str or "challenge" in error_str:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid MFA code"
+                )
             raise HTTPException(
                 status_code=401,
                 detail="Invalid email or password"
@@ -369,4 +479,186 @@ class AuthService:
         except Exception as e:
             print(f"Verify token error: {e}")
             return None
+
+    @staticmethod
+    async def mfa_enroll(access_token: str, friendly_name: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Enroll user in MFA (TOTP)
+        
+        Args:
+            access_token: User's access token
+            friendly_name: Friendly name for the factor
+            
+        Returns:
+            Dict containing factor ID, QR code, and secret
+        """
+        try:
+            supabase = AuthService.get_supabase_client()
+            supabase.postgrest.auth(access_token)
+            
+            enroll_response = supabase.auth.mfa.enroll({
+                "factor_type": "totp",
+                "friendly_name": friendly_name or "Authenticator App"
+            })
+            
+            return {
+                "id": enroll_response.id,
+                "type": enroll_response.type,
+                "qr_code": enroll_response.qr_code,
+                "secret": enroll_response.secret,
+                "friendly_name": getattr(enroll_response, 'friendly_name', friendly_name or "Authenticator App")
+            }
+        except Exception as e:
+            print(f"MFA enroll error: {e}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to enroll in MFA: {str(e)}"
+            )
+
+    @staticmethod
+    async def mfa_verify_enrollment(access_token: str, factor_id: str, code: str) -> Dict[str, Any]:
+        """
+        Verify MFA enrollment with a code
+        
+        Args:
+            access_token: User's access token
+            factor_id: Factor ID to verify
+            code: TOTP code from authenticator app
+            
+        Returns:
+            Dict with success status
+        """
+        try:
+            supabase = AuthService.get_supabase_client()
+            supabase.postgrest.auth(access_token)
+            
+            # Create challenge and verify
+            challenge_response = supabase.auth.mfa.challenge({"factor_id": factor_id})
+            challenge_id = challenge_response.id if hasattr(challenge_response, 'id') else None
+            
+            if not challenge_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Failed to create MFA challenge"
+                )
+            
+            verify_response = supabase.auth.mfa.verify({
+                "challenge_id": challenge_id,
+                "code": code
+            })
+            
+            return {
+                "success": True,
+                "message": "MFA enrollment verified successfully"
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"MFA verify enrollment error: {e}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid verification code: {str(e)}"
+            )
+
+    @staticmethod
+    async def mfa_list_factors(access_token: str) -> Dict[str, Any]:
+        """
+        List all MFA factors for a user
+        
+        Args:
+            access_token: User's access token
+            
+        Returns:
+            Dict containing list of factors
+        """
+        try:
+            supabase = AuthService.get_supabase_client()
+            supabase.postgrest.auth(access_token)
+            
+            factors_response = supabase.auth.mfa.list_factors()
+            factors = factors_response.factors if hasattr(factors_response, 'factors') else []
+            
+            return {
+                "factors": [
+                    {
+                        "id": f.id,
+                        "type": f.factor_type,
+                        "friendly_name": getattr(f, 'friendly_name', None),
+                        "status": getattr(f, 'status', 'verified')
+                    }
+                    for f in factors
+                ]
+            }
+        except Exception as e:
+            print(f"MFA list factors error: {e}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to list MFA factors: {str(e)}"
+            )
+
+    @staticmethod
+    async def mfa_unenroll(access_token: str, factor_id: str) -> Dict[str, Any]:
+        """
+        Unenroll (remove) an MFA factor
+        
+        Args:
+            access_token: User's access token
+            factor_id: Factor ID to remove
+            
+        Returns:
+            Dict with success status
+        """
+        try:
+            supabase = AuthService.get_supabase_client()
+            supabase.postgrest.auth(access_token)
+            
+            supabase.auth.mfa.unenroll({"factor_id": factor_id})
+            
+            return {
+                "success": True,
+                "message": "MFA factor removed successfully"
+            }
+        except Exception as e:
+            print(f"MFA unenroll error: {e}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to remove MFA factor: {str(e)}"
+            )
+
+    @staticmethod
+    async def mfa_challenge(access_token: str, factor_id: str) -> Dict[str, Any]:
+        """
+        Create an MFA challenge for sign-in
+        
+        Args:
+            access_token: User's access token (from initial sign-in)
+            factor_id: Factor ID to challenge
+            
+        Returns:
+            Dict containing challenge ID
+        """
+        try:
+            supabase = AuthService.get_supabase_client()
+            supabase.postgrest.auth(access_token)
+            
+            challenge_response = supabase.auth.mfa.challenge({"factor_id": factor_id})
+            challenge_id = challenge_response.id if hasattr(challenge_response, 'id') else None
+            
+            if not challenge_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Failed to create MFA challenge"
+                )
+            
+            return {
+                "challenge_id": challenge_id
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"MFA challenge error: {e}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to create MFA challenge: {str(e)}"
+            )
 
