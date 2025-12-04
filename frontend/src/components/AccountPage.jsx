@@ -139,122 +139,124 @@ const AccountPage = ({ user, projects }) => {
       </div>
 
       {/* MFA Section */}
-      <div className="border border-terminal-border p-10 mb-10">
-        <div className="mb-6">
-          <h3 className="text-lg text-terminal-orange mb-2 flex items-center gap-2">
-            <Shield size={20} />
-            Two-Factor Authentication
-          </h3>
-          <p className="text-terminal-gray text-sm">
-            Add an extra layer of security to your account by requiring a verification code from your authenticator app when signing in.
-          </p>
-        </div>
+      {import.meta.env.VITE_ENVIRONMENT === 'production' && (
+        <div className="border border-terminal-border p-10 mb-10">
+          <div className="mb-6">
+            <h3 className="text-lg text-terminal-orange mb-2 flex items-center gap-2">
+              <Shield size={20} />
+              Two-Factor Authentication
+            </h3>
+            <p className="text-terminal-gray text-sm">
+              Add an extra layer of security to your account by requiring a verification code from your authenticator app when signing in.
+            </p>
+          </div>
 
-        {showMFASetup ? (
-          <MFASetup
-            onComplete={handleMFASetupComplete}
-            onCancel={handleMFASetupCancel}
-          />
-        ) : (
-          <>
-            {loadingMFA ? (
-              <div className="text-terminal-gray">
-                &gt; Loading MFA settings...
-              </div>
-            ) : (
-              <>
-                {mfaError && (
-                  <div className="text-red-400 bg-red-400/10 border border-red-400/30 p-3 rounded mb-5">
-                    ✗ {mfaError}
-                  </div>
-                )}
-
-                {mfaFactors.length === 0 ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-terminal-gray">
-                      <ShieldOff size={16} />
-                      <span>Two-factor authentication is not enabled</span>
+          {showMFASetup ? (
+            <MFASetup
+              onComplete={handleMFASetupComplete}
+              onCancel={handleMFASetupCancel}
+            />
+          ) : (
+            <>
+              {loadingMFA ? (
+                <div className="text-terminal-gray">
+                  &gt; Loading MFA settings...
+                </div>
+              ) : (
+                <>
+                  {mfaError && (
+                    <div className="text-red-400 bg-red-400/10 border border-red-400/30 p-3 rounded mb-5">
+                      ✗ {mfaError}
                     </div>
-                    <TerminalButton
-                      onClick={() => setShowMFASetup(true)}
-                      disabled={loadingMFA}
-                    >
-                      <Shield size={16} className="inline mr-2" />
-                      [Enable Two-Factor Authentication]
-                    </TerminalButton>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {mfaFactors.some(f => f.status === 'verified') ? (
-                      <div className="flex items-center gap-2 text-terminal-green">
-                        <ShieldCheck size={16} />
-                        <span>Two-factor authentication is enabled</span>
+                  )}
+
+                  {mfaFactors.length === 0 ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 text-terminal-gray">
+                        <ShieldOff size={16} />
+                        <span>Two-factor authentication is not enabled</span>
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-yellow-400">
-                        <Shield size={16} />
-                        <span>Two-factor authentication setup incomplete - please verify your authenticator app</span>
-                      </div>
-                    )}
-                    
-                    <div className="space-y-3">
-                      {mfaFactors.map((factor) => (
-                        <div
-                          key={factor.id}
-                          className="border border-terminal-border p-4 rounded bg-terminal-bg-lighter flex items-center justify-between"
-                        >
-                          <div>
-                            <div className="text-terminal-orange font-medium">
-                              {factor.friendly_name || 'Authenticator App'}
-                            </div>
-                            <div className="text-terminal-gray text-sm">
-                              {factor.type.toUpperCase()} • {factor.status}
-                              {factor.status !== 'verified' && (
-                                <span className="text-yellow-400 ml-2">(Not verified)</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            {factor.status !== 'verified' && (
-                              <TerminalButton
-                                onClick={() => {
-                                  // Remove unverified factor and start fresh
-                                  handleUnenrollMFA(factor.id).then(() => {
-                                    setShowMFASetup(true);
-                                  });
-                                }}
-                                disabled={loadingMFA}
-                                className="bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/50 text-yellow-400"
-                              >
-                                [Retry Setup]
-                              </TerminalButton>
-                            )}
-                            <TerminalButton
-                              onClick={() => handleUnenrollMFA(factor.id)}
-                              disabled={loadingMFA}
-                              className="bg-red-500/20 hover:bg-red-500/30 border-red-500/50 text-red-400"
-                            >
-                              [Remove]
-                            </TerminalButton>
-                          </div>
+                      <TerminalButton
+                        onClick={() => setShowMFASetup(true)}
+                        disabled={loadingMFA}
+                      >
+                        <Shield size={16} className="inline mr-2" />
+                        [Enable Two-Factor Authentication]
+                      </TerminalButton>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {mfaFactors.some(f => f.status === 'verified') ? (
+                        <div className="flex items-center gap-2 text-terminal-green">
+                          <ShieldCheck size={16} />
+                          <span>Two-factor authentication is enabled</span>
                         </div>
-                      ))}
-                    </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-yellow-400">
+                          <Shield size={16} />
+                          <span>Two-factor authentication setup incomplete - please verify your authenticator app</span>
+                        </div>
+                      )}
+                      
+                      <div className="space-y-3">
+                        {mfaFactors.map((factor) => (
+                          <div
+                            key={factor.id}
+                            className="border border-terminal-border p-4 rounded bg-terminal-bg-lighter flex items-center justify-between"
+                          >
+                            <div>
+                              <div className="text-terminal-orange font-medium">
+                                {factor.friendly_name || 'Authenticator App'}
+                              </div>
+                              <div className="text-terminal-gray text-sm">
+                                {factor.type.toUpperCase()} • {factor.status}
+                                {factor.status !== 'verified' && (
+                                  <span className="text-yellow-400 ml-2">(Not verified)</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              {factor.status !== 'verified' && (
+                                <TerminalButton
+                                  onClick={() => {
+                                    // Remove unverified factor and start fresh
+                                    handleUnenrollMFA(factor.id).then(() => {
+                                      setShowMFASetup(true);
+                                    });
+                                  }}
+                                  disabled={loadingMFA}
+                                  className="bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/50 text-yellow-400"
+                                >
+                                  [Retry Setup]
+                                </TerminalButton>
+                              )}
+                              <TerminalButton
+                                onClick={() => handleUnenrollMFA(factor.id)}
+                                disabled={loadingMFA}
+                                className="bg-red-500/20 hover:bg-red-500/30 border-red-500/50 text-red-400"
+                              >
+                                [Remove]
+                              </TerminalButton>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
 
-                    <TerminalButton
-                      onClick={() => setShowMFASetup(true)}
-                      disabled={loadingMFA}
-                    >
-                      <Shield size={16} className="inline mr-2" />
-                      [Add Another Authenticator]
-                    </TerminalButton>
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        )}
-      </div>
+                      <TerminalButton
+                        onClick={() => setShowMFASetup(true)}
+                        disabled={loadingMFA}
+                      >
+                        <Shield size={16} className="inline mr-2" />
+                        [Add Another Authenticator]
+                      </TerminalButton>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="border border-red-500/30 bg-red-500/10 p-6 rounded">
         <div className="mb-4">
