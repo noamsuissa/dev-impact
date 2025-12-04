@@ -2,6 +2,9 @@ import httpx
 from typing import Optional
 from schemas.github_auth import DeviceCodeResponse, TokenResponse, GitHubUser
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_DEVICE_AUTH_URL = os.getenv("GITHUB_DEVICE_AUTH_URL", "https://github.com/login/device/code")
