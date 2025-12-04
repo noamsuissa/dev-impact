@@ -113,30 +113,67 @@ class AuthService:
             
             # If MFA challenge ID and code provided, verify MFA
             if mfa_challenge_id and mfa_code:
-                response = supabase.auth.mfa.verify({
-                    "challenge_id": mfa_challenge_id,
-                    "code": mfa_code
+                # First sign in with password to get a session token
+                password_response = supabase.auth.sign_in_with_password({
+                    "email": email,
+                    "password": password
                 })
                 
-                if response.user is None or response.session is None:
+                if password_response.user is None or password_response.session is None:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Invalid email or password"
+                    )
+                
+                # Create a new client with the session token set
+                url = os.getenv("SUPABASE_URL")
+                anon_key = os.getenv("SUPABASE_ANON_KEY")
+                
+                if not url or not anon_key:
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Supabase configuration not found"
+                    )
+                
+                # Create authenticated client with the session token
+                authenticated_client = create_client(url, anon_key)
+                authenticated_client.postgrest.auth(password_response.session.access_token)
+                
+                try:
+                    # Verify MFA using the authenticated client
+                    verify_response = authenticated_client.auth.mfa.verify({
+                        "challenge_id": mfa_challenge_id,
+                        "code": mfa_code
+                    })
+                    
+                    if verify_response.user is None or verify_response.session is None:
+                        raise HTTPException(
+                            status_code=401,
+                            detail="Invalid MFA code"
+                        )
+                    
+                    return {
+                        "user": {
+                            "id": verify_response.user.id,
+                            "email": verify_response.user.email,
+                            "created_at": verify_response.user.created_at
+                        },
+                        "session": {
+                            "access_token": verify_response.session.access_token,
+                            "refresh_token": verify_response.session.refresh_token,
+                            "expires_at": verify_response.session.expires_at,
+                        },
+                        "requires_mfa": False
+                    }
+                except HTTPException:
+                    raise
+                except Exception as verify_err:
+                    print(f"MFA verify error: {verify_err}")
+                    traceback.print_exc()
                     raise HTTPException(
                         status_code=401,
                         detail="Invalid MFA code"
                     )
-                
-                return {
-                    "user": {
-                        "id": response.user.id,
-                        "email": response.user.email,
-                        "created_at": response.user.created_at
-                    },
-                    "session": {
-                        "access_token": response.session.access_token,
-                        "refresh_token": response.session.refresh_token,
-                        "expires_at": response.session.expires_at,
-                    },
-                    "requires_mfa": False
-                }
             
             # Initial sign in with password
             response = supabase.auth.sign_in_with_password({
