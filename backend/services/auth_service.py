@@ -144,7 +144,80 @@ class AuthService:
                 "password": password
             })
             
-            # Check if MFA is required (user exists but no session)
+            # Check if user has MFA factors enrolled
+            # If they do, we need to challenge them even if a session was returned
+            user_id = response.user.id if response.user else None
+            
+            if user_id:
+                # Check if user has MFA factors using Admin API
+                url = os.getenv("SUPABASE_URL")
+                service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+                
+                if url and service_key:
+                    try:
+                        async with httpx.AsyncClient() as client:
+                            factors_response = await client.get(
+                                f"{url}/auth/v1/admin/users/{user_id}/factors",
+                                headers={
+                                    "apikey": service_key,
+                                    "Authorization": f"Bearer {service_key}",
+                                    "Content-Type": "application/json"
+                                }
+                            )
+                            
+                            if factors_response.status_code == 200:
+                                factors_data = factors_response.json()
+                                factors = factors_data if isinstance(factors_data, list) else factors_data.get('factors', [])
+                                
+                                # Filter for verified TOTP factors
+                                verified_totp_factors = [
+                                    f for f in factors 
+                                    if f.get('factor_type') == 'totp' and f.get('status') == 'verified'
+                                ]
+                                
+                                if verified_totp_factors:
+                                    # User has MFA - create challenge
+                                    factor_id = verified_totp_factors[0].get('id')
+                                    if factor_id:
+                                        # Use user API to create challenge (need user's access token)
+                                        # Get access token from the session if available, or use anon key
+                                        anon_key = os.getenv("SUPABASE_ANON_KEY")
+                                        if anon_key:
+                                            mfa_client = create_client(url, anon_key)
+                                            # If we have a session token, use it
+                                            if response.session and response.session.access_token:
+                                                mfa_client.postgrest.auth(response.session.access_token)
+                                            
+                                            try:
+                                                challenge_response = mfa_client.auth.mfa.challenge({"factor_id": factor_id})
+                                                challenge_id = getattr(challenge_response, 'id', None) if challenge_response else None
+                                                
+                                                if challenge_id:
+                                                    return {
+                                                        "user": {
+                                                            "id": response.user.id,
+                                                            "email": response.user.email,
+                                                            "created_at": response.user.created_at
+                                                        },
+                                                        "session": None,  # Don't return session until MFA verified
+                                                        "requires_mfa": True,
+                                                        "mfa_challenge_id": challenge_id,
+                                                        "mfa_factors": [
+                                                            {
+                                                                "id": f.get("id", ""),
+                                                                "type": f.get("factor_type", f.get("type", "")),
+                                                                "friendly_name": f.get("friendly_name"),
+                                                                "status": f.get("status", "verified")
+                                                            }
+                                                            for f in verified_totp_factors
+                                                        ]
+                                                    }
+                                            except Exception as challenge_err:
+                                                print(f"Failed to create MFA challenge: {challenge_err}")
+                    except Exception as mfa_check_err:
+                        print(f"Error checking MFA factors: {mfa_check_err}")
+            
+            # Check if MFA is required (user exists but no session) - fallback check
             if response.user is not None and response.session is None:
                 # MFA is required - need to use anon key client with user's access token
                 # The response might have an access_token even without a full session
