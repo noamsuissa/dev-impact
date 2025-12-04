@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 from fastapi import HTTPException
 from supabase import create_client, Client
 import jwt
+import httpx
+import traceback
 
 # Load environment variables
 load_dotenv()
@@ -30,39 +32,6 @@ class AuthService:
         
         return create_client(url, key)
 
-    @staticmethod
-    def get_user_authenticated_client(access_token: str) -> Client:
-        """
-        Get Supabase client authenticated for a specific user
-        Required for MFA operations which are user-scoped
-        
-        Args:
-            access_token: User's access token
-            
-        Returns:
-            Authenticated Supabase client
-        """
-        url = os.getenv("SUPABASE_URL")
-        anon_key = os.getenv("SUPABASE_ANON_KEY")
-        
-        if not url or not anon_key:
-            raise HTTPException(
-                status_code=500,
-                detail="Supabase configuration not found"
-            )
-        
-        # Create client with anon key (not service role - MFA needs user context)
-        client = create_client(url, anon_key)
-        
-        # Verify user and authenticate session
-        user_response = client.auth.get_user(access_token)
-        if not user_response or not user_response.user:
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid or expired token"
-            )
-        
-        return client
 
     @staticmethod
     async def sign_up(email: str, password: str, captcha_token: Optional[str] = None) -> Dict[str, Any]:
@@ -460,7 +429,6 @@ class AuthService:
                 )
             
             # Update password using Admin API
-            import httpx
             async with httpx.AsyncClient() as client:
                 response = await client.put(
                     f"{url}/auth/v1/admin/users/{user_id}",
@@ -527,21 +495,54 @@ class AuthService:
             Dict containing factor ID, QR code, and secret
         """
         try:
-            # MFA operations require user authentication (not service role)
-            supabase = AuthService.get_user_authenticated_client(access_token)
+            # Get user ID from token
+            user_id = await AuthService.verify_token(access_token)
+            if not user_id:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid or expired token"
+                )
             
-            enroll_response = supabase.auth.mfa.enroll({
-                "factor_type": "totp",
-                "friendly_name": friendly_name or "Authenticator App"
-            })
+            # Use Admin API to enroll MFA factor
+            url = os.getenv("SUPABASE_URL")
+            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
             
-            return {
-                "id": enroll_response.id,
-                "type": enroll_response.type,
-                "qr_code": enroll_response.qr_code,
-                "secret": enroll_response.secret,
-                "friendly_name": getattr(enroll_response, 'friendly_name', friendly_name or "Authenticator App")
-            }
+            if not url or not service_key:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Supabase configuration not found"
+                )
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{url}/auth/v1/admin/users/{user_id}/factors",
+                    headers={
+                        "apikey": service_key,
+                        "Authorization": f"Bearer {service_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "friendly_name": friendly_name or "Authenticator App",
+                        "factor_type": "totp"
+                    }
+                )
+                
+                if response.status_code != 200:
+                    print(f"Admin API error: {response.status_code} - {response.text}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Failed to enroll in MFA"
+                    )
+                
+                data = response.json()
+                
+                return {
+                    "id": data.get("id", ""),
+                    "type": data.get("factor_type", data.get("type", "")),
+                    "qr_code": data.get("qr_code", ""),
+                    "secret": data.get("secret", ""),
+                    "friendly_name": data.get("friendly_name", friendly_name or "Authenticator App")
+                }
         except HTTPException:
             raise
         except Exception as e:
@@ -565,23 +566,71 @@ class AuthService:
             Dict with success status
         """
         try:
-            # MFA operations require user authentication (not service role)
-            supabase = AuthService.get_user_authenticated_client(access_token)
-            
-            # Create challenge and verify
-            challenge_response = supabase.auth.mfa.challenge({"factor_id": factor_id})
-            challenge_id = challenge_response.id if hasattr(challenge_response, 'id') else None
-            
-            if not challenge_id:
+            # Get user ID from token
+            user_id = await AuthService.verify_token(access_token)
+            if not user_id:
                 raise HTTPException(
-                    status_code=400,
-                    detail="Failed to create MFA challenge"
+                    status_code=401,
+                    detail="Invalid or expired token"
                 )
             
-            verify_response = supabase.auth.mfa.verify({
-                "challenge_id": challenge_id,
-                "code": code
-            })
+            # Use Admin API to verify MFA factor
+            url = os.getenv("SUPABASE_URL")
+            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            
+            if not url or not service_key:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Supabase configuration not found"
+                )
+            
+            async with httpx.AsyncClient() as client:
+                # First create a challenge
+                challenge_response = await client.post(
+                    f"{url}/auth/v1/admin/users/{user_id}/factors/{factor_id}/challenge",
+                    headers={
+                        "apikey": service_key,
+                        "Authorization": f"Bearer {service_key}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                
+                if challenge_response.status_code != 200:
+                    print(f"Challenge error: {challenge_response.status_code} - {challenge_response.text}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Failed to create MFA challenge"
+                    )
+                
+                challenge_data = challenge_response.json()
+                challenge_id = challenge_data.get("id")
+                
+                if not challenge_id:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Failed to create MFA challenge"
+                    )
+                
+                # Then verify the challenge
+                verify_response = await client.post(
+                    f"{url}/auth/v1/admin/users/{user_id}/factors/{factor_id}/verify",
+                    headers={
+                        "apikey": service_key,
+                        "Authorization": f"Bearer {service_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "challenge_id": challenge_id,
+                        "code": code
+                    }
+                )
+                
+                if verify_response.status_code != 200:
+                    print(f"Verify error: {verify_response.status_code} - {verify_response.text}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Invalid verification code"
+                    )
             
             return {
                 "success": True,
@@ -608,27 +657,65 @@ class AuthService:
             Dict containing list of factors
         """
         try:
-            # MFA operations require user authentication (not service role)
-            supabase = AuthService.get_user_authenticated_client(access_token)
+            # Get user ID from token first
+            user_id = await AuthService.verify_token(access_token)
+            if not user_id:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid or expired token"
+                )
             
-            factors_response = supabase.auth.mfa.list_factors()
-            factors = factors_response.factors if hasattr(factors_response, 'factors') else []
+            # Use Admin API to list factors (requires service role key)
+            url = os.getenv("SUPABASE_URL")
+            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
             
-            return {
-                "factors": [
-                    {
-                        "id": getattr(f, 'id', ''),
-                        "type": getattr(f, 'factor_type', getattr(f, 'type', '')),
-                        "friendly_name": getattr(f, 'friendly_name', None),
-                        "status": getattr(f, 'status', 'verified')
+            if not url or not service_key:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Supabase configuration not found"
+                )
+            
+            # Use Admin API endpoint
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{url}/auth/v1/admin/users/{user_id}/factors",
+                    headers={
+                        "apikey": service_key,
+                        "Authorization": f"Bearer {service_key}",
+                        "Content-Type": "application/json"
                     }
-                    for f in factors
-                ]
-            }
+                )
+                
+                if response.status_code == 404:
+                    # User has no factors
+                    return {"factors": []}
+                
+                if response.status_code != 200:
+                    print(f"Admin API error: {response.status_code} - {response.text}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Failed to list MFA factors"
+                    )
+                
+                data = response.json()
+                factors = data if isinstance(data, list) else data.get('factors', [])
+                
+                return {
+                    "factors": [
+                        {
+                            "id": f.get("id", ""),
+                            "type": f.get("factor_type", f.get("type", "")),
+                            "friendly_name": f.get("friendly_name"),
+                            "status": f.get("status", "verified")
+                        }
+                        for f in factors
+                    ]
+                }
         except HTTPException:
             raise
         except Exception as e:
             print(f"MFA list factors error: {e}")
+            traceback.print_exc()
             raise HTTPException(
                 status_code=400,
                 detail=f"Failed to list MFA factors: {str(e)}"
@@ -647,10 +734,40 @@ class AuthService:
             Dict with success status
         """
         try:
-            # MFA operations require user authentication (not service role)
-            supabase = AuthService.get_user_authenticated_client(access_token)
+            # Get user ID from token
+            user_id = await AuthService.verify_token(access_token)
+            if not user_id:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid or expired token"
+                )
             
-            supabase.auth.mfa.unenroll({"factor_id": factor_id})
+            # Use Admin API to unenroll MFA factor
+            url = os.getenv("SUPABASE_URL")
+            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            
+            if not url or not service_key:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Supabase configuration not found"
+                )
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.delete(
+                    f"{url}/auth/v1/admin/users/{user_id}/factors/{factor_id}",
+                    headers={
+                        "apikey": service_key,
+                        "Authorization": f"Bearer {service_key}",
+                        "Content-Type": "application/json"
+                    }
+                )
+                
+                if response.status_code not in [200, 204]:
+                    print(f"Admin API error: {response.status_code} - {response.text}")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Failed to remove MFA factor"
+                    )
             
             return {
                 "success": True,
