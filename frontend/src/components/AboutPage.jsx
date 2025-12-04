@@ -2,8 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Code, Target, Zap, Users } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
+import { useMetaTags } from '../hooks/useMetaTags';
 
 const AboutPage = () => {
+  // Set meta tags for about page
+  useMetaTags({
+    title: 'About dev-impact - A New Standard for Developer Resumes',
+    description: 'Learn about dev-impact\'s philosophy: showing real developer impact through quantifiable metrics, clear problem-solution narratives, and beautiful shareable profiles.',
+    image: 'https://dev-impact.io/boom.png',
+    url: 'https://dev-impact.io/about',
+    type: 'website'
+  });
+
   const principles = [
     {
       icon: Target,

@@ -3,12 +3,29 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { Github, ArrowLeft, Eye } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
+import { useMetaTags } from '../hooks/useMetaTags';
 
 const PublicProfile = () => {
   const { username } = useParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Dynamic meta tags for SEO and OpenGraph
+  const profileUrl = `https://dev-impact.io/${username}`;
+  const profileTitle = profile ? `${profile.user.name} - Developer Profile | dev-impact` : 'Developer Profile | dev-impact';
+  const profileDescription = profile 
+    ? `View ${profile.user.name}'s developer profile on dev-impact. ${profile.projects.length} projects with ${profile.projects.reduce((sum, p) => sum + (p.metrics?.length || 0), 0)} achievements.`
+    : 'View developer profile on dev-impact';
+  const profileImage = profile?.user?.github?.avatar_url || 'https://dev-impact.io/boom.png';
+
+  useMetaTags({
+    title: profileTitle,
+    description: profileDescription,
+    image: profileImage,
+    url: profileUrl,
+    type: 'profile'
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {

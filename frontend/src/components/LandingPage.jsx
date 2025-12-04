@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalButton from './common/TerminalButton';
+import { useMetaTags } from '../hooks/useMetaTags';
 
 const LandingPage = () => {
   const [lines, setLines] = useState([]);
   const [showButtons, setShowButtons] = useState(false);
+
+  // Set meta tags for landing page
+  useMetaTags({
+    title: 'dev-impact - Show Your Developer Impact',
+    description: 'A new standard in showcasing developer impact. Show real impact, not just bullet points. Create beautiful, shareable developer profiles with quantifiable metrics.',
+    image: 'https://dev-impact.io/boom.png',
+    url: 'https://dev-impact.io/',
+    type: 'website'
+  });
 
   useEffect(() => {
     const bootSequence = [
