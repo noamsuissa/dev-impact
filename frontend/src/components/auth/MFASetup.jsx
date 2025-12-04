@@ -53,20 +53,27 @@ const MFASetup = ({ onComplete, onCancel }) => {
         
         // Convert data URI to blob URL to bypass CSP restrictions
         try {
-          if (qrCodeValue.startsWith('data:')) {
+          if (qrCodeValue.startsWith('data:image/svg+xml') || qrCodeValue.startsWith('data:image/')) {
+            // For data URIs, convert to blob
             const response = await fetch(qrCodeValue);
+            if (!response.ok) {
+              throw new Error('Failed to fetch data URI');
+            }
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
             setQrCodeBlobUrl(blobUrl);
+          } else if (qrCodeValue.startsWith('http://') || qrCodeValue.startsWith('https://')) {
+            // For HTTP/HTTPS URLs, use directly
+            setQrCodeBlobUrl(qrCodeValue);
           } else {
+            // For other formats, try as-is (might be base64 or other format)
             setQrCodeBlobUrl(qrCodeValue);
           }
         } catch (err) {
-          console.warn('Failed to convert QR code to blob URL:', err);
-          // Fallback to original data URI
+          console.error('Failed to convert QR code to blob URL:', err);
+          // Fallback: try using data URI directly (CSP should allow it now)
+          setQrCodeBlobUrl(qrCodeValue);
         }
-      } else {
-        console.warn('QR code not provided in response, user will need to use secret key');
       }
       
       setSecret(secretValue);
@@ -198,12 +205,13 @@ const MFASetup = ({ onComplete, onCancel }) => {
               <div className="mb-2">
                 <label htmlFor="verify-code">&gt; Verification Code:</label>
               </div>
-              <TerminalInput
+              <input
                 type="text"
                 name="verify-code"
                 id="verify-code"
                 value={verificationCode}
-                onChange={(value) => {
+                onChange={(e) => {
+                  const value = e.target.value;
                   const cleanedValue = value.replace(/\D/g, '').slice(0, 6);
                   setVerificationCode(cleanedValue);
                   setError(null);
@@ -213,7 +221,7 @@ const MFASetup = ({ onComplete, onCancel }) => {
                 required
                 autoComplete="one-time-code"
                 maxLength={6}
-                className="text-center text-2xl tracking-widest"
+                className="terminal-input text-center text-2xl tracking-widest"
               />
             </div>
 
