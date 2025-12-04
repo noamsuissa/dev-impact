@@ -176,50 +176,55 @@ class AuthService:
                                 ]
                                 
                                 if verified_totp_factors:
-                                    # User has MFA - create challenge using Admin API
+                                    # User has MFA - create challenge using user API with session token
                                     factor_id = verified_totp_factors[0].get('id')
                                     if factor_id:
-                                        try:
-                                            # Use Admin API to create challenge (doesn't require user session)
-                                            async with httpx.AsyncClient() as admin_client:
-                                                challenge_response = await admin_client.post(
-                                                    f"{url}/auth/v1/admin/users/{user_id}/factors/{factor_id}/challenge",
-                                                    headers={
-                                                        "apikey": service_key,
-                                                        "Authorization": f"Bearer {service_key}",
-                                                        "Content-Type": "application/json"
-                                                    }
-                                                )
-                                                
-                                                if challenge_response.status_code == 200:
-                                                    challenge_data = challenge_response.json()
-                                                    challenge_id = challenge_data.get("id")
-                                                    
-                                                    if challenge_id:
-                                                        return {
-                                                            "user": {
-                                                                "id": response.user.id,
-                                                                "email": response.user.email,
-                                                                "created_at": response.user.created_at
-                                                            },
-                                                            "session": None,  # Don't return session until MFA verified
-                                                            "requires_mfa": True,
-                                                            "mfa_challenge_id": challenge_id,
-                                                            "mfa_factors": [
-                                                                {
-                                                                    "id": f.get("id", ""),
-                                                                    "type": f.get("factor_type", f.get("type", "")),
-                                                                    "friendly_name": f.get("friendly_name"),
-                                                                    "status": f.get("status", "verified")
-                                                                }
-                                                                for f in verified_totp_factors
-                                                            ]
+                                        # Use user API to create challenge (requires user's access token from password sign-in)
+                                        anon_key = os.getenv("SUPABASE_ANON_KEY")
+                                        if anon_key and response.session and response.session.access_token:
+                                            try:
+                                                # Use user API endpoint with the session token from password sign-in
+                                                async with httpx.AsyncClient() as user_client:
+                                                    challenge_response = await user_client.post(
+                                                        f"{url}/auth/v1/factors/{factor_id}/challenge",
+                                                        headers={
+                                                            "apikey": anon_key,
+                                                            "Authorization": f"Bearer {response.session.access_token}",
+                                                            "Content-Type": "application/json"
                                                         }
-                                                else:
-                                                    print(f"Admin API challenge error: {challenge_response.status_code} - {challenge_response.text}")
-                                        except Exception as challenge_err:
-                                            print(f"Failed to create MFA challenge: {challenge_err}")
-                                            traceback.print_exc()
+                                                    )
+                                                    
+                                                    if challenge_response.status_code == 200:
+                                                        challenge_data = challenge_response.json()
+                                                        challenge_id = challenge_data.get("id")
+                                                        
+                                                        if challenge_id:
+                                                            return {
+                                                                "user": {
+                                                                    "id": response.user.id,
+                                                                    "email": response.user.email,
+                                                                    "created_at": response.user.created_at
+                                                                },
+                                                                "session": None,  # Don't return session until MFA verified
+                                                                "requires_mfa": True,
+                                                                "mfa_challenge_id": challenge_id,
+                                                                "mfa_factors": [
+                                                                    {
+                                                                        "id": f.get("id", ""),
+                                                                        "type": f.get("factor_type", f.get("type", "")),
+                                                                        "friendly_name": f.get("friendly_name"),
+                                                                        "status": f.get("status", "verified")
+                                                                    }
+                                                                    for f in verified_totp_factors
+                                                                ]
+                                                            }
+                                                    else:
+                                                        print(f"User API challenge error: {challenge_response.status_code} - {challenge_response.text}")
+                                            except Exception as challenge_err:
+                                                print(f"Failed to create MFA challenge: {challenge_err}")
+                                                traceback.print_exc()
+                                        else:
+                                            print("Missing anon key or session token for MFA challenge")
                     except Exception as mfa_check_err:
                         print(f"Error checking MFA factors: {mfa_check_err}")
             
