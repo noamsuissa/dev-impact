@@ -95,8 +95,8 @@ const Onboarding = ({ onComplete }) => {
           setDeviceCode({ userCode, verificationUri });
           setGithubState('awaiting');
         },
-        (message) => {
-          console.log('GitHub OAuth progress:', message);
+        () => {
+          // Progress callback - no logging needed in production
         }
       );
 

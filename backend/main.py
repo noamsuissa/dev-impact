@@ -12,6 +12,9 @@ import re
 # Load environment variables from .env file
 load_dotenv()
 
+# Check if we're in production (disable API docs)
+is_production = os.getenv("ENVIRONMENT", "").lower() in ["production", "prod"]
+
 # Initialize rate limiter - applies to all routes globally
 limiter = Limiter(key_func=get_remote_address, default_limits=os.getenv("RATE_LIMIT_DEFAULT_LIMITS", "100/minute,1000/hour").split(","))
 
@@ -19,6 +22,9 @@ app = FastAPI(
     title="Dev Impact API",
     description="Backend API for Dev Impact application with GitHub OAuth",
     version="1.0.0",
+    docs_url=None if is_production else "/docs",
+    redoc_url=None if is_production else "/redoc",
+    openapi_url=None if is_production else "/openapi.json",
 )
 
 # Add rate limiter to app state

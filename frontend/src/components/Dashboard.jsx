@@ -39,8 +39,8 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
           setDeviceCode({ userCode, verificationUri });
           setGithubState('awaiting');
         },
-        (message) => {
-          console.log('GitHub OAuth progress:', message);
+        () => {
+          // Progress callback - no logging needed in production
         }
       );
 
@@ -81,7 +81,6 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
         }
       } catch {
         // Profile not published, that's okay
-        console.log('Profile not published yet');
       }
     };
 

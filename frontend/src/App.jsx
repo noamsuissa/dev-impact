@@ -100,7 +100,6 @@ const AuthenticatedLayout = () => {
   const handleOnboardingComplete = async (userData) => {
     try {
       await userClient.completeOnboarding(userData);
-      console.log('Profile saved via API');
       setUserProfile(userData);
       navigate('/dashboard');
     } catch (err) {
@@ -115,11 +114,9 @@ const AuthenticatedLayout = () => {
       if (isExisting) {
         const updated = await projectsClient.update(project.id, project);
         setProjects(projects.map(p => p.id === project.id ? updated : p));
-        console.log('Project updated via API');
       } else {
         const created = await projectsClient.create(project);
         setProjects([...projects, created]);
-        console.log('Project created via API');
       }
     } catch (err) {
       console.error('Failed to save project:', err);
@@ -133,7 +130,6 @@ const AuthenticatedLayout = () => {
     try {
       await projectsClient.delete(id);
       setProjects(projects.filter(p => p.id !== id));
-      console.log('Project deleted via API');
     } catch (err) {
       console.error('Failed to delete project:', err);
       alert('Failed to delete project: ' + err.message);
@@ -153,7 +149,6 @@ const AuthenticatedLayout = () => {
           avatar_url: githubData.avatar_url
         }
       });
-      console.log('GitHub connected and saved via API');
     } catch (err) {
       console.error('Failed to save GitHub connection:', err);
       alert('GitHub connected but failed to save. Please try again.');

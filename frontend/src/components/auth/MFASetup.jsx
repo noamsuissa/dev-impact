@@ -35,7 +35,6 @@ const MFASetup = ({ onComplete, onCancel }) => {
 
     try {
       const data = await authClient.mfaEnroll(friendlyName);
-      console.log('MFA enroll response:', data);
       
       // Handle different response structures
       const qrCodeValue = data.qr_code || data.totp?.qr_code || data.qrCode;

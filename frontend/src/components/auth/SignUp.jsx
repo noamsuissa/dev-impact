@@ -82,8 +82,6 @@ const SignUp = () => {
         isCaptchaEnabled ? captchaToken : 'localhost_bypass'
       );
 
-      console.log('Signup successful:', data);
-
       // Check if email confirmation is required
       if (data.requires_email_verification) {
         setMessage('Check your email to verify your account');
