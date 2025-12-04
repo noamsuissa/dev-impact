@@ -1,12 +1,24 @@
 import { ImageResponse } from '@vercel/og';
 
 export const config = {
-  runtime: 'edge',
+  runtime: 'nodejs18.x',
 };
 
-export default async function handler(request) {
+export default async function handler(req) {
   try {
-    const { searchParams } = new URL(request.url);
+    // Extract URL from request - handle both Vercel serverless and standard formats
+    let requestUrl;
+    if (req.url) {
+      requestUrl = req.url;
+    } else if (req.headers && req.headers.host) {
+      const path = req.path || '/api/og';
+      const query = req.query ? '?' + new URLSearchParams(req.query).toString() : '';
+      requestUrl = `https://${req.headers.host}${path}${query}`;
+    } else {
+      requestUrl = 'https://dev-impact.io/api/og';
+    }
+    
+    const { searchParams } = new URL(requestUrl);
     
     // Get query parameters
     const title = searchParams.get('title');
