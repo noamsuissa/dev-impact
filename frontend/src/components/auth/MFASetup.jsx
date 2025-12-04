@@ -51,10 +51,10 @@ const MFASetup = ({ onComplete, onCancel }) => {
       if (qrCodeValue) {
         setQrCode(qrCodeValue);
         
-        // Convert data URI to blob URL to bypass CSP restrictions
+        // Handle different QR code formats
         try {
-          if (qrCodeValue.startsWith('data:image/svg+xml') || qrCodeValue.startsWith('data:image/')) {
-            // For data URIs, convert to blob
+          if (qrCodeValue.startsWith('data:image/')) {
+            // Already a data URI - convert to blob URL
             const response = await fetch(qrCodeValue);
             if (!response.ok) {
               throw new Error('Failed to fetch data URI');
@@ -62,17 +62,34 @@ const MFASetup = ({ onComplete, onCancel }) => {
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
             setQrCodeBlobUrl(blobUrl);
+          } else if (qrCodeValue.startsWith('<?xml') || qrCodeValue.startsWith('<svg')) {
+            // Raw SVG XML - convert to data URI then blob URL
+            const svgBlob = new Blob([qrCodeValue], { type: 'image/svg+xml' });
+            const blobUrl = URL.createObjectURL(svgBlob);
+            setQrCodeBlobUrl(blobUrl);
           } else if (qrCodeValue.startsWith('http://') || qrCodeValue.startsWith('https://')) {
-            // For HTTP/HTTPS URLs, use directly
+            // HTTP/HTTPS URL - use directly
             setQrCodeBlobUrl(qrCodeValue);
           } else {
-            // For other formats, try as-is (might be base64 or other format)
-            setQrCodeBlobUrl(qrCodeValue);
+            // Try as data URI (might be base64 encoded)
+            const dataUri = `data:image/svg+xml;base64,${btoa(qrCodeValue)}`;
+            const response = await fetch(dataUri);
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            setQrCodeBlobUrl(blobUrl);
           }
         } catch (err) {
           console.error('Failed to convert QR code to blob URL:', err);
-          // Fallback: try using data URI directly (CSP should allow it now)
-          setQrCodeBlobUrl(qrCodeValue);
+          // Last resort: try creating data URI from raw SVG
+          if (qrCodeValue.startsWith('<?xml') || qrCodeValue.startsWith('<svg')) {
+            try {
+              const encoded = encodeURIComponent(qrCodeValue);
+              const dataUri = `data:image/svg+xml;charset=utf-8,${encoded}`;
+              setQrCodeBlobUrl(dataUri);
+            } catch (encodeErr) {
+              console.error('Failed to encode SVG as data URI:', encodeErr);
+            }
+          }
         }
       }
       
