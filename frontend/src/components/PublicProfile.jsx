@@ -18,10 +18,8 @@ const PublicProfile = () => {
     ? `View ${profile.user.name}'s developer profile on dev-impact. ${profile.projects.length} projects with ${profile.projects.reduce((sum, p) => sum + (p.metrics?.length || 0), 0)} achievements.`
     : 'View developer profile on dev-impact';
   
-  // Build OG image URL with query parameters for dynamic profile image
-  const profileImage = profile 
-    ? `https://www.dev-impact.io/api/og?username=${encodeURIComponent(username)}&name=${encodeURIComponent(profile.user.name)}&projects=${profile.projects.length}&achievements=${profile.projects.reduce((sum, p) => sum + (p.metrics?.length || 0), 0)}${profile.user.github?.avatar_url ? `&avatar=${encodeURIComponent(profile.user.github.avatar_url)}` : ''}`
-    : 'https://www.dev-impact.io/api/og';
+  // Use static OG image for all profiles
+  const profileImage = 'https://www.dev-impact.io/og-image.png';
 
   useMetaTags({
     title: profileTitle,

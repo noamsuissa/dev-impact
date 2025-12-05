@@ -9,7 +9,7 @@ const AboutPage = () => {
   useMetaTags({
     title: 'About dev-impact - A New Standard for Developer Resumes',
     description: 'Learn about dev-impact\'s philosophy: showing real developer impact through quantifiable metrics, clear problem-solution narratives, and beautiful shareable profiles.',
-    image: 'https://www.dev-impact.io/api/og?title=About%20dev-impact&description=Learn%20about%20dev-impact\'s%20philosophy',
+    image: 'https://www.dev-impact.io/og-image.png',
     url: 'https://www.dev-impact.io/about',
     type: 'website'
   });

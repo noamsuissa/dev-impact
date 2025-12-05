@@ -11,7 +11,7 @@ const LandingPage = () => {
   useMetaTags({
     title: 'dev-impact - Show Your Developer Impact',
     description: 'A new standard in showcasing developer impact. Show real impact, not just bullet points. Create beautiful, shareable developer profiles with quantifiable metrics.',
-    image: 'https://www.dev-impact.io/api/og',
+    image: 'https://www.dev-impact.io/og-image.png',
     url: 'https://www.dev-impact.io/',
     type: 'website'
   });
