@@ -3,8 +3,18 @@ import { Link } from 'react-router-dom';
 import { Github, ArrowLeft, Eye } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
+import { useMetaTags } from '../hooks/useMetaTags';
 
 const ExamplePage = () => {
+  // Set meta tags for example page
+  useMetaTags({
+    title: 'Example Developer Profile - dev-impact',
+    description: 'View an example developer profile on dev-impact. See how developers showcase their impact with quantifiable metrics, project details, and achievements.',
+    image: 'https://www.dev-impact.io/og-image.png',
+    url: 'https://www.dev-impact.io/example',
+    type: 'website'
+  });
+
   // Example profile data
   const exampleProfile = {
     user: {
