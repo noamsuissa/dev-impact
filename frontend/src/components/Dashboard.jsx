@@ -116,7 +116,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
       await profiles.publish({ username });
       
       // Copy link to clipboard
-      const shareUrl = `https://dev-impact.io/${username}`;
+      const shareUrl = `${import.meta.env.VITE_APP_URL}/${username}`;
       setPublishedUrl(shareUrl);
       
       // Mark as published
