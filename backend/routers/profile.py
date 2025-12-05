@@ -41,7 +41,7 @@ async def publish_profile(
     Publish or update a user profile
     
     This endpoint creates or updates a published profile with a unique username.
-    The profile will be accessible at dev-impact.io/{username}
+    The profile will be accessible at {username}.{BASE_DOMAIN}
     """
     # Validate authorization and extract user ID
     if not authorization or not authorization.startswith("Bearer "):

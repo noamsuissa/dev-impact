@@ -75,7 +75,8 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
         const response = await fetch(`${apiUrl}/api/profiles/${username}`);
         
         if (response.ok) {
-          const shareUrl = `https://www.dev-impact.io/${username}`;
+          const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+          const shareUrl = `https://${username}.${baseDomain}`;
           setIsPublished(true);
           setPublishedUrl(shareUrl);
         }
@@ -112,11 +113,14 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
       const username = user.username;
 
       // Backend fetches fresh data from database, so we only need to send username
-      // Publish via API
-      await profiles.publish({ username });
+      // Publish via API - backend returns the URL
+      const response = await profiles.publish({ username });
       
-      // Copy link to clipboard
-      const shareUrl = `${import.meta.env.VITE_APP_URL}/${username}`;
+      // Use URL from backend response to ensure consistency
+      const shareUrl = response.url || (() => {
+        const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+        return `https://${username}.${baseDomain}`;
+      })();
       setPublishedUrl(shareUrl);
       
       // Mark as published
