@@ -1,7 +1,8 @@
 import { ImageResponse } from '@vercel/og';
 import React from 'react';
 
-export const config = { runtime: 'edge' };
+// Use nodejs runtime instead of edge - @vercel/og requires WebAssembly which isn't fully supported in Edge
+export const config = { runtime: 'nodejs' };
 
 export default async function handler(request) {
   try {
