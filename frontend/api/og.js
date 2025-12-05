@@ -6,19 +6,8 @@ export const runtime = 'edge';
 export default async function handler(request) {
   try {
     // In Vercel Edge Functions, request is a Request object
-    // Handle both full URLs and relative paths (for preview/production)
-    let url;
-    try {
-      // Try to use request.url directly (should be full URL)
-      url = new URL(request.url);
-    } catch {
-      // If that fails, construct from headers (for preview/production URLs)
-      const host = request.headers.get('host') || request.headers.get('x-forwarded-host') || 'dev-impact.io';
-      const protocol = request.headers.get('x-forwarded-proto') || 
-                      (host.includes('localhost') ? 'http' : 'https');
-      const path = request.url.startsWith('/') ? request.url : `/${request.url}`;
-      url = new URL(`${protocol}://${host}${path}`);
-    }
+    // request.url should always be a full URL in Vercel
+    const url = new URL(request.url);
     const { searchParams } = url;
     
     const title = searchParams.get('title');
