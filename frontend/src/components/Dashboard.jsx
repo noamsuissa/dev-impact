@@ -75,7 +75,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
         const response = await fetch(`${apiUrl}/api/profiles/${username}`);
         
         if (response.ok) {
-          const shareUrl = `https://dev-impact.io/${username}`;
+          const shareUrl = `https://www.dev-impact.io/${username}`;
           setIsPublished(true);
           setPublishedUrl(shareUrl);
         }
