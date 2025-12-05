@@ -4,26 +4,24 @@ export const config = {
   runtime: 'nodejs',
 };
 
-export default async function handler(request) {
+export default async function handler(req) {
   try {
-    // Handle request - Vercel passes a Request object
-    const url = new URL(request.url);
-    const { searchParams } = url;
-    
-    // Get query parameters
-    const title = searchParams.get('title');
-    const description = searchParams.get('description') || 'Show Your Developer Impact';
-    const username = searchParams.get('username');
-    const name = searchParams.get('name');
-    const projects = searchParams.get('projects') || '0';
-    const achievements = searchParams.get('achievements') || '0';
-    const avatar = searchParams.get('avatar');
+    // In Node.js runtime, use req.query directly (Vercel parses it for us)
+    const {
+      title,
+      description = 'Show Your Developer Impact',
+      username,
+      name,
+      projects = '0',
+      achievements = '0',
+      avatar,
+    } = req.query || {};
 
     // Determine if this is a profile page, custom page, or homepage
     const isProfile = username && name;
     const isCustomPage = title && !isProfile;
 
-    const imageResponse = new ImageResponse(
+    return new ImageResponse(
       (
         <div
           style={{
@@ -52,7 +50,6 @@ export default async function handler(request) {
                 height: '100%',
               }}
             >
-              {/* Avatar */}
               {avatar && (
                 <img
                   src={avatar}
@@ -67,7 +64,6 @@ export default async function handler(request) {
                 />
               )}
               
-              {/* Name */}
               <div
                 style={{
                   fontSize: '64px',
@@ -80,7 +76,6 @@ export default async function handler(request) {
                 {name}
               </div>
 
-              {/* Stats */}
               <div
                 style={{
                   display: 'flex',
@@ -95,7 +90,6 @@ export default async function handler(request) {
                 <div>{achievements} Achievements</div>
               </div>
 
-              {/* Username */}
               <div
                 style={{
                   fontSize: '28px',
@@ -117,7 +111,6 @@ export default async function handler(request) {
                 height: '100%',
               }}
             >
-              {/* Logo/Title */}
               <div
                 style={{
                   fontSize: isCustomPage ? '64px' : '80px',
@@ -131,7 +124,6 @@ export default async function handler(request) {
                 {isCustomPage ? title : 'dev-impact'}
               </div>
 
-              {/* Tagline */}
               <div
                 style={{
                   fontSize: isCustomPage ? '32px' : '36px',
@@ -144,7 +136,6 @@ export default async function handler(request) {
                 {description}
               </div>
 
-              {/* Subtitle - only show on homepage */}
               {!isCustomPage && (
                 <div
                   style={{
@@ -159,7 +150,6 @@ export default async function handler(request) {
             </div>
           )}
 
-          {/* Footer */}
           <div
             style={{
               position: 'absolute',
@@ -177,44 +167,29 @@ export default async function handler(request) {
         height: 630,
       }
     );
-
-    return imageResponse;
   } catch (e) {
-    console.error('Error generating OG image:', e);
-    console.error('Error stack:', e.stack);
-    console.error('Request URL:', request?.url);
-    
-    // Return a simple error image instead of text
-    try {
-      return new ImageResponse(
-        (
-          <div
-            style={{
-              height: '100%',
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: '#2d2d2d',
-              color: '#ff6b35',
-              fontSize: '40px',
-            }}
-          >
-            Error generating image
-          </div>
-        ),
-        {
-          width: 1200,
-          height: 630,
-        }
-      );
-    } catch {
-      return new Response(`Failed to generate OG image: ${e.message}`, { 
-        status: 500,
-        headers: { 'Content-Type': 'text/plain' }
-      });
-    }
+    console.error('Error generating OG image:', e.message);
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            height: '100%',
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#2d2d2d',
+            color: '#ff6b35',
+            fontSize: '40px',
+          }}
+        >
+          dev-impact
+        </div>
+      ),
+      {
+        width: 1200,
+        height: 630,
+      }
+    );
   }
 }
-
