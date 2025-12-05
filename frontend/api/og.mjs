@@ -1,222 +1,93 @@
-import { ImageResponse } from '@vercel/og';
-import React from 'react';
+// repo/frontend/api/og.mjs
+export const config = { runtime: 'edge' };
 
-// Use nodejs runtime instead of edge - @vercel/og requires WebAssembly which isn't fully supported in Edge
-export const config = { runtime: 'nodejs' };
+/**
+ * Works with both Edge Request.headers (Headers with .get)
+ * and Node-style plain object headers.
+ */
+function getHeader(req, name) {
+  if (!req || !req.headers) return undefined;
+  if (typeof req.headers.get === 'function') return req.headers.get(name);
+  return req.headers[name.toLowerCase()] || req.headers[name];
+}
+
+function escapeXml(str = '') {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 export default async function handler(request) {
   try {
-    // In Vercel Edge Functions, request is a Request object
-    // request.url should always be a full URL in Vercel
-    console.log(request);
-    const host = request.headers.get('host') || 'localhost';
+    // safe base for relative URLs
+    const host = getHeader(request, 'host') || 'localhost';
     const base = `https://${host}`;
-    const url = new URL(request.url, base); // safe for both absolute and relative
-    const { searchParams } = url;
-    
-    const title = searchParams.get('title');
-    const description = searchParams.get('description') || 'Show Your Developer Impact';
-    const username = searchParams.get('username');
-    const name = searchParams.get('name');
-    const projects = searchParams.get('projects') || '0';
-    const achievements = searchParams.get('achievements') || '0';
-    const avatar = searchParams.get('avatar');
+    const url = new URL(request.url, base);
+    const params = url.searchParams;
+
+    const title = params.get('title') || 'dev-impact';
+    const description = params.get('description') || 'Show Your Developer Impact';
+    const username = params.get('username');
+    const name = params.get('name');
+    const projects = params.get('projects') || '0';
+    const achievements = params.get('achievements') || '0';
+    const avatar = params.get('avatar'); // optional remote image (won't be embedded)
 
     const isProfile = username && name;
     const isCustomPage = title && !isProfile;
 
-    // Use React.createElement instead of JSX for Edge Functions
-    const element = React.createElement(
-      'div',
-      {
-        style: {
-          height: '100%',
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#2d2d2d',
-          backgroundImage: 'linear-gradient(to bottom, #2d2d2d, #1a1a1a)',
-          fontFamily: 'monospace',
-          color: '#ff6b35',
-          padding: '80px',
-          position: 'relative',
-        },
-      },
-      isProfile
-        ? React.createElement(
-            'div',
-            {
-              style: {
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '100%',
-                height: '100%',
-              },
-            },
-            avatar &&
-              React.createElement('img', {
-                src: avatar,
-                alt: name,
-                width: '120',
-                height: '120',
-                style: {
-                  borderRadius: '50%',
-                  border: '4px solid #ff6b35',
-                  marginBottom: '40px',
-                },
-              }),
-            React.createElement(
-              'div',
-              {
-                style: {
-                  display: 'flex',
-                  fontSize: '64px',
-                  fontWeight: 'bold',
-                  marginBottom: '20px',
-                  textTransform: 'uppercase',
-                  color: '#ff6b35',
-                },
-              },
-              name
-            ),
-            React.createElement(
-              'div',
-              {
-                style: {
-                  display: 'flex',
-                  gap: '40px',
-                  fontSize: '32px',
-                  color: '#c9c5c0',
-                  marginBottom: '40px',
-                },
-              },
-              React.createElement(
-                'div',
-                { style: { display: 'flex' } },
-                `${projects} ${projects === '1' ? 'Project' : 'Projects'}`
-              ),
-              React.createElement('div', { style: { display: 'flex' } }, '•'),
-              React.createElement(
-                'div',
-                { style: { display: 'flex' } },
-                `${achievements} Achievements`
-              )
-            ),
-            React.createElement(
-              'div',
-              {
-                style: {
-                  display: 'flex',
-                  fontSize: '28px',
-                  color: '#888',
-                },
-              },
-              `dev-impact.io/${username}`
-            )
-          )
-        : React.createElement(
-            'div',
-            {
-              style: {
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '100%',
-                height: '100%',
-              },
-            },
-            React.createElement(
-              'div',
-              {
-                style: {
-                  display: 'flex',
-                  fontSize: isCustomPage ? '64px' : '80px',
-                  fontWeight: 'bold',
-                  marginBottom: '30px',
-                  textTransform: 'uppercase',
-                  color: '#ff6b35',
-                  letterSpacing: isCustomPage ? '2px' : '4px',
-                },
-              },
-              isCustomPage ? title : 'dev-impact'
-            ),
-            React.createElement(
-              'div',
-              {
-                style: {
-                  display: 'flex',
-                  fontSize: isCustomPage ? '32px' : '36px',
-                  color: '#c9c5c0',
-                  marginBottom: '40px',
-                  textAlign: 'center',
-                  maxWidth: '900px',
-                },
-              },
-              description
-            ),
-            !isCustomPage &&
-              React.createElement(
-                'div',
-                {
-                  style: {
-                    display: 'flex',
-                    fontSize: '28px',
-                    color: '#888',
-                    textAlign: 'center',
-                  },
-                },
-                'Show real impact, not just bullet points.'
-              )
-          ),
-      React.createElement(
-        'div',
-        {
-          style: {
-            display: 'flex',
-            position: 'absolute',
-            bottom: '40px',
-            fontSize: '24px',
-            color: '#666',
-          },
-        },
-        'dev-impact.io'
-      )
-    );
+    // Build an SVG string (1200x630)
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${escapeXml(title)}">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d2d2d"/>
+      <stop offset="100%" stop-color="#111"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 64px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; fill: #ff6b35; letter-spacing: 1px; }
+      .subtitle { font: 400 28px system-ui, -apple-system, "Segoe UI", Roboto; fill: #c9c5c0; }
+      .meta { font: 600 20px system-ui, -apple-system, "Segoe UI", Roboto; fill: #ddd; }
+      .small { font: 600 18px system-ui, -apple-system, "Segoe UI", Roboto; fill: #666; }
+    </style>
+  </defs>
 
-    return new ImageResponse(element, {
-      width: 1200,
-      height: 630,
+  <rect width="1200" height="630" fill="url(#g)" />
+  <g transform="translate(80,80)">
+
+    <g transform="translate(0,0)">
+      <text x="0" y="110" class="title">${escapeXml(isProfile ? name : (isCustomPage ? title : 'dev-impact'))}</text>
+      <text x="0" y="170" class="subtitle">${escapeXml(isProfile ? `@${username} — ${description}` : description)}</text>
+    </g>
+
+    <g transform="translate(0,260)" >
+      <text x="0" y="40" class="meta">Projects: ${escapeXml(projects)} — Achievements: ${escapeXml(achievements)}</text>
+    </g>
+
+    <g transform="translate(0,340)">
+      <text x="0" y="40" class="small">dev-impact.io${isProfile ? `/${escapeXml(username)}` : ''}</text>
+    </g>
+
+  </g>
+</svg>`;
+
+    return new Response(svg, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/svg+xml; charset=utf-8',
+        // tune caching as you like
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+      },
     });
-  } catch (e) {
-    console.error('Error generating OG image:', e.message);
-    console.error('Stack:', e.stack);
-    
-    const errorElement = React.createElement(
-      'div',
-      {
-        style: {
-          height: '100%',
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#2d2d2d',
-          color: '#ff6b35',
-          fontSize: '40px',
-        },
-      },
-      'dev-impact'
-    );
-
-    return new ImageResponse(errorElement, {
-      width: 1200,
-      height: 630,
+  } catch (err) {
+    console.error('OG SVG error', err);
+    const fallback = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><rect width="100%" height="100%" fill="#222"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#ff6b35" font-size="48">dev-impact</text></svg>`;
+    return new Response(fallback, {
+      status: 200,
+      headers: { 'Content-Type': 'image/svg+xml; charset=utf-8' },
     });
   }
 }
-
