@@ -5,7 +5,21 @@ export const runtime = 'edge';
 
 export default async function handler(request) {
   try {
-    const { searchParams } = new URL(request.url);
+    // In Vercel Edge Functions, request is a Request object
+    // Handle both full URLs and relative paths (for preview/production)
+    let url;
+    try {
+      // Try to use request.url directly (should be full URL)
+      url = new URL(request.url);
+    } catch {
+      // If that fails, construct from headers (for preview/production URLs)
+      const host = request.headers.get('host') || request.headers.get('x-forwarded-host') || 'dev-impact.io';
+      const protocol = request.headers.get('x-forwarded-proto') || 
+                      (host.includes('localhost') ? 'http' : 'https');
+      const path = request.url.startsWith('/') ? request.url : `/${request.url}`;
+      url = new URL(`${protocol}://${host}${path}`);
+    }
+    const { searchParams } = url;
     
     const title = searchParams.get('title');
     const description = searchParams.get('description') || 'Show Your Developer Impact';
