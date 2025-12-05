@@ -7,7 +7,10 @@ export default async function handler(request) {
   try {
     // In Vercel Edge Functions, request is a Request object
     // request.url should always be a full URL in Vercel
-    const url = new URL(request.url);
+    console.log(request);
+    const host = request.headers.get('host') || 'localhost';
+    const base = `https://${host}`;
+    const url = new URL(request.url, base); // safe for both absolute and relative
     const { searchParams } = url;
     
     const title = searchParams.get('title');
