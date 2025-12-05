@@ -18,6 +18,8 @@ from schemas.auth import (
     MFAListResponse
 )
 from services.auth.auth_service import AuthService
+from services.auth.mfa_service import MFAService
+from utils import auth_utils
 
 router = APIRouter(
     prefix="/api/auth",
@@ -111,7 +113,7 @@ async def get_session(authorization: Optional[str] = Header(None)):
     access_token = authorization.replace("Bearer ", "")
     
     try:
-        result = await AuthService.get_session(access_token)
+        result = await auth_utils.get_session(access_token)
         return result
     except HTTPException:
         raise
@@ -131,7 +133,7 @@ async def refresh_session(request: RefreshTokenRequest):
     Gets a new access token using refresh token.
     """
     try:
-        result = await AuthService.refresh_session(request.refresh_token)
+        result = await auth_utils.refresh_session(request.refresh_token)
         return result
     except HTTPException:
         raise
@@ -213,7 +215,7 @@ async def mfa_enroll(
     access_token = authorization.replace("Bearer ", "")
     
     try:
-        result = await AuthService.mfa_enroll(access_token, request.friendly_name)
+        result = await MFAService.mfa_enroll(access_token, request.friendly_name)
         return result
     except HTTPException:
         raise
@@ -245,7 +247,7 @@ async def mfa_verify_enrollment(
     access_token = authorization.replace("Bearer ", "")
     
     try:
-        result = await AuthService.mfa_verify_enrollment(access_token, request.factor_id, request.code)
+        result = await MFAService.mfa_verify_enrollment(access_token, request.factor_id, request.code)
         return result
     except HTTPException:
         raise
@@ -274,7 +276,7 @@ async def mfa_list_factors(authorization: Optional[str] = Header(None)):
     access_token = authorization.replace("Bearer ", "")
     
     try:
-        result = await AuthService.mfa_list_factors(access_token)
+        result = await MFAService.mfa_list_factors(access_token)
         return result
     except HTTPException:
         raise
@@ -306,7 +308,7 @@ async def mfa_unenroll(
     access_token = authorization.replace("Bearer ", "")
     
     try:
-        result = await AuthService.mfa_unenroll(access_token, factor_id)
+        result = await MFAService.mfa_unenroll(access_token, factor_id)
         return result
     except HTTPException:
         raise
