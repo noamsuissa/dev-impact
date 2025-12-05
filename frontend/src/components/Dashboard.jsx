@@ -6,6 +6,7 @@ import ProjectCard from './ProjectCard';
 import { useAuth } from '../hooks/useAuth';
 import { completeGitHubAuth } from '../utils/githubAuth';
 import { profiles } from '../utils/client';
+import { generateProfileUrl, isLocalhost } from '../utils/helpers';
 
 const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
   const navigate = useNavigate();
@@ -75,8 +76,8 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
         const response = await fetch(`${apiUrl}/api/profiles/${username}`);
         
         if (response.ok) {
-          const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
-          const shareUrl = `https://${username}.${baseDomain}`;
+          // Generate URL based on environment (localhost uses path, production uses subdomain)
+          const shareUrl = generateProfileUrl(username);
           setIsPublished(true);
           setPublishedUrl(shareUrl);
         }
@@ -116,11 +117,8 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
       // Publish via API - backend returns the URL
       const response = await profiles.publish({ username });
       
-      // Use URL from backend response to ensure consistency
-      const shareUrl = response.url || (() => {
-        const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
-        return `https://${username}.${baseDomain}`;
-      })();
+      // Use URL from backend response, but override for localhost compatibility
+      const shareUrl = response.url ? (isLocalhost() ? generateProfileUrl(username) : response.url) : generateProfileUrl(username);
       setPublishedUrl(shareUrl);
       
       // Mark as published

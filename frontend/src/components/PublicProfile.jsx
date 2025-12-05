@@ -4,6 +4,7 @@ import { Github, ArrowLeft, Eye } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
 import { useMetaTags } from '../hooks/useMetaTags';
+import { generateProfileUrl } from '../utils/helpers';
 
 const PublicProfile = () => {
   const { username: usernameFromPath } = useParams();
@@ -36,15 +37,22 @@ const PublicProfile = () => {
   const username = getUsername();
 
   // Dynamic meta tags for SEO and OpenGraph
-  const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
-  const profileUrl = username ? `https://${username}.${baseDomain}` : `https://${baseDomain}`;
+  const profileUrl = username ? generateProfileUrl(username) : (() => {
+    const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+    return typeof window !== 'undefined' && window.location.hostname === 'localhost' 
+      ? `http://localhost:${window.location.port || '5173'}/`
+      : `https://${baseDomain}/`;
+  })();
   const profileTitle = profile ? `${profile.user.name} - Developer Profile | dev-impact` : 'Developer Profile | dev-impact';
   const profileDescription = profile 
     ? `View ${profile.user.name}'s developer profile on dev-impact. ${profile.projects.length} projects with ${profile.projects.reduce((sum, p) => sum + (p.metrics?.length || 0), 0)} achievements.`
     : 'View developer profile on dev-impact';
   
   // Use static OG image for all profiles
-  const profileImage = `https://${baseDomain}/og-image.png`;
+  const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+  const profileImage = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? `http://localhost:${window.location.port || '5173'}/og-image.png`
+    : `https://${baseDomain}/og-image.png`;
 
   useMetaTags({
     title: profileTitle,
