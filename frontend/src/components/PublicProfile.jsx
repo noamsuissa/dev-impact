@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { Github, ArrowLeft, Eye } from 'lucide-react';
-import TerminalButton from './common/TerminalButton';
+import { Github, Eye } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import { useMetaTags } from '../hooks/useMetaTags';
 import { generateProfileUrl } from '../utils/helpers';
+import { useAuth } from '../hooks/useAuth';
 
 const PublicProfile = () => {
   const { username: usernameFromPath } = useParams();
+  const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,6 +36,40 @@ const PublicProfile = () => {
   };
   
   const username = getUsername();
+
+  // Get home URL - navigate to main domain if on subdomain
+  const getHomeUrl = () => {
+    const hostname = window.location.hostname;
+    const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+    
+    // Check if we're on a subdomain
+    if (hostname !== 'localhost' && 
+        !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) && 
+        hostname.includes('.')) {
+      const parts = hostname.split('.');
+      const domainParts = baseDomain.split('.');
+      const isSubdomain = parts.length > domainParts.length;
+      
+      if (isSubdomain && parts[0] && parts[0] !== 'www') {
+        // We're on a subdomain, redirect to main domain
+        const protocol = window.location.protocol;
+        return `${protocol}//${baseDomain}/`;
+      }
+    }
+    
+    // Not on subdomain, use regular navigation
+    return user ? "/dashboard" : "/";
+  };
+
+  const handleLogoClick = (e) => {
+    const homeUrl = getHomeUrl();
+    // If it's a full URL (subdomain case), use window.location
+    if (homeUrl.startsWith('http')) {
+      e.preventDefault();
+      window.location.href = homeUrl;
+    }
+    // Otherwise, let Link handle it normally
+  };
 
   // Dynamic meta tags for SEO and OpenGraph
   const profileUrl = username ? generateProfileUrl(username) : (() => {
@@ -117,11 +152,12 @@ const PublicProfile = () => {
       <div className="p-10 max-w-[1200px] mx-auto">
         {/* Navigation */}
         <div className="mb-10 flex items-center justify-between">
-          <Link to="/">
-            <TerminalButton>
-              <ArrowLeft size={16} className="inline mr-2" />
-              [Back to Home]
-            </TerminalButton>
+          <Link 
+            to={user ? "/dashboard" : "/"}
+            onClick={handleLogoClick}
+            className="text-terminal-orange font-mono text-xl font-semibold hover:text-terminal-orange/80 transition-colors"
+          >
+            dev-impact
           </Link>
           <div className="flex items-center gap-2 text-terminal-gray text-sm">
             <Eye size={14} />
