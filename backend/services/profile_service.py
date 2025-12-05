@@ -156,10 +156,13 @@ class ProfileService:
                 detail="Failed to publish profile"
             )
         
+        # Get base domain from environment, default to dev-impact.io
+        base_domain = os.getenv("BASE_DOMAIN", "dev-impact.io")
+        
         return {
             "success": True,
             "username": username,
-            "url": f"https://dev-impact.io/{username}",
+            "url": f"https://{username}.{base_domain}",
             "message": "Profile published successfully"
         }
 

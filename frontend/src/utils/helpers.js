@@ -48,3 +48,25 @@ export const centerText = (text, width) => {
   return repeat(' ', leftPad) + truncated + repeat(' ', rightPad);
 };
 
+// Utility function to check if we're on localhost
+export const isLocalhost = () => {
+  if (typeof window === 'undefined') return false;
+  const hostname = window.location.hostname;
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/);
+};
+
+// Utility function to generate profile URL based on environment
+// On localhost: uses path-based URL (http://localhost:5173/username)
+// In production: uses subdomain URL (https://username.dev-impact.io)
+export const generateProfileUrl = (username) => {
+  if (isLocalhost()) {
+    // On localhost, use path-based URL
+    const port = window.location.port || '5173';
+    return `http://localhost:${port}/${username}`;
+  } else {
+    // In production, use subdomain URL
+    const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+    return `https://${username}.${baseDomain}`;
+  }
+};
+

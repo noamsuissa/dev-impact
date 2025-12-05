@@ -263,6 +263,45 @@ const AccountPageRoute = () => {
     return <AccountPage user={userProfile} projects={projects} />;
 }
 
+// Component to handle subdomain-based profile routing
+const SubdomainProfileHandler = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+  
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    
+    // Check if we're on a subdomain (e.g., username.dev-impact.io)
+    // Exclude localhost and IP addresses
+    if (hostname !== 'localhost' && 
+        !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) && 
+        hostname.includes('.')) {
+      
+      // Extract subdomain (everything before the first dot)
+      const parts = hostname.split('.');
+      const subdomain = parts[0];
+      
+      // Check if subdomain is not the main domain parts
+      // For dev-impact.io, we want to catch username.dev-impact.io
+      const domainParts = baseDomain.split('.');
+      const isSubdomain = parts.length > domainParts.length;
+      
+      if (isSubdomain && subdomain && subdomain !== 'www') {
+        // We're on a subdomain, extract username and navigate
+        const username = subdomain;
+        // Only navigate if we're not already showing that profile
+        if (location.pathname !== `/${username}`) {
+          // Use replace to avoid adding to history
+          navigate(`/${username}`, { replace: true });
+        }
+      }
+    }
+  }, [navigate, location, baseDomain]);
+  
+  return null;
+};
+
 export default function App() {
   const { loading: authLoading } = useAuth();
   
@@ -280,6 +319,7 @@ export default function App() {
   return (
     <Router>
       <AuthRedirectHandler />
+      <SubdomainProfileHandler />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
@@ -301,7 +341,7 @@ export default function App() {
             <Route path="/account" element={<AccountPageRoute />} />
         </Route>
         
-        {/* Public Profile Route */}
+        {/* Public Profile Route - supports both subdomain and path-based access */}
         <Route path="/404" element={<NotFound />} />
         <Route path="/:username" element={<PublicProfile />} />
         

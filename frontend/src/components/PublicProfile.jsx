@@ -4,22 +4,55 @@ import { Github, ArrowLeft, Eye } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
 import { useMetaTags } from '../hooks/useMetaTags';
+import { generateProfileUrl } from '../utils/helpers';
 
 const PublicProfile = () => {
-  const { username } = useParams();
+  const { username: usernameFromPath } = useParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Extract username from subdomain or path
+  const getUsername = () => {
+    const hostname = window.location.hostname;
+    const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+    
+    // Check if we're on a subdomain
+    if (hostname !== 'localhost' && 
+        !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) && 
+        hostname.includes('.')) {
+      const parts = hostname.split('.');
+      const domainParts = baseDomain.split('.');
+      const isSubdomain = parts.length > domainParts.length;
+      
+      if (isSubdomain && parts[0] && parts[0] !== 'www') {
+        return parts[0];
+      }
+    }
+    
+    // Fall back to path parameter
+    return usernameFromPath;
+  };
+  
+  const username = getUsername();
 
   // Dynamic meta tags for SEO and OpenGraph
-  const profileUrl = `https://www.dev-impact.io/${username}`;
+  const profileUrl = username ? generateProfileUrl(username) : (() => {
+    const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+    return typeof window !== 'undefined' && window.location.hostname === 'localhost' 
+      ? `http://localhost:${window.location.port || '5173'}/`
+      : `https://${baseDomain}/`;
+  })();
   const profileTitle = profile ? `${profile.user.name} - Developer Profile | dev-impact` : 'Developer Profile | dev-impact';
   const profileDescription = profile 
     ? `View ${profile.user.name}'s developer profile on dev-impact. ${profile.projects.length} projects with ${profile.projects.reduce((sum, p) => sum + (p.metrics?.length || 0), 0)} achievements.`
     : 'View developer profile on dev-impact';
   
   // Use static OG image for all profiles
-  const profileImage = 'https://www.dev-impact.io/og-image.png';
+  const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+  const profileImage = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+    ? `http://localhost:${window.location.port || '5173'}/og-image.png`
+    : `https://${baseDomain}/og-image.png`;
 
   useMetaTags({
     title: profileTitle,
