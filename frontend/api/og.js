@@ -19,7 +19,7 @@ export default {
       const isProfile = username && name;
       const isCustomPage = title && !isProfile;
 
-      // Build the OG image using React.createElement (no JSX in .mjs files)
+      // Build the OG image using React.createElement (no JSX in Edge runtime)
       const ogImage = isProfile ? (
         React.createElement(
           'div',
