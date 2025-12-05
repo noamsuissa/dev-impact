@@ -5,7 +5,8 @@ from fastapi import APIRouter, HTTPException, Header, Request
 from typing import Optional
 from schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest
 from services.user_service import UserService
-from services.auth_service import AuthService
+from services.auth.auth_service import AuthService
+from utils import auth_utils
 
 router = APIRouter(
     prefix="/api/user",
@@ -22,7 +23,7 @@ async def get_user_id_from_header(authorization: Optional[str]) -> str:
         )
     
     access_token = authorization.replace("Bearer ", "")
-    user_id = await AuthService.verify_token(access_token)
+    user_id = await auth_utils.verify_token(access_token)
     
     if not user_id:
         raise HTTPException(
