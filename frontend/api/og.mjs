@@ -34,44 +34,69 @@ export default async function handler(request) {
     const name = params.get('name');
     const projects = params.get('projects') || '0';
     const achievements = params.get('achievements') || '0';
-    const avatar = params.get('avatar'); // optional remote image (won't be embedded)
 
     const isProfile = username && name;
     const isCustomPage = title && !isProfile;
+    const heroTitle = isProfile ? name : (isCustomPage ? title : 'dev-impact');
+    const heroSubtitle = isProfile ? 'Developer Profile' : description;
+    const statLine = `${projects} Projects • ${achievements} Achievements`;
+    const bannerText = description || 'Show real impact, not just bullet points.';
+    const projectCards = ['TechCorp', 'StartupXYZ', 'CloudScale']
+      .map((company, index) => {
+        const problems = [
+          'Problem: Scale and reliability',
+          'Problem: Manual dashboards',
+          'Problem: Legacy deployments',
+        ];
+        const solutions = [
+          'Solution: Real-time data pipeline',
+          'Solution: Interactive analytics UI',
+          'Solution: Microservices + CI/CD',
+        ];
+        const metrics = ['60% Faster', '10x Faster', '95% Faster'];
+        return `
+      <g transform="translate(${index * 360}, 0)">
+        <rect x="0" y="0" width="340" height="220" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="6 6" />
+        <text x="16" y="30" font-size="20" fill="#ff6b35" font-family="IBM Plex Mono, monospace" font-weight="700">Company: ${escapeXml(company)}</text>
+        <text x="16" y="60" font-size="18" fill="#c9c5c0" font-family="IBM Plex Mono, monospace">${escapeXml(problems[index])}</text>
+        <text x="16" y="90" font-size="18" fill="#c9c5c0" font-family="IBM Plex Mono, monospace">${escapeXml(solutions[index])}</text>
+        <text x="16" y="190" font-size="20" fill="#ffffff" font-family="IBM Plex Mono, monospace">${escapeXml(metrics[index])}</text>
+      </g>`;
+      })
+      .join('');
 
-    // Build an SVG string (1200x630)
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${escapeXml(title)}">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${escapeXml(heroTitle)}">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2d2d2d"/>
-      <stop offset="100%" stop-color="#111"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#0d0d0d"/>
     </linearGradient>
     <style>
-      .title { font: 700 64px system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; fill: #ff6b35; letter-spacing: 1px; }
-      .subtitle { font: 400 28px system-ui, -apple-system, "Segoe UI", Roboto; fill: #c9c5c0; }
-      .meta { font: 600 20px system-ui, -apple-system, "Segoe UI", Roboto; fill: #ddd; }
-      .small { font: 600 18px system-ui, -apple-system, "Segoe UI", Roboto; fill: #666; }
+      .mono { font-family: "IBM Plex Mono", "Space Mono", monospace; }
     </style>
   </defs>
 
-  <rect width="1200" height="630" fill="url(#g)" />
-  <g transform="translate(80,80)">
+  <rect width="1200" height="630" fill="url(#bg)" />
 
-    <g transform="translate(0,0)">
-      <text x="0" y="110" class="title">${escapeXml(isProfile ? name : (isCustomPage ? title : 'dev-impact'))}</text>
-      <text x="0" y="170" class="subtitle">${escapeXml(isProfile ? `@${username} — ${description}` : description)}</text>
-    </g>
+  <rect x="80" y="30" width="1040" height="45" rx="6" fill="#23170d" stroke="#ff6b35" stroke-width="1" />
+  <text x="96" y="60" font-size="20" fill="#ff8b3c" class="mono">> ${escapeXml(bannerText)} Create your own profile →</text>
 
-    <g transform="translate(0,260)" >
-      <text x="0" y="40" class="meta">Projects: ${escapeXml(projects)} — Achievements: ${escapeXml(achievements)}</text>
-    </g>
+  <rect x="80" y="100" width="1040" height="200" rx="12" fill="#2f2f2f" stroke="#444" stroke-width="1" />
+  <circle cx="140" cy="200" r="55" fill="#0d0d0d" stroke="#ff6b35" stroke-width="4" />
+  <text x="210" y="170" font-size="48" fill="#ff8b35" letter-spacing="2" class="mono">${escapeXml(heroTitle.toUpperCase())}</text>
+  <text x="210" y="210" font-size="24" fill="#c9c5c0" class="mono">${escapeXml(heroSubtitle)}</text>
+  <text x="210" y="250" font-size="20" fill="#8b8b8b" class="mono">${isProfile && username ? `github.com/${escapeXml(username)}` : 'Showcase your projects'}</text>
+  <line x1="210" y1="265" x2="980" y2="265" stroke="#333" stroke-width="1" />
+  <text x="210" y="300" font-size="22" fill="#ffffff" class="mono">${escapeXml(statLine)}</text>
 
-    <g transform="translate(0,340)">
-      <text x="0" y="40" class="small">dev-impact.io${isProfile ? `/${escapeXml(username)}` : ''}</text>
-    </g>
+  <text x="80" y="340" font-size="28" fill="#ffffff" class="mono">> Projects (${escapeXml(projects)})</text>
 
+  <g transform="translate(80, 360)">
+    ${projectCards}
   </g>
+
+  <rect x="80" y="580" width="1040" height="1" fill="#333" />
 </svg>`;
 
     return new Response(svg, {
