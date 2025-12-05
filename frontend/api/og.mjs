@@ -1,7 +1,7 @@
 import { ImageResponse } from '@vercel/og';
 import React from 'react';
 
-export const runtime = 'edge';
+export const config = { runtime: 'edge' };
 
 export default async function handler(request) {
   try {
