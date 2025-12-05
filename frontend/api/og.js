@@ -5,11 +5,37 @@ export const runtime = 'edge';
 
 export default async function handler(request) {
   try {
-    // In Vercel Edge Functions, request is a Request object
-    // request.url should always be a full URL in Vercel
-    const url = new URL(request.url);
-    console.log(url);
-    console.log(request);
+    // In Edge Functions, request.url might be relative, so we need to construct absolute URL
+    let urlString = request.url;
+    
+    // If it's not already an absolute URL, construct it
+    if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
+      // Try to get headers - handle both Headers object and plain object
+      let host = 'dev-impact.io';
+      let protocol = 'https';
+      
+      if (request.headers) {
+        // Check if headers is a Headers object with get method
+        if (typeof request.headers.get === 'function') {
+          host = request.headers.get('host') || request.headers.get('x-forwarded-host') || host;
+          protocol = request.headers.get('x-forwarded-proto') || protocol;
+        } else if (request.headers.host) {
+          // Headers might be a plain object
+          host = request.headers.host || request.headers['x-forwarded-host'] || host;
+          protocol = request.headers['x-forwarded-proto'] || protocol;
+        }
+      }
+      
+      // Determine protocol based on host if not set
+      if (protocol === 'https' && host.includes('localhost')) {
+        protocol = 'http';
+      }
+      
+      // Construct full URL
+      urlString = `${protocol}://${host}${urlString.startsWith('/') ? urlString : '/' + urlString}`;
+    }
+    
+    const url = new URL(urlString);
     const { searchParams } = url;
     
     const title = searchParams.get('title');
