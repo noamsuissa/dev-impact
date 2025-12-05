@@ -4,29 +4,10 @@ export const config = {
   runtime: 'nodejs',
 };
 
-export default async function handler(req) {
+export default async function handler(request) {
   try {
-    // Handle Vercel serverless function request format
-    // In dev mode, req might be a Request object; in production it's a serverless function request
-    let requestUrl;
-    
-    if (req instanceof Request) {
-      requestUrl = req.url;
-    } else if (req?.url) {
-      requestUrl = req.url;
-    } else if (req?.headers) {
-      // Build URL from request components
-      const protocol = req.headers['x-forwarded-proto'] || (req.headers['x-forwarded-ssl'] === 'on' ? 'https' : 'http');
-      const host = req.headers.host || req.headers['x-forwarded-host'] || 'localhost:3000';
-      const path = req.url || '/api/og';
-      const query = req.query ? '?' + new URLSearchParams(req.query).toString() : '';
-      requestUrl = `${protocol}://${host}${path}${query}`;
-    } else {
-      // Last resort fallback
-      requestUrl = 'http://localhost:3000/api/og';
-    }
-    
-    const url = new URL(requestUrl);
+    // Handle request - Vercel passes a Request object
+    const url = new URL(request.url);
     const { searchParams } = url;
     
     // Get query parameters
@@ -201,7 +182,7 @@ export default async function handler(req) {
   } catch (e) {
     console.error('Error generating OG image:', e);
     console.error('Error stack:', e.stack);
-    console.error('Request:', JSON.stringify(req, null, 2));
+    console.error('Request URL:', request?.url);
     
     // Return a simple error image instead of text
     try {

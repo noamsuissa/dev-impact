@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/og.js": {
+      "runtime": "nodejs"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
