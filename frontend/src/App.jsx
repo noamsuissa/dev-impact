@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { user as userClient, projects as projectsClient } from './utils/client';
+import { Analytics } from '@vercel/analytics/react';
 
 // Pages / Components
 import LandingPage from './components/LandingPage';
@@ -317,37 +318,40 @@ export default function App() {
   }
 
   return (
-    <Router>
-      <AuthRedirectHandler />
-      <SubdomainProfileHandler />
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/example" element={<ExamplePage />} />
-        
-        {/* Protected Routes - All nested under a Layout */}
-        <Route element={<ProtectedRoute><AuthenticatedLayout /></ProtectedRoute>}>
-            <Route path="/onboarding" element={<OnboardingRoute />} />
-            <Route path="/dashboard" element={<DashboardRoute />} />
-            <Route path="/project/new" element={<ProjectBuilderRoute />} />
-            <Route path="/project/:projectId/edit" element={<ProjectBuilderRoute />} />
-            <Route path="/profile" element={<ProfileViewRoute />} />
-            <Route path="/export" element={<ExportPageRoute />} />
-            <Route path="/account" element={<AccountPageRoute />} />
-        </Route>
-        
-        {/* Public Profile Route - supports both subdomain and path-based access */}
-        <Route path="/404" element={<NotFound />} />
-        <Route path="/:username" element={<PublicProfile />} />
-        
-        {/* 404 Route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Router>
+    <>
+      <Router>
+        <AuthRedirectHandler />
+        <SubdomainProfileHandler />
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/example" element={<ExamplePage />} />
+          
+          {/* Protected Routes - All nested under a Layout */}
+          <Route element={<ProtectedRoute><AuthenticatedLayout /></ProtectedRoute>}>
+              <Route path="/onboarding" element={<OnboardingRoute />} />
+              <Route path="/dashboard" element={<DashboardRoute />} />
+              <Route path="/project/new" element={<ProjectBuilderRoute />} />
+              <Route path="/project/:projectId/edit" element={<ProjectBuilderRoute />} />
+              <Route path="/profile" element={<ProfileViewRoute />} />
+              <Route path="/export" element={<ExportPageRoute />} />
+              <Route path="/account" element={<AccountPageRoute />} />
+          </Route>
+          
+          {/* Public Profile Route - supports both subdomain and path-based access */}
+          <Route path="/404" element={<NotFound />} />
+          <Route path="/:username" element={<PublicProfile />} />
+          
+          {/* 404 Route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+      <Analytics />
+    </>
   );
 }
