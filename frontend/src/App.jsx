@@ -265,43 +265,45 @@ const AccountPageRoute = () => {
     return <AccountPage user={userProfile} projects={projects} />;
 }
 
-// Component to handle subdomain-based profile routing
-const SubdomainProfileHandler = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+// Helper function to check if we're on a subdomain and extract username
+const getSubdomainUsername = () => {
+  const hostname = window.location.hostname;
   const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
   
-  useEffect(() => {
-    const hostname = window.location.hostname;
+  // Check if we're on a subdomain (e.g., username.dev-impact.io)
+  // Exclude localhost and IP addresses
+  if (hostname !== 'localhost' && 
+      !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) && 
+      hostname.includes('.')) {
     
-    // Check if we're on a subdomain (e.g., username.dev-impact.io)
-    // Exclude localhost and IP addresses
-    if (hostname !== 'localhost' && 
-        !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) && 
-        hostname.includes('.')) {
-      
-      // Extract subdomain (everything before the first dot)
-      const parts = hostname.split('.');
-      const subdomain = parts[0];
-      
-      // Check if subdomain is not the main domain parts
-      // For dev-impact.io, we want to catch username.dev-impact.io
-      const domainParts = baseDomain.split('.');
-      const isSubdomain = parts.length > domainParts.length;
-      
-      if (isSubdomain && subdomain && subdomain !== 'www') {
-        // We're on a subdomain, extract username and navigate
-        const username = subdomain;
-        // Only navigate if we're not already showing that profile
-        if (location.pathname !== `/${username}`) {
-          // Use replace to avoid adding to history
-          navigate(`/${username}`, { replace: true });
-        }
-      }
+    // Extract subdomain (everything before the first dot)
+    const parts = hostname.split('.');
+    const subdomain = parts[0];
+    
+    // Check if subdomain is not the main domain parts
+    // For dev-impact.io, we want to catch username.dev-impact.io
+    const domainParts = baseDomain.split('.');
+    const isSubdomain = parts.length > domainParts.length;
+    
+    if (isSubdomain && subdomain && subdomain !== 'www') {
+      return subdomain;
     }
-  }, [navigate, location, baseDomain]);
+  }
   
   return null;
+};
+
+// Component to conditionally render LandingPage or PublicProfile based on subdomain
+const RootRoute = () => {
+  const subdomainUsername = getSubdomainUsername();
+  
+  // If we're on a subdomain, show the profile
+  if (subdomainUsername) {
+    return <PublicProfile />;
+  }
+  
+  // Otherwise, show the landing page
+  return <LandingPage />;
 };
 
 export default function App() {
@@ -322,10 +324,9 @@ export default function App() {
     <>
       <Router>
         <AuthRedirectHandler />
-        <SubdomainProfileHandler />
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<RootRoute />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
