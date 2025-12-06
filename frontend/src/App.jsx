@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Outle
 import { useAuth } from './hooks/useAuth';
 import { user as userClient, projects as projectsClient } from './utils/client';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Pages / Components
 import LandingPage from './components/LandingPage';
@@ -352,6 +353,7 @@ export default function App() {
         </Routes>
       </Router>
       <Analytics />
+      <SpeedInsights />
     </>
   );
 }
