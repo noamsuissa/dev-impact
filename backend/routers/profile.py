@@ -7,6 +7,7 @@ from schemas.profile import (
     PublishProfileRequest, 
     PublishProfileResponse,
     CheckUsernameResponse,
+    ProfileResponse,
 )
 from services.profile_service import ProfileService
 from utils import auth_utils
@@ -45,7 +46,7 @@ async def check_username(username: str):
     return result
 
 
-@router.get("/{username}/{profile_slug}")
+@router.get("/{username}/{profile_slug}", response_model=ProfileResponse)
 async def get_profile_with_slug(username: str, profile_slug: str):
     """
     Get a published profile by username and profile slug
@@ -55,17 +56,8 @@ async def get_profile_with_slug(username: str, profile_slug: str):
     
     URL format: /api/profiles/{username}/{profile_slug}
     """
-    try:
-        profile = await ProfileService.get_profile(username, profile_slug)
-        return profile
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error fetching profile: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch profile: {str(e)}"
-        )
+    profile = await ProfileService.get_profile(username, profile_slug)
+    return profile
 
 @router.get("/{username}")
 async def get_profile(username: str):

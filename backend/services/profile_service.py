@@ -11,8 +11,11 @@ from fastapi import HTTPException
 from utils.auth_utils import get_supabase_client
 from services.user_service import UserService
 from services.project_service import ProjectService
-from schemas.profile import PublishProfileResponse
-from schemas.profile import CheckUsernameResponse
+from schemas.profile import (
+    PublishProfileResponse,
+    CheckUsernameResponse,
+    ProfileResponse,
+)
 
 # Load environment variables
 load_dotenv()
@@ -189,7 +192,7 @@ class ProfileService:
         )
 
     @staticmethod
-    async def get_profile(username: str, profile_slug: Optional[str] = None) -> Dict[str, Any]:
+    async def get_profile(username: str, profile_slug: Optional[str] = None) -> ProfileResponse:
         """
         Get a published profile by username and optional profile slug
         
@@ -198,13 +201,10 @@ class ProfileService:
             profile_slug: Optional profile slug (for multi-profile support)
             
         Returns:
-            Dict containing profile data
+            ProfileResponse containing profile data
         """
         if not ProfileService.validate_username(username):
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid username format"
-            )
+            raise HTTPException(status_code=400, detail="Invalid username format")
         
         supabase = get_supabase_client()
         
@@ -218,19 +218,13 @@ class ProfileService:
         # Otherwise, get the first published profile (backward compatibility)
         if profile_slug:
             if not ProfileService.validate_slug(profile_slug):
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid profile slug format"
-                )
+                raise HTTPException(status_code=400, detail="Invalid profile slug format")
             query = query.eq("profile_slug", profile_slug)
         
         result = query.execute()
         
         if not result.data or len(result.data) == 0:
-            raise HTTPException(
-                status_code=404,
-                detail="Profile not found"
-            )
+            raise HTTPException(status_code=404, detail="Profile not found")
         
         # If no profile_slug provided, get the first one (backward compatibility)
         profile = result.data[0] if not profile_slug else result.data[0]
@@ -249,19 +243,20 @@ class ProfileService:
             update_query.execute()
         except Exception as e:
             print(f"Failed to increment view count: {e}")
+            raise HTTPException(status_code=500, detail="Failed to increment view count")
         
         # Return profile data
         profile_data = profile["profile_data"]
-        return {
-            "username": profile["username"],
-            "profile_slug": profile.get("profile_slug"),
-            "user": profile_data["user"],
-            "profile": profile_data.get("profile"),  # Profile name and description
-            "projects": profile_data["projects"],
-            "view_count": profile["view_count"] + 1,
-            "published_at": profile["published_at"],
-            "updated_at": profile["updated_at"]
-        }
+        return ProfileResponse(
+            username=profile["username"],
+            profile_slug=profile.get("profile_slug"),
+            user=profile_data["user"],
+            profile=profile_data.get("profile"),  # Profile name and description
+            projects=profile_data["projects"],
+            viewCount=profile["view_count"] + 1,
+            publishedAt=profile["published_at"],
+            updatedAt=profile["updated_at"]
+        )
 
     @staticmethod
     async def unpublish_profile(
