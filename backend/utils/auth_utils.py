@@ -3,6 +3,7 @@ from fastapi import HTTPException
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from services.profile_service import ProfileService
 
 load_dotenv()
 
@@ -124,3 +125,22 @@ async def refresh_session(refresh_token: str) -> Dict[str, Any]:
                 status_code=401,
                 detail="Invalid or expired refresh token"
             )
+
+def get_user_id_from_authorization(authorization: Optional[str]) -> str:
+    """Extract and validate user ID from authorization header"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required"
+        )
+    
+    token = authorization.replace("Bearer ", "")
+    user_id = ProfileService.get_user_id_from_token(token)
+    
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication token"
+        )
+    
+    return user_id
