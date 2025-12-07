@@ -130,17 +130,8 @@ async def mfa_enroll(
     Creates a new TOTP factor and returns QR code for setup.
     Requires valid access token.
     """
-    try:
-        result = await MFAService.mfa_enroll(authorization, request.friendly_name)
-        return MFAEnrollResponse(**result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"MFA enroll error: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail="Failed to enroll in MFA"
-        )
+    result = await MFAService.mfa_enroll(authorization, request.friendly_name)
+    return result
 
 
 @router.post("/mfa/verify", response_model=MessageResponse)
@@ -154,17 +145,8 @@ async def mfa_verify_enrollment(
     Verifies the TOTP code to complete enrollment.
     Requires valid access token.
     """
-    try:
-        result = await MFAService.mfa_verify_enrollment(authorization, request.factor_id, request.code)
-        return MessageResponse(**result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"MFA verify error: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid verification code"
-        )
+    result = await MFAService.mfa_verify_enrollment(authorization, request.factor_id, request.code)
+    return result
 
 
 @router.get("/mfa/factors", response_model=MFAListResponse)

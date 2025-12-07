@@ -5,6 +5,20 @@ from fastapi import HTTPException
 import httpx
 import traceback
 from utils import auth_utils
+from schemas.auth import (
+    SignUpRequest,
+    SignInRequest,
+    RefreshTokenRequest,
+    ResetPasswordRequest,
+    UpdatePasswordRequest,
+    AuthResponse,
+    MessageResponse,
+    MFAEnrollRequest,
+    MFAVerifyRequest,
+    MFAEnrollResponse,
+    MFAListResponse,
+    MFAFactorResponse
+)
 
 load_dotenv()
 
@@ -12,7 +26,7 @@ class MFAService:
     """Service for handling MFA operations"""
 
     @staticmethod
-    async def mfa_enroll(access_token: str, friendly_name: Optional[str] = None) -> Dict[str, Any]:
+    async def mfa_enroll(access_token: str, friendly_name: Optional[str] = None) -> MFAEnrollResponse:
         """
         Enroll user in MFA (TOTP)
         
@@ -21,7 +35,7 @@ class MFAService:
             friendly_name: Friendly name for the factor
             
         Returns:
-            Dict containing factor ID, QR code, and secret
+            MFAEnrollResponse containing factor ID, QR code, and secret
         """
         try:
             # MFA enrollment must be done via user API (not Admin API)
@@ -30,10 +44,7 @@ class MFAService:
             anon_key = os.getenv("SUPABASE_ANON_KEY")
             
             if not url or not anon_key:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Supabase configuration not found"
-                )
+                raise HTTPException(status_code=500, detail="Supabase configuration not found")
             
             # Use user API endpoint with user's access token
             async with httpx.AsyncClient() as client:
@@ -52,10 +63,7 @@ class MFAService:
                 
                 if response.status_code != 200:
                     print(f"User API error: {response.status_code} - {response.text}")
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Failed to enroll in MFA: {response.text}"
-                    )
+                    raise HTTPException(status_code=400, detail=f"Failed to enroll in MFA: {response.text}")
                 
                 data = response.json()
                 
@@ -79,35 +87,26 @@ class MFAService:
                     
                     if not qr_code or not secret:
                         print(f"DEBUG - Missing QR code or secret. Full data: {data}")
-                        raise HTTPException(
-                            status_code=400,
-                            detail="MFA enrollment response missing QR code or secret"
-                        )
+                        raise HTTPException(status_code=400, detail="MFA enrollment response missing QR code or secret")
                     
-                    return {
-                        "id": factor_id,
-                        "type": factor_type,
-                        "qr_code": qr_code,
-                        "secret": secret,
-                        "friendly_name": data.get("friendly_name", friendly_name or "Authenticator App")
-                    }
-                else:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Unexpected response format from MFA enrollment"
+                    return MFAEnrollResponse(
+                        id=factor_id,
+                        type=factor_type,
+                        qr_code=qr_code,
+                        secret=secret,
+                        friendly_name=data.get("friendly_name", friendly_name or "Authenticator App")
                     )
+                else:
+                    raise HTTPException(status_code=400, detail="Unexpected response format from MFA enrollment")
         except HTTPException:
             raise
         except Exception as e:
             print(f"MFA enroll error: {e}")
             traceback.print_exc()
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to enroll in MFA: {str(e)}"
-            )
+            raise HTTPException(status_code=400, detail=f"Failed to enroll in MFA: {str(e)}")
 
     @staticmethod
-    async def mfa_verify_enrollment(access_token: str, factor_id: str, code: str) -> Dict[str, Any]:
+    async def mfa_verify_enrollment(access_token: str, factor_id: str, code: str) -> MessageResponse:
         """
         Verify MFA enrollment with a code
         
@@ -117,7 +116,7 @@ class MFAService:
             code: TOTP code from authenticator app
             
         Returns:
-            Dict with success status
+            MessageResponse with success status
         """
         try:
             # MFA verification must be done via user API (not Admin API)
@@ -125,10 +124,7 @@ class MFAService:
             anon_key = os.getenv("SUPABASE_ANON_KEY")
             
             if not url or not anon_key:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Supabase configuration not found"
-                )
+                raise HTTPException(status_code=500, detail="Supabase configuration not found")
             
             async with httpx.AsyncClient() as client:
                 # First create a challenge
@@ -143,19 +139,13 @@ class MFAService:
                 
                 if challenge_response.status_code != 200:
                     print(f"Challenge error: {challenge_response.status_code} - {challenge_response.text}")
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Failed to create MFA challenge"
-                    )
+                    raise HTTPException(status_code=400, detail="Failed to create MFA challenge")
                 
                 challenge_data = challenge_response.json()
                 challenge_id = challenge_data.get("id")
                 
                 if not challenge_id:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Failed to create MFA challenge"
-                    )
+                    raise HTTPException(status_code=400, detail="Failed to create MFA challenge")
                 
                 # Then verify the challenge
                 verify_response = await client.post(
@@ -173,27 +163,21 @@ class MFAService:
                 
                 if verify_response.status_code != 200:
                     print(f"Verify error: {verify_response.status_code} - {verify_response.text}")
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Invalid verification code"
-                    )
+                    raise HTTPException(status_code=400, detail="Invalid verification code")
             
-            return {
-                "success": True,
-                "message": "MFA enrollment verified successfully"
-            }
+            return MessageResponse(
+                success=True,
+                message="MFA enrollment verified successfully"
+            )
         except HTTPException:
             raise
         except Exception as e:
             print(f"MFA verify enrollment error: {e}")
             traceback.print_exc()
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid verification code: {str(e)}"
-            )
+            raise HTTPException(status_code=400, detail=f"Invalid verification code: {str(e)}")
 
     @staticmethod
-    async def mfa_list_factors(access_token: str) -> Dict[str, Any]:
+    async def mfa_list_factors(access_token: str) -> MFAListResponse:
         """
         List all MFA factors for a user
         
@@ -201,26 +185,20 @@ class MFAService:
             access_token: User's access token
             
         Returns:
-            Dict containing list of factors
+            MFAListResponse containing list of factors
         """
         try:
             # Get user ID from token first
             user_id = await auth_utils.verify_token(access_token)
             if not user_id:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Invalid or expired token"
-                )
+                raise HTTPException(status_code=401, detail="Invalid or expired token")
             
             # Use Admin API to list factors (requires service role key)
             url = os.getenv("SUPABASE_URL")
             service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
             
             if not url or not service_key:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Supabase configuration not found"
-                )
+                raise HTTPException(status_code=500, detail="Supabase configuration not found")
             
             # Use Admin API endpoint
             async with httpx.AsyncClient() as client:
@@ -235,41 +213,35 @@ class MFAService:
                 
                 if response.status_code == 404:
                     # User has no factors
-                    return {"factors": []}
+                    return MFAListResponse(factors=[])
                 
                 if response.status_code != 200:
                     print(f"Admin API error: {response.status_code} - {response.text}")
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Failed to list MFA factors"
-                    )
+                    raise HTTPException(status_code=400, detail="Failed to list MFA factors")
                 
                 data = response.json()
                 factors = data if isinstance(data, list) else data.get('factors', [])
                 
-                return {
-                    "factors": [
-                        {
-                            "id": f.get("id", ""),
-                            "type": f.get("factor_type", f.get("type", "")),
-                            "friendly_name": f.get("friendly_name"),
-                            "status": f.get("status", "verified")
-                        }
+                return MFAListResponse(
+                    factors=[
+                        MFAFactorResponse(
+                            id=f.get("id", ""),
+                            type=f.get("factor_type", f.get("type", "")),
+                            friendly_name=f.get("friendly_name"),
+                            status=f.get("status", "verified")
+                        )
                         for f in factors
                     ]
-                }
+                )
         except HTTPException:
             raise
         except Exception as e:
             print(f"MFA list factors error: {e}")
             traceback.print_exc()
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to list MFA factors: {str(e)}"
-            )
+            raise HTTPException(status_code=400, detail=f"Failed to list MFA factors: {e}")
 
     @staticmethod
-    async def mfa_unenroll(access_token: str, factor_id: str) -> Dict[str, Any]:
+    async def mfa_unenroll(access_token: str, factor_id: str) -> MessageResponse:
         """
         Unenroll (remove) an MFA factor
         
@@ -278,26 +250,20 @@ class MFAService:
             factor_id: Factor ID to remove
             
         Returns:
-            Dict with success status
+            MessageResponse with success status
         """
         try:
             # Get user ID from token
             user_id = await auth_utils.verify_token(access_token)
             if not user_id:
-                raise HTTPException(
-                    status_code=401,
-                    detail="Invalid or expired token"
-                )
+                raise HTTPException(status_code=401, detail="Invalid or expired token")
             
             # Use Admin API to unenroll MFA factor
             url = os.getenv("SUPABASE_URL")
             service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
             
             if not url or not service_key:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Supabase configuration not found"
-                )
+                raise HTTPException(status_code=500, detail="Supabase configuration not found")
             
             async with httpx.AsyncClient() as client:
                 response = await client.delete(
@@ -311,58 +277,15 @@ class MFAService:
                 
                 if response.status_code not in [200, 204]:
                     print(f"Admin API error: {response.status_code} - {response.text}")
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Failed to remove MFA factor"
-                    )
+                    raise HTTPException(status_code=400, detail="Failed to remove MFA factor")
             
-            return {
-                "success": True,
-                "message": "MFA factor removed successfully"
-            }
+            return MessageResponse(
+                success=True,
+                message="MFA factor removed successfully"
+            )
         except HTTPException:
             raise
         except Exception as e:
             print(f"MFA unenroll error: {e}")
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to remove MFA factor: {str(e)}"
-            )
-
-    @staticmethod
-    async def mfa_challenge(access_token: str, factor_id: str) -> Dict[str, Any]:
-        """
-        Create an MFA challenge for sign-in
-        
-        Args:
-            access_token: User's access token (from initial sign-in)
-            factor_id: Factor ID to challenge
-            
-        Returns:
-            Dict containing challenge ID
-        """
-        try:
-            supabase = auth_utils.get_supabase_client()
-            supabase.postgrest.auth(access_token)
-            
-            challenge_response = supabase.auth.mfa.challenge({"factor_id": factor_id})
-            challenge_id = challenge_response.id if hasattr(challenge_response, 'id') else None
-            
-            if not challenge_id:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Failed to create MFA challenge"
-                )
-            
-            return {
-                "challenge_id": challenge_id
-            }
-        except HTTPException:
-            raise
-        except Exception as e:
-            print(f"MFA challenge error: {e}")
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to create MFA challenge: {str(e)}"
-            )
+            raise HTTPException(status_code=400, detail=f"Failed to remove MFA factor: {e}")
 
