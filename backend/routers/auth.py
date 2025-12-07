@@ -157,17 +157,8 @@ async def mfa_list_factors(authorization: str = Depends(auth_utils.get_access_to
     Returns list of enrolled MFA factors.
     Requires valid access token.
     """
-    try:
-        result = await MFAService.mfa_list_factors(authorization)
-        return MFAListResponse(**result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"MFA list factors error: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail="Failed to list MFA factors"
-        )
+    result = await MFAService.mfa_list_factors(authorization)
+    return result
 
 
 @router.delete("/mfa/factors/{factor_id}", response_model=MessageResponse)
@@ -181,15 +172,6 @@ async def mfa_unenroll(
     Removes the specified MFA factor from the user's account.
     Requires valid access token.
     """
-    try:
-        result = await MFAService.mfa_unenroll(authorization, factor_id)
-        return MessageResponse(**result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"MFA unenroll error: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail="Failed to remove MFA factor"
-        )
+    result = await MFAService.mfa_unenroll(authorization, factor_id)
+    return result
 
