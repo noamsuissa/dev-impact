@@ -1,35 +1,17 @@
 """
 User Service - Handle user profile operations with Supabase
 """
-import os
-from typing import Optional, Dict, Any
-from dotenv import load_dotenv
+from typing import Dict, Any
 from fastapi import HTTPException
-from supabase import create_client, Client
-
-# Load environment variables
-load_dotenv()
-
+from utils.auth_utils import get_supabase_client
+from schemas.user import UserProfile
+from schemas.auth import MessageResponse
 
 class UserService:
     """Service for handling user profile operations."""
 
     @staticmethod
-    def get_supabase_client() -> Client:
-        """Get Supabase client from environment"""
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
-        
-        if not url or not key:
-            raise HTTPException(
-                status_code=500,
-                detail="Supabase configuration not found"
-            )
-        
-        return create_client(url, key)
-
-    @staticmethod
-    async def get_profile(user_id: str) -> Dict[str, Any]:
+    async def get_profile(user_id: str) -> UserProfile:
         """
         Get user profile by ID
         
@@ -37,10 +19,10 @@ class UserService:
             user_id: User's ID
             
         Returns:
-            Dict containing user profile data
+            UserProfile containing user profile data
         """
         try:
-            supabase = UserService.get_supabase_client()
+            supabase = get_supabase_client()
             
             result = supabase.table("profiles")\
                 .select("*")\
@@ -49,23 +31,26 @@ class UserService:
                 .execute()
             
             if not result.data:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Profile not found"
-                )
+                raise HTTPException(status_code=404, detail="Profile not found")
             
-            return result.data
+            return UserProfile(
+                id=result.data["id"],
+                username=result.data["username"],
+                full_name=result.data["full_name"],
+                github_username=result.data["github_username"],
+                github_avatar_url=result.data["github_avatar_url"],
+                is_published=result.data["is_published"],
+                created_at=result.data["created_at"],
+                updated_at=result.data["updated_at"]
+            )
         except HTTPException:
             raise
         except Exception as e:
             print(f"Get profile error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to fetch profile"
-            )
+            raise HTTPException(status_code=500, detail="Failed to fetch profile")
 
     @staticmethod
-    async def update_profile(user_id: str, profile_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_profile(user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
         """
         Update user profile
         
@@ -74,10 +59,10 @@ class UserService:
             profile_data: Profile data to update
             
         Returns:
-            Dict containing updated profile data
+            UserProfile containing updated profile data
         """
         try:
-            supabase = UserService.get_supabase_client()
+            supabase = get_supabase_client()
             
             # Prepare update data (only include non-None values)
             update_data = {k: v for k, v in profile_data.items() if v is not None}
@@ -92,23 +77,26 @@ class UserService:
                 .execute()
             
             if not result.data:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Profile not found"
-                )
+                raise HTTPException(status_code=404, detail="Profile not found")
             
-            return result.data[0]
+            return UserProfile(
+                id=result.data["id"],
+                username=result.data["username"],
+                full_name=result.data["full_name"],
+                github_username=result.data["github_username"],
+                github_avatar_url=result.data["github_avatar_url"],
+                is_published=result.data["is_published"],
+                created_at=result.data["created_at"],
+                updated_at=result.data["updated_at"]
+            )
         except HTTPException:
             raise
         except Exception as e:
             print(f"Update profile error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to update profile"
-            )
+            raise HTTPException(status_code=500, detail="Failed to update profile")
 
     @staticmethod
-    async def create_or_update_profile(user_id: str, profile_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_or_update_profile(user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
         """
         Create or update user profile (for onboarding)
         
@@ -117,10 +105,10 @@ class UserService:
             profile_data: Profile data
             
         Returns:
-            Dict containing profile data
+            UserProfile containing profile data
         """
         try:
-            supabase = UserService.get_supabase_client()
+            supabase = get_supabase_client()
             
             # Prepare upsert data
             upsert_data = {
@@ -140,23 +128,26 @@ class UserService:
                 .execute()
             
             if not result.data:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Failed to create/update profile"
-                )
+                raise HTTPException(status_code=500, detail="Failed to create/update profile")
             
-            return result.data[0]
+            return UserProfile(
+                id=result.data["id"],
+                username=result.data["username"],
+                full_name=result.data["full_name"],
+                github_username=result.data["github_username"],
+                github_avatar_url=result.data["github_avatar_url"],
+                is_published=result.data["is_published"],
+                created_at=result.data["created_at"],
+                updated_at=result.data["updated_at"]
+            )
         except HTTPException:
             raise
         except Exception as e:
             print(f"Create/update profile error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to create/update profile"
-            )
+            raise HTTPException(status_code=500, detail="Failed to create/update profile")
 
     @staticmethod
-    async def delete_account(user_id: str) -> Dict[str, Any]:
+    async def delete_account(user_id: str) -> MessageResponse:
         """
         Delete user account (profile and auth user)
         
@@ -164,10 +155,10 @@ class UserService:
             user_id: User's ID
             
         Returns:
-            Dict with success message
+            MessageResponse with success message
         """
         try:
-            supabase = UserService.get_supabase_client()
+            supabase = get_supabase_client()
             
             # Delete profile (this will cascade delete related data if FK constraints are set)
             supabase.table("profiles")\
@@ -176,43 +167,15 @@ class UserService:
                 .execute()
             
             # Delete auth user using Admin API
-            url = os.getenv("SUPABASE_URL")
-            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            supabase.auth.admin.delete_user(user_id)
             
-            if not url or not service_key:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Server configuration error"
-                )
-            
-            import httpx
-            async with httpx.AsyncClient() as client:
-                response = await client.delete(
-                    f"{url}/auth/v1/admin/users/{user_id}",
-                    headers={
-                        "apikey": service_key,
-                        "Authorization": f"Bearer {service_key}",
-                        "Content-Type": "application/json"
-                    }
-                )
-                
-                if response.status_code not in [200, 204]:
-                    print(f"Supabase delete user failed: {response.text}")
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Failed to delete user account"
-                    )
-            
-            return {
-                "success": True,
-                "message": "Account deleted successfully"
-            }
+            return MessageResponse(
+                success=True,
+                message="Account deleted successfully"
+            )
         except HTTPException:
             raise
         except Exception as e:
             print(f"Delete account error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to delete account"
-            )
+            raise HTTPException(status_code=500, detail="Failed to delete account")
 
