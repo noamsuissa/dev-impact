@@ -16,6 +16,7 @@ from schemas.profile import (
     CheckUsernameResponse,
     ProfileResponse,
 )
+from schemas.auth import MessageResponse
 
 # Load environment variables
 load_dotenv()
@@ -259,11 +260,7 @@ class ProfileService:
         )
 
     @staticmethod
-    async def unpublish_profile(
-        username: str,
-        profile_slug: str,
-        user_id: str
-    ) -> Dict[str, Any]:
+    async def unpublish_profile(username: str, profile_slug: str, user_id: str) -> MessageResponse:
         """
         Unpublish a profile
         
@@ -273,49 +270,48 @@ class ProfileService:
             user_id: The authenticated user's ID
             
         Returns:
-            Dict with success status and message
+            MessageResponse with success status and message
         """
-        supabase = get_supabase_client()
-        
-        # Verify ownership via profile_id
-        result = supabase.table("published_profiles")\
-            .select("profile_id, user_profiles!inner(user_id)")\
-            .eq("username", username)\
-            .eq("profile_slug", profile_slug)\
-            .execute()
-        
-        if not result.data or len(result.data) == 0:
-            raise HTTPException(
-                status_code=404,
-                detail="Profile not found"
-            )
-        
-        # Check ownership via profile_id relationship
-        profile_id = result.data[0].get("profile_id")
-        if profile_id:
-            profile_check = supabase.table("user_profiles")\
-                .select("user_id")\
-                .eq("id", profile_id)\
-                .single()\
+        try:
+            supabase = get_supabase_client()
+            
+            # Verify ownership via profile_id
+            result = supabase.table("published_profiles")\
+                .select("profile_id, user_profiles!inner(user_id)")\
+                .eq("username", username)\
+                .eq("profile_slug", profile_slug)\
                 .execute()
             
-            if profile_check.data and profile_check.data["user_id"] != user_id:
-                raise HTTPException(
-                    status_code=403,
-                    detail="You don't have permission to unpublish this profile"
-                )
-        
-        # Unpublish (set is_published to false)
-        supabase.table("published_profiles")\
-            .update({"is_published": False})\
-            .eq("username", username)\
-            .eq("profile_slug", profile_slug)\
-            .execute()
-        
-        return {
-            "success": True,
-            "message": "Profile unpublished successfully"
-        }
+            if not result.data or len(result.data) == 0:
+                raise HTTPException(status_code=404, detail="Profile not found")
+            
+            # Check ownership via profile_id relationship
+            profile_id = result.data[0].get("profile_id")
+            if profile_id:
+                profile_check = supabase.table("user_profiles")\
+                    .select("user_id")\
+                    .eq("id", profile_id)\
+                    .single()\
+                    .execute()
+                
+                if profile_check.data and profile_check.data["user_id"] != user_id:
+                    raise HTTPException(status_code=403, detail="You don't have permission to unpublish this profile")
+            
+            # Unpublish (set is_published to false)
+            supabase.table("published_profiles")\
+                .update({"is_published": False})\
+                .eq("username", username)\
+                .eq("profile_slug", profile_slug)\
+                .execute()
+            
+            return MessageResponse(
+                success=True,
+                message="Profile unpublished successfully"
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to unpublish profile: {e}")
 
     @staticmethod
     async def list_profiles(limit: int = 50, offset: int = 0) -> Dict[str, Any]:

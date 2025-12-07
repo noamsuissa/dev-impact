@@ -9,6 +9,7 @@ from schemas.profile import (
     CheckUsernameResponse,
     ProfileResponse,
 )
+from schemas.auth import MessageResponse
 from services.profile_service import ProfileService
 from utils import auth_utils
 
@@ -73,7 +74,7 @@ async def get_profile(username: str):
     return profile
 
 
-@router.delete("/{username}/{profile_slug}")
+@router.delete("/{username}/{profile_slug}", response_model=MessageResponse)
 async def unpublish_profile(
     username: str,
     profile_slug: str,
@@ -88,17 +89,8 @@ async def unpublish_profile(
     # Get user ID from token
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    try:
-        result = await ProfileService.unpublish_profile(username, profile_slug, user_id)
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error unpublishing profile: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to unpublish profile: {str(e)}"
-        )
+    result = await ProfileService.unpublish_profile(username, profile_slug, user_id)
+    return result
 
 
 @router.get("")
