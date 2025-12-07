@@ -37,7 +37,7 @@ async def sign_up(request: SignUpRequest):
     try:
         # Pass captcha_token (can be None or bypass string)
         result = await AuthService.sign_up(request.email, request.password, request.captcha_token)
-        return result
+        return AuthResponse(**result)
     except HTTPException:
         raise
     except Exception as e:
@@ -65,7 +65,7 @@ async def sign_in(request: SignInRequest):
             request.mfa_code,
             request.mfa_factor_id
         )
-        return result
+        return AuthResponse(**result)
     except HTTPException:
         raise
     except Exception as e:
@@ -90,7 +90,7 @@ async def sign_out(authorization: Optional[str] = Header(None)):
     
     try:
         result = await AuthService.sign_out(access_token)
-        return result
+        return MessageResponse(**result)
     except Exception as e:
         print(f"Sign out error: {e}")
         return {"success": True, "message": "Signed out"}
@@ -105,7 +105,7 @@ async def get_session(authorization: str = Depends(auth_utils.get_access_token))
     """
     try:
         result = await auth_utils.get_session(authorization)
-        return result
+        return AuthResponse(**result)
     except HTTPException:
         raise
     except Exception as e:
@@ -125,7 +125,7 @@ async def refresh_session(request: RefreshTokenRequest):
     """
     try:
         result = await auth_utils.refresh_session(request.refresh_token)
-        return result
+        return AuthResponse(**result)
     except HTTPException:
         raise
     except Exception as e:
@@ -145,7 +145,7 @@ async def reset_password(request: ResetPasswordRequest):
     """
     try:
         result = await AuthService.reset_password_email(request.email)
-        return result
+        return MessageResponse(**result)
     except Exception as e:
         print(f"Reset password error: {e}")
         return {
@@ -167,7 +167,7 @@ async def update_password(
     """
     try:
         result = await AuthService.update_password(authorization, request.new_password)
-        return result
+        return MessageResponse(**result)
     except HTTPException:
         raise
     except Exception as e:
@@ -191,7 +191,7 @@ async def mfa_enroll(
     """
     try:
         result = await MFAService.mfa_enroll(authorization, request.friendly_name)
-        return result
+        return MFAEnrollResponse(**result)
     except HTTPException:
         raise
     except Exception as e:
@@ -215,7 +215,7 @@ async def mfa_verify_enrollment(
     """
     try:
         result = await MFAService.mfa_verify_enrollment(authorization, request.factor_id, request.code)
-        return result
+        return MessageResponse(**result)
     except HTTPException:
         raise
     except Exception as e:
@@ -236,7 +236,7 @@ async def mfa_list_factors(authorization: str = Depends(auth_utils.get_access_to
     """
     try:
         result = await MFAService.mfa_list_factors(authorization)
-        return result
+        return MFAListResponse(**result)
     except HTTPException:
         raise
     except Exception as e:
@@ -260,7 +260,7 @@ async def mfa_unenroll(
     """
     try:
         result = await MFAService.mfa_unenroll(authorization, factor_id)
-        return result
+        return MessageResponse(**result)
     except HTTPException:
         raise
     except Exception as e:
