@@ -12,6 +12,7 @@ from utils.auth_utils import get_supabase_client
 from services.user_service import UserService
 from services.project_service import ProjectService
 from schemas.profile import PublishProfileResponse
+from schemas.profile import CheckUsernameResponse
 
 # Load environment variables
 load_dotenv()
@@ -362,7 +363,7 @@ class ProfileService:
         }
 
     @staticmethod
-    async def check_username(username: str) -> Dict[str, Any]:
+    async def check_username(username: str) -> CheckUsernameResponse:
         """
         Check if a username is available
         
@@ -370,14 +371,14 @@ class ProfileService:
             username: The username to check
             
         Returns:
-            Dict with availability status
+            CheckUsernameResponse with availability status
         """
         if not ProfileService.validate_username(username):
-            return {
-                "available": False,
-                "valid": False,
-                "message": "Username must be 3-50 characters, lowercase letters, numbers, and hyphens only"
-            }
+            return CheckUsernameResponse(
+                available=False,
+                valid=False,
+                message="Username must be 3-50 characters, lowercase letters, numbers, and hyphens only"
+            )
         
         try:
             supabase = get_supabase_client()
@@ -387,15 +388,15 @@ class ProfileService:
             
             available = result.data
             
-            return {
-                "available": available,
-                "valid": True,
-                "message": "Username is available" if available else "Username is taken or reserved"
-            }
+            return CheckUsernameResponse(
+                available=available,
+                valid=True,
+                message="Username is available" if available else "Username is taken or reserved"
+            )
         except Exception as e:
             print(f"Error checking username: {e}")
-            return {
-                "available": False,
-                "valid": True,
-                "message": "Error checking username availability"
-            }
+            return CheckUsernameResponse(
+                available=False,
+                valid=True,
+                message="Error checking username availability"
+            )

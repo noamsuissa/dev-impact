@@ -6,6 +6,7 @@ from typing import Optional
 from schemas.profile import (
     PublishProfileRequest, 
     PublishProfileResponse,
+    CheckUsernameResponse,
 )
 from services.profile_service import ProfileService
 from utils import auth_utils
@@ -32,7 +33,7 @@ async def publish_profile(
     return result
 
 
-@router.get("/check/{username}")
+@router.get("/check/{username}", response_model=CheckUsernameResponse)
 async def check_username(username: str):
     """
     Check if a username is available
@@ -40,16 +41,8 @@ async def check_username(username: str):
     Returns whether the username is available and valid.
     This route must be defined before the generic /{username} route.
     """
-    try:
-        result = await ProfileService.check_username(username)
-        return result
-    except Exception as e:
-        print(f"Error checking username: {e}")
-        return {
-            "available": False,
-            "valid": True,
-            "message": "Error checking username availability"
-        }
+    result = await ProfileService.check_username(username)
+    return result
 
 
 @router.get("/{username}/{profile_slug}")

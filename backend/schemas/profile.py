@@ -67,3 +67,8 @@ class ProfileResponse(BaseModel):
 
     class Config:
         populate_by_name = True
+
+class CheckUsernameResponse(BaseModel):
+    available: bool
+    valid: bool
+    message: Optional[str] = None
