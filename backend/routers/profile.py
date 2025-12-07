@@ -67,6 +67,26 @@ async def publish_profile(
         )
 
 
+@router.get("/check/{username}")
+async def check_username(username: str):
+    """
+    Check if a username is available
+    
+    Returns whether the username is available and valid.
+    This route must be defined before the generic /{username} route.
+    """
+    try:
+        result = await ProfileService.check_username(username)
+        return result
+    except Exception as e:
+        print(f"Error checking username: {e}")
+        return {
+            "available": False,
+            "valid": True,
+            "message": "Error checking username availability"
+        }
+
+
 @router.get("/{username}/{profile_slug}")
 async def get_profile_with_slug(username: str, profile_slug: str):
     """
@@ -157,22 +177,3 @@ async def list_profiles(limit: int = 50, offset: int = 0):
             status_code=500,
             detail=f"Failed to list profiles: {str(e)}"
         )
-
-
-@router.get("/check/{username}")
-async def check_username(username: str):
-    """
-    Check if a username is available
-    
-    Returns whether the username is available and valid.
-    """
-    try:
-        result = await ProfileService.check_username(username)
-        return result
-    except Exception as e:
-        print(f"Error checking username: {e}")
-        return {
-            "available": False,
-            "valid": True,
-            "message": "Error checking username availability"
-        }
