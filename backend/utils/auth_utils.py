@@ -1,9 +1,9 @@
-from typing import Optional, Dict, Any
+from typing import Optional
+import jwt
 from fastapi import HTTPException, Header
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
-from services.profile_service import ProfileService
 from schemas.auth import AuthResponse, UserResponse, SessionResponse
 
 load_dotenv()
@@ -25,7 +25,7 @@ def get_access_token(
     
     return authorization.replace("Bearer ", "")
 
-def get_supabase_client() -> Client:
+def get_supabase_client(access_token: Optional[str] = None) -> Client:
     """Get Supabase client from environment"""
     url = os.getenv("SUPABASE_URL")
     # Use service role key for backend operations
@@ -37,7 +37,12 @@ def get_supabase_client() -> Client:
             detail="Supabase configuration not found"
         )
     
-    return create_client(url, key)
+    client = create_client(url, key)
+    
+    if access_token and not os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
+        client.postgrest.auth(access_token)
+        
+    return client
 
 async def verify_token(access_token: str) -> Optional[str]:
     """
@@ -144,6 +149,18 @@ async def refresh_session(refresh_token: str) -> AuthResponse:
                 detail="Invalid or expired refresh token"
             )
 
+def get_user_id_from_token(token: str) -> Optional[str]:
+    """Extract user ID from JWT token"""
+    try:
+        # Decode JWT without verification (we trust Supabase tokens)
+        # In production, you should verify the signature with your Supabase JWT secret
+        decoded = jwt.decode(token, options={"verify_signature": False})
+        user_id = decoded.get('sub')
+        return user_id
+    except Exception as e:
+        print(f"Error decoding token: {e}")
+        return None
+
 def get_user_id_from_authorization(authorization: Optional[str]) -> str:
     """Extract and validate user ID from authorization header"""
     if not authorization or not authorization.startswith("Bearer "):
@@ -153,7 +170,7 @@ def get_user_id_from_authorization(authorization: Optional[str]) -> str:
         )
     
     token = authorization.replace("Bearer ", "")
-    user_id = ProfileService.get_user_id_from_token(token)
+    user_id = get_user_id_from_token(token)
     
     if not user_id:
         raise HTTPException(

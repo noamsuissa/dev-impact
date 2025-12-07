@@ -1,7 +1,7 @@
 """
 Profiles Router - Handle profile publishing and retrieval
 """
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Depends
 from typing import Optional
 from schemas.profile import (
     PublishProfileRequest, 
@@ -16,13 +16,10 @@ router = APIRouter(
 )
 
 
-
-
-
 @router.post("", response_model=PublishProfileResponse)
 async def publish_profile(
     profile: PublishProfileRequest,
-    authorization: Optional[str] = Header(None)
+    authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Publish or update a user profile
@@ -30,41 +27,9 @@ async def publish_profile(
     This endpoint creates or updates a published profile with a unique username.
     The profile will be accessible at {username}.{BASE_DOMAIN}
     """
-    # Validate authorization and extract user ID
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required to publish profile"
-        )
-    
-    token = authorization.replace("Bearer ", "")
-    user_id = ProfileService.get_user_id_from_token(token)
-    
-    if not user_id:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid authentication token"
-        )
-    
-    try:
-        # Publish profile using service
-        result = await ProfileService.publish_profile(
-            username=profile.username,
-            profile_id=profile.profile_id,
-            user_id=user_id,
-            token=token
-        )
-        
-        return PublishProfileResponse(**result)
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error publishing profile: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to publish profile: {str(e)}"
-        )
+    user_id = auth_utils.get_user_id_from_token(authorization)
+    result = await ProfileService.publish_profile(username=profile.username, profile_id=profile.profile_id, user_id=user_id, token=authorization)
+    return result
 
 
 @router.get("/check/{username}")

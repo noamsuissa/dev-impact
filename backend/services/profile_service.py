@@ -8,6 +8,10 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi import HTTPException
+from utils.auth_utils import get_supabase_client
+from services.user_service import UserService
+from services.project_service import ProjectService
+from schemas.profile import PublishProfileResponse
 
 # Load environment variables
 load_dotenv()
@@ -49,50 +53,12 @@ class ProfileService:
         return bool(re.match(pattern, slug))
 
     @staticmethod
-    def get_supabase_client(user_token: Optional[str] = None):
-        """Get Supabase client from environment"""
-        from supabase import create_client, Client
-        
-        url = os.getenv("SUPABASE_URL")
-        # Try service role key first (for backend operations), fall back to anon key
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
-        
-        if not url or not key:
-            print(f"DEBUG - SUPABASE_URL: {url}")
-            print(f"DEBUG - Key available: {'Yes' if key else 'No'}")
-            raise HTTPException(
-                status_code=500,
-                detail="Supabase configuration not found. Make sure SUPABASE_URL and keys are set in .env file"
-            )
-        
-        client = create_client(url, key)
-        
-        # If a user token is provided and we're using anon key, set the auth header
-        if user_token and not os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
-            client.postgrest.auth(user_token)
-        
-        return client
-
-    @staticmethod
-    def get_user_id_from_token(token: str) -> Optional[str]:
-        """Extract user ID from JWT token"""
-        try:
-            # Decode JWT without verification (we trust Supabase tokens)
-            # In production, you should verify the signature with your Supabase JWT secret
-            decoded = jwt.decode(token, options={"verify_signature": False})
-            user_id = decoded.get('sub')
-            return user_id
-        except Exception as e:
-            print(f"Error decoding token: {e}")
-            return None
-
-    @staticmethod
     async def publish_profile(
         username: str,
         profile_id: str,
         user_id: str,
         token: str
-    ) -> Dict[str, Any]:
+    ) -> PublishProfileResponse:
         """
         Publish or update a user profile in Supabase
         
@@ -103,18 +69,15 @@ class ProfileService:
             token: The user's auth token
             
         Returns:
-            Dict with success status, username, profile_slug, and URL
+            PublishProfileResponse with success status, username, profile_slug, and URL
         """
         if not ProfileService.validate_username(username):
-            raise HTTPException(
-                status_code=400,
-                detail="Username must be 3-50 characters, lowercase letters, numbers, and hyphens only"
-            )
+            raise HTTPException(status_code=400, detail="Username must be 3-50 characters, lowercase letters, numbers, and hyphens only")
         
         # Ensure username consistency (lowercase)
         username = username.lower()
         
-        supabase = ProfileService.get_supabase_client(user_token=token)
+        supabase = get_supabase_client(access_token=token)
         
         # Verify profile exists and belongs to user
         profile_result = supabase.table("user_profiles")\
@@ -125,10 +88,7 @@ class ProfileService:
             .execute()
         
         if not profile_result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Profile not found"
-            )
+            raise HTTPException(status_code=404, detail="Profile not found")
         
         profile = profile_result.data
         profile_slug = profile["slug"]
@@ -144,32 +104,21 @@ class ProfileService:
             existing_profile = existing.data[0]
             # Check if it's a different user (shouldn't happen with proper auth, but safety check)
             if existing_profile.get("user_id") and existing_profile["user_id"] != user_id:
-                raise HTTPException(
-                    status_code=409,
-                    detail="This profile slug is already taken for this username"
-                )
+                raise HTTPException(status_code=409, detail="This profile slug is already taken for this username")
         
         # Fetch latest user profile from database
         try:
-            from services.user_service import UserService
             user_profile = await UserService.get_profile(user_id)
         except Exception as e:
             print(f"Error fetching user profile: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to fetch user profile"
-            )
+            raise HTTPException(status_code=500, detail="Failed to fetch user profile")
         
         # Fetch latest projects from database for this profile
         try:
-            from services.project_service import ProjectService
             projects = await ProjectService.list_projects(user_id, profile_id=profile_id)
         except Exception as e:
             print(f"Error fetching projects: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to fetch projects"
-            )
+            raise HTTPException(status_code=500, detail="Failed to fetch projects")
         
         # Build profile_data from fresh database data
         fresh_profile_data = {
@@ -222,10 +171,7 @@ class ProfileService:
                 .execute()
         
         if not result.data:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to publish profile"
-            )
+            raise HTTPException(status_code=500, detail="Failed to publish profile")
         
         # Get base domain from environment, default to dev-impact.io
         base_domain = os.getenv("BASE_DOMAIN", "dev-impact.io")
@@ -233,13 +179,13 @@ class ProfileService:
         # Generate URL: username.dev-impact.io/profile-slug
         url = f"https://{username}.{base_domain}/{profile_slug}"
         
-        return {
-            "success": True,
-            "username": username,
-            "profile_slug": profile_slug,
-            "url": url,
-            "message": "Profile published successfully"
-        }
+        return PublishProfileResponse(
+            success=True,
+            username=username,
+            profile_slug=profile_slug,
+            url=url,
+            message="Profile published successfully"
+        )
 
     @staticmethod
     async def get_profile(username: str, profile_slug: Optional[str] = None) -> Dict[str, Any]:
@@ -259,7 +205,7 @@ class ProfileService:
                 detail="Invalid username format"
             )
         
-        supabase = ProfileService.get_supabase_client()
+        supabase = get_supabase_client()
         
         # Build query
         query = supabase.table("published_profiles")\
@@ -333,7 +279,7 @@ class ProfileService:
         Returns:
             Dict with success status and message
         """
-        supabase = ProfileService.get_supabase_client()
+        supabase = get_supabase_client()
         
         # Verify ownership via profile_id
         result = supabase.table("published_profiles")\
@@ -387,7 +333,7 @@ class ProfileService:
         Returns:
             Dict containing profiles list and pagination info
         """
-        supabase = ProfileService.get_supabase_client()
+        supabase = get_supabase_client()
         
         result = supabase.table("published_profiles")\
             .select("username, profile_data, view_count, published_at, updated_at")\
@@ -434,7 +380,7 @@ class ProfileService:
             }
         
         try:
-            supabase = ProfileService.get_supabase_client()
+            supabase = get_supabase_client()
             
             # Use RPC call to check availability (checks format, reserved names, and existing profiles)
             result = supabase.rpc("is_username_available", {"desired_username": username}).execute()
