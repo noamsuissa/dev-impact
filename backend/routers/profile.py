@@ -59,7 +59,7 @@ async def get_profile_with_slug(username: str, profile_slug: str):
     profile = await ProfileService.get_profile(username, profile_slug)
     return profile
 
-@router.get("/{username}")
+@router.get("/{username}", response_model=ProfileResponse)
 async def get_profile(username: str):
     """
     Get a published profile by username (backward compatibility)
@@ -69,17 +69,8 @@ async def get_profile(username: str):
     
     Returns the first published profile for the username (for backward compatibility).
     """
-    try:
-        profile = await ProfileService.get_profile(username, None)
-        return profile
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error fetching profile: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch profile: {str(e)}"
-        )
+    profile = await ProfileService.get_profile(username, None)
+    return profile
 
 
 @router.delete("/{username}/{profile_slug}")
