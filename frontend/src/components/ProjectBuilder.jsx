@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
 
-const ProjectForm = ({ initialData, onSave, onCancel, isEditing }) => {
+const ProjectForm = ({ initialData, onSave, onCancel, isEditing, profiles = [], selectedProfileId }) => {
   const [company, setCompany] = useState(initialData?.company || '');
   const [projectName, setProjectName] = useState(initialData?.projectName || '');
   const [role, setRole] = useState(initialData?.role || '');
@@ -14,6 +14,13 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing }) => {
   const [metrics, setMetrics] = useState(initialData?.metrics || []);
   const [techStack, setTechStack] = useState(initialData?.techStack || []);
   const [newTech, setNewTech] = useState('');
+  // Initialize profileId from initialData, selectedProfileId, or first profile
+  const [profileId, setProfileId] = useState(() => {
+    if (initialData?.profile_id) return initialData.profile_id;
+    if (selectedProfileId) return selectedProfileId;
+    if (profiles.length > 0) return profiles[0].id;
+    return null;
+  });
 
   const addContribution = () => {
     setContributions([...contributions, '']);
@@ -64,13 +71,15 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing }) => {
       problem,
       contributions: contributions.filter(c => c.trim()),
       metrics: metrics.filter(m => m.primary && m.label),
-      techStack
+      techStack,
+      profile_id: profileId
     };
     onSave(project);
   };
 
   const isValid = company && projectName && role && teamSize && problem && 
-                  contributions.some(c => c.trim()) && techStack.length > 0;
+                  contributions.some(c => c.trim()) && techStack.length > 0 &&
+                  (profileId || profiles.length === 0); // Profile is required if profiles exist
 
   return (
     <div className="p-10 max-w-[800px] mx-auto">
@@ -82,6 +91,30 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing }) => {
         <div className="text-xl">
           &gt; {isEditing ? 'Edit' : 'New'} Project
         </div>
+      </div>
+
+      <div className="mb-5">
+        <div className="mb-2">
+          &gt; Profile: {!profileId && profiles.length > 0 && <span className="text-red-400 text-xs">(Required)</span>}
+        </div>
+        {profiles.length > 0 ? (
+          <select
+            value={profileId || ''}
+            onChange={(e) => setProfileId(e.target.value || null)}
+            className="w-full bg-terminal-bg-lighter border border-terminal-border px-3 py-2 text-terminal-text focus:outline-none focus:border-terminal-orange"
+          >
+            <option value="">-- Select Profile --</option>
+            {profiles.map(profile => (
+              <option key={profile.id} value={profile.id}>
+                {profile.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <div className="text-terminal-gray text-sm border border-terminal-border px-3 py-2 bg-terminal-bg-lighter">
+            No profiles available. Create a profile first from the Dashboard.
+          </div>
+        )}
       </div>
 
       <div className="mb-5">
@@ -208,10 +241,16 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing }) => {
   );
 };
 
-const ProjectBuilder = ({ onSave, projects = [] }) => {
+const ProjectBuilder = ({ onSave, projects = [], profiles = [], selectedProfileId }) => {
   const navigate = useNavigate();
   const { projectId } = useParams();
   const isEditing = projectId && projectId !== 'new';
+  
+  // Ensure profiles is an array
+  const profilesList = Array.isArray(profiles) ? profiles : [];
+  
+  // Debug: log profiles to see if they're being passed
+  console.log('ProjectBuilder - profiles:', profilesList, 'selectedProfileId:', selectedProfileId);
   
   // Derive project from props instead of syncing to state
   const project = isEditing && projects.length > 0 
@@ -265,6 +304,8 @@ const ProjectBuilder = ({ onSave, projects = [] }) => {
     <ProjectForm
       key={project?.id || 'new'}
       initialData={project}
+      profiles={profilesList}
+      selectedProfileId={selectedProfileId}
       onSave={async (data) => {
         try {
           await onSave(data);
