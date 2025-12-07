@@ -16,9 +16,9 @@ class PollRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     status: str
-    access_token: str
-    token_type: str
-    scope: str
+    access_token: Optional[str] = None
+    token_type: Optional[str] = None
+    scope: Optional[str] = None
 
 
 class GitHubUser(BaseModel):
