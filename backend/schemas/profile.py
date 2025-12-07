@@ -1,11 +1,17 @@
+"""
+Profile Schemas - For published profiles (user account profiles)
+"""
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-# Pydantic models for request/response
+
+# Shared data models for published profiles
 class MetricData(BaseModel):
+    """Project metric data"""
     primary: str
     label: str
     detail: Optional[str] = None
+
 
 class ProjectData(BaseModel):
     id: str
@@ -34,16 +40,26 @@ class UserData(BaseModel):
 
 class PublishProfileRequest(BaseModel):
     username: str
+    profile_id: str
 
 class PublishProfileResponse(BaseModel):
     success: bool
     username: str
+    profile_slug: str
     url: str
     message: str
 
+class ProfileData(BaseModel):
+    """Published profile metadata (user profile for projects)"""
+    name: str
+    description: Optional[str] = None
+
+
 class ProfileResponse(BaseModel):
     username: str
+    profile_slug: Optional[str] = None
     user: UserData
+    profile: Optional[ProfileData] = None
     projects: List[ProjectData]
     viewCount: int = Field(..., alias="view_count")
     publishedAt: str = Field(..., alias="published_at")

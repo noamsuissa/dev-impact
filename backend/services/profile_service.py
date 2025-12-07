@@ -26,6 +26,29 @@ class ProfileService:
         return bool(re.match(pattern, username))
 
     @staticmethod
+    def generate_slug(name: str) -> str:
+        """Generate URL-friendly slug from profile name"""
+        if not name:
+            return ""
+        # Convert to lowercase, replace spaces and special chars with dashes
+        slug = re.sub(r'[^a-z0-9]+', '-', name.lower())
+        # Remove leading/trailing dashes
+        slug = slug.strip('-')
+        # Ensure it's not empty
+        if not slug:
+            slug = "profile"
+        return slug
+
+    @staticmethod
+    def validate_slug(slug: str) -> bool:
+        """Validate slug format"""
+        if not slug:
+            return False
+        # Lowercase alphanumeric and hyphens only, 1-100 characters
+        pattern = r'^[a-z0-9-]{1,100}$'
+        return bool(re.match(pattern, slug))
+
+    @staticmethod
     def get_supabase_client(user_token: Optional[str] = None):
         """Get Supabase client from environment"""
         from supabase import create_client, Client
@@ -66,6 +89,7 @@ class ProfileService:
     @staticmethod
     async def publish_profile(
         username: str,
+        profile_id: str,
         user_id: str,
         token: str
     ) -> Dict[str, Any]:
@@ -73,12 +97,13 @@ class ProfileService:
         Publish or update a user profile in Supabase
         
         Args:
-            username: The desired username
+            username: The user's username
+            profile_id: The profile ID to publish
             user_id: The authenticated user's ID
             token: The user's auth token
             
         Returns:
-            Dict with success status, username, and URL
+            Dict with success status, username, profile_slug, and URL
         """
         if not ProfileService.validate_username(username):
             raise HTTPException(
@@ -91,17 +116,37 @@ class ProfileService:
         
         supabase = ProfileService.get_supabase_client(user_token=token)
         
-        # Check if username is already taken by another user
+        # Verify profile exists and belongs to user
+        profile_result = supabase.table("user_profiles")\
+            .select("id, slug, name, description")\
+            .eq("id", profile_id)\
+            .eq("user_id", user_id)\
+            .single()\
+            .execute()
+        
+        if not profile_result.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Profile not found"
+            )
+        
+        profile = profile_result.data
+        profile_slug = profile["slug"]
+        
+        # Check if this profile is already published by another user (shouldn't happen, but check anyway)
         existing = supabase.table("published_profiles")\
-            .select("user_id")\
+            .select("user_id, profile_id")\
             .eq("username", username)\
+            .eq("profile_slug", profile_slug)\
             .execute()
         
         if existing.data and len(existing.data) > 0:
-            if existing.data[0]["user_id"] != user_id:
+            existing_profile = existing.data[0]
+            # Check if it's a different user (shouldn't happen with proper auth, but safety check)
+            if existing_profile.get("user_id") and existing_profile["user_id"] != user_id:
                 raise HTTPException(
                     status_code=409,
-                    detail="Username is already taken"
+                    detail="This profile slug is already taken for this username"
                 )
         
         # Fetch latest user profile from database
@@ -115,10 +160,10 @@ class ProfileService:
                 detail="Failed to fetch user profile"
             )
         
-        # Fetch latest projects from database
+        # Fetch latest projects from database for this profile
         try:
             from services.project_service import ProjectService
-            projects = await ProjectService.list_projects(user_id)
+            projects = await ProjectService.list_projects(user_id, profile_id=profile_id)
         except Exception as e:
             print(f"Error fetching projects: {e}")
             raise HTTPException(
@@ -135,20 +180,46 @@ class ProfileService:
                     "avatar_url": user_profile.get("github_avatar_url")
                 } if user_profile.get("github_username") else None
             },
+            "profile": {
+                "name": profile["name"],
+                "description": profile.get("description")
+            },
             "projects": projects
         }
         
+        # Check if profile is already published
+        existing = supabase.table("published_profiles")\
+            .select("id")\
+            .eq("username", username)\
+            .eq("profile_slug", profile_slug)\
+            .execute()
+        
         # Insert or update published profile with fresh data
-        result = supabase.table("published_profiles").upsert(
-            {
-                "user_id": user_id,
-                "username": username,
-                "profile_data": fresh_profile_data,
-                "is_published": True,
-                "updated_at": datetime.utcnow().isoformat()
-            },
-            on_conflict="username"
-        ).execute()
+        if existing.data and len(existing.data) > 0:
+            # Update existing
+            result = supabase.table("published_profiles")\
+                .update({
+                    "profile_id": profile_id,
+                    "profile_data": fresh_profile_data,
+                    "is_published": True,
+                    "updated_at": datetime.utcnow().isoformat()
+                })\
+                .eq("username", username)\
+                .eq("profile_slug", profile_slug)\
+                .execute()
+        else:
+            # Insert new
+            result = supabase.table("published_profiles")\
+                .insert({
+                    "user_id": user_id,  # Keep for backward compatibility
+                    "username": username,
+                    "profile_id": profile_id,
+                    "profile_slug": profile_slug,
+                    "profile_data": fresh_profile_data,
+                    "is_published": True,
+                    "updated_at": datetime.utcnow().isoformat()
+                })\
+                .execute()
         
         if not result.data:
             raise HTTPException(
@@ -159,20 +230,25 @@ class ProfileService:
         # Get base domain from environment, default to dev-impact.io
         base_domain = os.getenv("BASE_DOMAIN", "dev-impact.io")
         
+        # Generate URL: username.dev-impact.io/profile-slug
+        url = f"https://{username}.{base_domain}/{profile_slug}"
+        
         return {
             "success": True,
             "username": username,
-            "url": f"https://{username}.{base_domain}",
+            "profile_slug": profile_slug,
+            "url": url,
             "message": "Profile published successfully"
         }
 
     @staticmethod
-    async def get_profile(username: str) -> Dict[str, Any]:
+    async def get_profile(username: str, profile_slug: Optional[str] = None) -> Dict[str, Any]:
         """
-        Get a published profile by username
+        Get a published profile by username and optional profile slug
         
         Args:
             username: The profile username to fetch
+            profile_slug: Optional profile slug (for multi-profile support)
             
         Returns:
             Dict containing profile data
@@ -185,12 +261,23 @@ class ProfileService:
         
         supabase = ProfileService.get_supabase_client()
         
-        # Fetch published profile
-        result = supabase.table("published_profiles")\
+        # Build query
+        query = supabase.table("published_profiles")\
             .select("*")\
             .eq("username", username)\
-            .eq("is_published", True)\
-            .execute()
+            .eq("is_published", True)
+        
+        # If profile_slug is provided, filter by it
+        # Otherwise, get the first published profile (backward compatibility)
+        if profile_slug:
+            if not ProfileService.validate_slug(profile_slug):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid profile slug format"
+                )
+            query = query.eq("profile_slug", profile_slug)
+        
+        result = query.execute()
         
         if not result.data or len(result.data) == 0:
             raise HTTPException(
@@ -198,14 +285,21 @@ class ProfileService:
                 detail="Profile not found"
             )
         
-        profile = result.data[0]
+        # If no profile_slug provided, get the first one (backward compatibility)
+        profile = result.data[0] if not profile_slug else result.data[0]
         
         # Increment view count
         try:
-            supabase.table("published_profiles")\
+            update_query = supabase.table("published_profiles")\
                 .update({"view_count": profile["view_count"] + 1})\
-                .eq("username", username)\
-                .execute()
+                .eq("username", username)
+            
+            if profile_slug:
+                update_query = update_query.eq("profile_slug", profile_slug)
+            else:
+                update_query = update_query.eq("id", profile["id"])
+            
+            update_query.execute()
         except Exception as e:
             print(f"Failed to increment view count: {e}")
         
@@ -213,7 +307,9 @@ class ProfileService:
         profile_data = profile["profile_data"]
         return {
             "username": profile["username"],
+            "profile_slug": profile.get("profile_slug"),
             "user": profile_data["user"],
+            "profile": profile_data.get("profile"),  # Profile name and description
             "projects": profile_data["projects"],
             "view_count": profile["view_count"] + 1,
             "published_at": profile["published_at"],
@@ -221,12 +317,17 @@ class ProfileService:
         }
 
     @staticmethod
-    async def unpublish_profile(username: str, user_id: str) -> Dict[str, Any]:
+    async def unpublish_profile(
+        username: str,
+        profile_slug: str,
+        user_id: str
+    ) -> Dict[str, Any]:
         """
         Unpublish a profile
         
         Args:
-            username: The profile username to unpublish
+            username: The profile username
+            profile_slug: The profile slug to unpublish
             user_id: The authenticated user's ID
             
         Returns:
@@ -234,10 +335,11 @@ class ProfileService:
         """
         supabase = ProfileService.get_supabase_client()
         
-        # Verify ownership
+        # Verify ownership via profile_id
         result = supabase.table("published_profiles")\
-            .select("user_id")\
+            .select("profile_id, user_profiles!inner(user_id)")\
             .eq("username", username)\
+            .eq("profile_slug", profile_slug)\
             .execute()
         
         if not result.data or len(result.data) == 0:
@@ -246,16 +348,26 @@ class ProfileService:
                 detail="Profile not found"
             )
         
-        if result.data[0]["user_id"] != user_id:
-            raise HTTPException(
-                status_code=403,
-                detail="You don't have permission to unpublish this profile"
-            )
+        # Check ownership via profile_id relationship
+        profile_id = result.data[0].get("profile_id")
+        if profile_id:
+            profile_check = supabase.table("user_profiles")\
+                .select("user_id")\
+                .eq("id", profile_id)\
+                .single()\
+                .execute()
+            
+            if profile_check.data and profile_check.data["user_id"] != user_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You don't have permission to unpublish this profile"
+                )
         
         # Unpublish (set is_published to false)
         supabase.table("published_profiles")\
             .update({"is_published": False})\
             .eq("username", username)\
+            .eq("profile_slug", profile_slug)\
             .execute()
         
         return {
@@ -341,4 +453,3 @@ class ProfileService:
                 "valid": True,
                 "message": "Error checking username availability"
             }
-
