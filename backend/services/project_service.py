@@ -5,7 +5,7 @@ import os
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from supabase import create_client, Client
+from utils.auth_utils import get_supabase_client
 
 # Load environment variables
 load_dotenv()
@@ -13,20 +13,6 @@ load_dotenv()
 
 class ProjectService:
     """Service for handling project operations."""
-
-    @staticmethod
-    def get_supabase_client() -> Client:
-        """Get Supabase client from environment"""
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
-        
-        if not url or not key:
-            raise HTTPException(
-                status_code=500,
-                detail="Supabase configuration not found"
-            )
-        
-        return create_client(url, key)
 
     @staticmethod
     async def list_projects(user_id: str, profile_id: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -41,7 +27,7 @@ class ProjectService:
             List of projects with metrics
         """
         try:
-            supabase = ProjectService.get_supabase_client()
+            supabase = get_supabase_client()
             
             query = supabase.table("impact_projects")\
                 .select("*, metrics:project_metrics(*)")\
@@ -108,7 +94,7 @@ class ProjectService:
             Project data with metrics
         """
         try:
-            supabase = ProjectService.get_supabase_client()
+            supabase = get_supabase_client()
             
             result = supabase.table("impact_projects")\
                 .select("*, metrics:project_metrics(*)")\
@@ -178,7 +164,7 @@ class ProjectService:
             Created project data
         """
         try:
-            supabase = ProjectService.get_supabase_client()
+            supabase = get_supabase_client()
             
             # Extract profile_id if provided
             profile_id = project_data.pop("profile_id", None)
@@ -287,7 +273,7 @@ class ProjectService:
             Updated project data
         """
         try:
-            supabase = ProjectService.get_supabase_client()
+            supabase = get_supabase_client()
             
             # Extract metrics if provided
             metrics = project_data.pop("metrics", None)
@@ -377,7 +363,7 @@ class ProjectService:
             Success message
         """
         try:
-            supabase = ProjectService.get_supabase_client()
+            supabase = get_supabase_client()
             
             # Delete project (metrics will be cascade deleted if FK is set up correctly)
             result = supabase.table("impact_projects")\
