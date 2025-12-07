@@ -34,18 +34,8 @@ async def sign_up(request: SignUpRequest):
     Creates a new user account with email and password.
     May require email verification depending on Supabase settings.
     """
-    try:
-        # Pass captcha_token (can be None or bypass string)
-        result = await AuthService.sign_up(request.email, request.password, request.captcha_token)
-        return AuthResponse(**result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Sign up error: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail="Failed to create account"
-        )
+    result = await AuthService.sign_up(request.email, request.password, request.captcha_token)
+    return result
 
 
 @router.post("/signin", response_model=AuthResponse)
@@ -57,23 +47,14 @@ async def sign_in(request: SignInRequest):
     If MFA is enabled, returns MFA challenge info instead of session.
     Returns user data and session tokens.
     """
-    try:
-        result = await AuthService.sign_in(
-            request.email, 
-            request.password,
-            request.mfa_challenge_id,
-            request.mfa_code,
-            request.mfa_factor_id
-        )
-        return AuthResponse(**result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Sign in error: {e}")
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email or password"
-        )
+    result = await AuthService.sign_in(
+        request.email, 
+        request.password,
+        request.mfa_challenge_id,
+        request.mfa_code,
+        request.mfa_factor_id
+    )
+    return result
 
 
 @router.post("/signout", response_model=MessageResponse)
@@ -88,13 +69,8 @@ async def sign_out(authorization: Optional[str] = Header(None)):
     
     access_token = authorization.replace("Bearer ", "")
     
-    try:
-        result = await AuthService.sign_out(access_token)
-        return MessageResponse(**result)
-    except Exception as e:
-        print(f"Sign out error: {e}")
-        return {"success": True, "message": "Signed out"}
-
+    result = await AuthService.sign_out(access_token)
+    return result
 
 @router.get("/session", response_model=AuthResponse)
 async def get_session(authorization: str = Depends(auth_utils.get_access_token)):
@@ -103,18 +79,8 @@ async def get_session(authorization: str = Depends(auth_utils.get_access_token))
     
     Returns current user and session data if token is valid.
     """
-    try:
-        result = await auth_utils.get_session(authorization)
-        return AuthResponse(**result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Get session error: {e}")
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or expired token"
-        )
-
+    result = await auth_utils.get_session(authorization)
+    return result
 
 @router.post("/refresh", response_model=AuthResponse)
 async def refresh_session(request: RefreshTokenRequest):
@@ -123,17 +89,8 @@ async def refresh_session(request: RefreshTokenRequest):
     
     Gets a new access token using refresh token.
     """
-    try:
-        result = await auth_utils.refresh_session(request.refresh_token)
-        return AuthResponse(**result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Refresh session error: {e}")
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or expired refresh token"
-        )
+    result = await auth_utils.refresh_session(request.refresh_token)
+    return result
 
 
 @router.post("/reset-password", response_model=MessageResponse)
@@ -143,15 +100,8 @@ async def reset_password(request: ResetPasswordRequest):
     
     Sends a password reset link to the user's email.
     """
-    try:
-        result = await AuthService.reset_password_email(request.email)
-        return MessageResponse(**result)
-    except Exception as e:
-        print(f"Reset password error: {e}")
-        return {
-            "success": True,
-            "message": "If an account exists, a password reset email has been sent"
-        }
+    result = await AuthService.reset_password_email(request.email)
+    return result
 
 
 @router.post("/update-password", response_model=MessageResponse)
@@ -165,17 +115,8 @@ async def update_password(
     Updates the password for the currently authenticated user.
     Requires valid access token.
     """
-    try:
-        result = await AuthService.update_password(authorization, request.new_password)
-        return MessageResponse(**result)
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Update password error: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail="Failed to update password"
-        )
+    result = await AuthService.update_password(authorization, request.new_password)
+    return result
 
 
 @router.post("/mfa/enroll", response_model=MFAEnrollResponse)
