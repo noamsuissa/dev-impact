@@ -1,14 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Eye, Download, LogOut, Github, Share2, CheckCircle, ExternalLink, Copy, User } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
+import ProfileTabs from './ProfileTabs';
+import ProfileModal from './ProfileModal';
+import PublishProfileModal from './PublishProfileModal';
+import UnpublishProfileModal from './UnpublishProfileModal';
+import ManageProfilesModal from './ManageProfilesModal';
 import { useAuth } from '../hooks/useAuth';
 import { completeGitHubAuth } from '../utils/githubAuth';
-import { profiles } from '../utils/client';
-import { generateProfileUrl, isLocalhost } from '../utils/helpers';
+import { profiles, userProfiles } from '../utils/client';
+import { generateProfileUrl } from '../utils/helpers';
 
-const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
+const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfileDeleted }) => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [githubState, setGithubState] = useState('initial'); // initial, loading, awaiting, success, error
@@ -18,6 +23,16 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
   const [publishedUrl, setPublishedUrl] = useState(null);
   const [isPublished, setIsPublished] = useState(false);
   const [showCopied, setShowCopied] = useState(false);
+  
+  // Profile state
+  const [userProfilesList, setUserProfilesList] = useState([]);
+  const [selectedProfileId, setSelectedProfileId] = useState(null);
+  const [publishedProfileSlugs, setPublishedProfileSlugs] = useState([]);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isUnpublishModalOpen, setIsUnpublishModalOpen] = useState(false);
+  const [isManageProfilesModalOpen, setIsManageProfilesModalOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(null);
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -64,30 +79,107 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
     setError(null);
   };
 
-  // Check if profile is already published on mount
+  // Load user profiles on mount
   useEffect(() => {
-    const checkPublishedStatus = async () => {
+    const loadProfiles = async () => {
       if (!user) return;
       
-      const username = user.username;
-      
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        const response = await fetch(`${apiUrl}/api/profiles/${username}`);
+        const profilesList = await userProfiles.list();
+        setUserProfilesList(profilesList);
         
-        if (response.ok) {
-          // Generate URL based on environment (localhost uses path, production uses subdomain)
-          const shareUrl = generateProfileUrl(username);
-          setIsPublished(true);
-          setPublishedUrl(shareUrl);
+        // Select first profile if available and none is currently selected
+        setSelectedProfileId(prev => {
+          if (profilesList.length > 0 && !prev) {
+            return profilesList[0].id;
+          }
+          return prev;
+        });
+      } catch (err) {
+        console.error('Failed to load profiles:', err);
+        setUserProfilesList([]);
+      }
+    };
+
+    loadProfiles();
+  }, [user]);
+
+  // Filter projects by selected profile (using useMemo for derived state)
+  const filteredProjects = useMemo(() => {
+    if (!selectedProfileId) {
+      // If no profile selected, show projects without a profile_id (unassigned)
+      return projects.filter(p => {
+        const pid = p.profile_id;
+        return !pid || pid === null || pid === undefined || pid === '';
+      });
+    }
+    
+    // Filter projects that belong ONLY to the selected profile
+    // Also include unassigned projects (null/undefined) so user can assign them
+    const filtered = projects.filter(p => {
+      const pid = p.profile_id;
+      // Show if: unassigned (null/undefined/empty) OR exactly matches selected profile
+      const isUnassigned = !pid || pid === null || pid === undefined || pid === '';
+      const matchesProfile = pid === selectedProfileId;
+      return isUnassigned || matchesProfile;
+    });
+    
+    // Debug logging
+    console.log('Filtering projects:', {
+      selectedProfileId,
+      totalProjects: projects.length,
+      filteredCount: filtered.length,
+      projects: projects.map(p => ({
+        id: p.id,
+        name: p.projectName,
+        profile_id: p.profile_id,
+        matches: p.profile_id === selectedProfileId || !p.profile_id
+      }))
+    });
+    
+    return filtered;
+  }, [projects, selectedProfileId]);
+
+  // Check published status for all profiles
+  useEffect(() => {
+    const checkPublishedStatus = async () => {
+      if (!user || userProfilesList.length === 0) return;
+      
+      const username = user.username;
+      const publishedSlugs = [];
+      
+      // Check each profile's published status
+      for (const profile of userProfilesList) {
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+          const response = await fetch(`${apiUrl}/api/profiles/${username}/${profile.slug}`);
+          
+          if (response.ok) {
+            publishedSlugs.push(profile.slug);
+          }
+        } catch {
+          // Profile not published, that's okay
         }
-      } catch {
-        // Profile not published, that's okay
+      }
+      
+      setPublishedProfileSlugs(publishedSlugs);
+      
+      // Update published state for selected profile
+      if (selectedProfileId) {
+        const selectedProfile = userProfilesList.find(p => p.id === selectedProfileId);
+        if (selectedProfile && publishedSlugs.includes(selectedProfile.slug)) {
+          setIsPublished(true);
+          const shareUrl = generateProfileUrl(username, selectedProfile.slug);
+          setPublishedUrl(shareUrl);
+        } else {
+          setIsPublished(false);
+          setPublishedUrl(null);
+        }
       }
     };
 
     checkPublishedStatus();
-  }, [user]);
+  }, [user, userProfilesList, selectedProfileId]);
 
   const handleCopyLink = async () => {
     if (!publishedUrl) return;
@@ -101,10 +193,20 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
     }
   };
 
-  const handlePublishProfile = async () => {
-    if (projects.length === 0) {
-      alert('Please add at least one project before publishing your profile.');
-      return;
+  const handlePublishProfile = async (profileIdToPublish) => {
+    const profileToPublish = userProfilesList.find(p => p.id === profileIdToPublish);
+    if (!profileToPublish) {
+      throw new Error('Profile not found.');
+    }
+
+    // Check if profile has projects - filter by exact profile_id match (exclude null/undefined)
+    const profileProjects = projects.filter(p => {
+      const pid = p.profile_id;
+      return pid && pid === profileIdToPublish;
+    });
+    
+    if (profileProjects.length === 0) {
+      throw new Error('Please add at least one project to this profile before publishing. Edit your projects to assign them to this profile.');
     }
 
     setPublishState('loading');
@@ -113,16 +215,24 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
     try {
       const username = user.username;
 
-      // Backend fetches fresh data from database, so we only need to send username
-      // Publish via API - backend returns the URL
-      const response = await profiles.publish({ username });
+      // Publish via API with profile_id
+      const response = await profiles.publish({ 
+        username,
+        profile_id: profileIdToPublish
+      });
       
-      // Use URL from backend response, but override for localhost compatibility
-      const shareUrl = response.url ? (isLocalhost() ? generateProfileUrl(username) : response.url) : generateProfileUrl(username);
+      // Use URL from backend response
+      const shareUrl = response.url || generateProfileUrl(username, response.profile_slug);
       setPublishedUrl(shareUrl);
       
       // Mark as published
       setIsPublished(true);
+      setPublishedProfileSlugs([...publishedProfileSlugs, profileToPublish.slug]);
+      
+      // If this is the selected profile, update the published URL
+      if (profileIdToPublish === selectedProfileId) {
+        setPublishedUrl(shareUrl);
+      }
       
       try {
         await navigator.clipboard.writeText(shareUrl);
@@ -140,17 +250,23 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
       console.error('Error publishing profile:', err);
       setError(err.message);
       setPublishState('error');
-      
-      // Reset error state after 5 seconds
-      setTimeout(() => {
-        setPublishState('initial');
-      }, 5000);
+      throw err; // Re-throw so modal can handle it
     }
   };
 
-  const handleUnpublishProfile = async () => {
-    if (!confirm('Are you sure you want to unpublish your profile? It will no longer be accessible to others.')) {
-      return;
+  const handleOpenPublishModal = () => {
+    setIsPublishModalOpen(true);
+  };
+
+  const handleClosePublishModal = () => {
+    setIsPublishModalOpen(false);
+    setError(null);
+  };
+
+  const handleUnpublishProfile = async (profileIdToUnpublish) => {
+    const profileToUnpublish = userProfilesList.find(p => p.id === profileIdToUnpublish);
+    if (!profileToUnpublish) {
+      throw new Error('Profile not found.');
     }
 
     setPublishState('loading');
@@ -160,26 +276,104 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
       const username = user.username;
 
       // Unpublish via API
-      await profiles.unpublish(username);
+      await profiles.unpublish(username, profileToUnpublish.slug);
 
       // Mark as unpublished
-      setIsPublished(false);
-      setPublishedUrl(null);
-      setPublishState('initial');
+      setPublishedProfileSlugs(publishedProfileSlugs.filter(s => s !== profileToUnpublish.slug));
       
-      // Show success message briefly
-      alert('Profile unpublished successfully!');
+      // If this is the selected profile, update the published state
+      if (profileIdToUnpublish === selectedProfileId) {
+        setIsPublished(false);
+        setPublishedUrl(null);
+      }
+      
+      setPublishState('initial');
     } catch (err) {
       console.error('Error unpublishing profile:', err);
       setError(err.message);
       setPublishState('error');
-      
-      // Reset error state after 5 seconds
-      setTimeout(() => {
-        setPublishState('initial');
-      }, 5000);
+      throw err; // Re-throw so modal can handle it
     }
   };
+
+  const handleOpenUnpublishModal = () => {
+    setIsUnpublishModalOpen(true);
+  };
+
+  const handleCloseUnpublishModal = () => {
+    setIsUnpublishModalOpen(false);
+    setError(null);
+  };
+
+  const handleCreateProfile = async (profileData) => {
+    const newProfile = await userProfiles.create(profileData);
+    setUserProfilesList([...userProfilesList, newProfile]);
+    
+    // Select the newly created profile
+    setSelectedProfileId(newProfile.id);
+  };
+
+  const handleUpdateProfile = async (profileData) => {
+    if (!editingProfile) return;
+    
+    const updatedProfile = await userProfiles.update(editingProfile.id, profileData);
+    setUserProfilesList(userProfilesList.map(p => 
+      p.id === updatedProfile.id ? updatedProfile : p
+    ));
+    setEditingProfile(null);
+  };
+
+  const handleDeleteProfile = async (profileId) => {
+    const profileToDelete = userProfilesList.find(p => p.id === profileId);
+    if (!profileToDelete) {
+      throw new Error('Profile not found.');
+    }
+
+    // Delete profile (backend will delete all assigned projects)
+    await userProfiles.delete(profileId);
+    
+    // Remove profile from list
+    setUserProfilesList(userProfilesList.filter(p => p.id !== profileId));
+    
+    // Note: Projects are already deleted by the backend.
+    // The parent component should refetch projects or filter them from its state.
+    // For now, the filteredProjects will automatically update via the useEffect
+    // that filters projects by selectedProfileId.
+    
+    // Select first remaining profile or null
+    const remaining = userProfilesList.filter(p => p.id !== profileId);
+    setSelectedProfileId(remaining.length > 0 ? remaining[0].id : null);
+    
+    // Notify parent to update projects state (filter out deleted projects)
+    if (onProfileDeleted) {
+      onProfileDeleted(profileId);
+    }
+  };
+
+  const handleOpenManageProfilesModal = () => {
+    setIsManageProfilesModalOpen(true);
+  };
+
+  const handleCloseManageProfilesModal = () => {
+    setIsManageProfilesModalOpen(false);
+  };
+
+  const handleOpenProfileModal = (profile = null) => {
+    setEditingProfile(profile);
+    setIsProfileModalOpen(true);
+  };
+
+  const handleCloseProfileModal = () => {
+    setIsProfileModalOpen(false);
+    setEditingProfile(null);
+  };
+
+  // Save selected profile to localStorage
+  useEffect(() => {
+    if (selectedProfileId && typeof window !== 'undefined') {
+      localStorage.setItem('selectedProfileId', selectedProfileId);
+    }
+  }, [selectedProfileId]);
 
   return (
     <div className="p-10 max-w-[1200px] mx-auto">
@@ -304,8 +498,8 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
           {/* Show Publish or Unpublish based on current state */}
           {!isPublished ? (
             <TerminalButton 
-              onClick={handlePublishProfile}
-              disabled={publishState === 'loading'}
+              onClick={handleOpenPublishModal}
+              disabled={publishState === 'loading' || userProfilesList.length === 0}
             >
               {publishState === 'loading' ? (
                 <>
@@ -326,20 +520,11 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
             </TerminalButton>
           ) : (
             <TerminalButton 
-              onClick={handleUnpublishProfile}
-              disabled={publishState === 'loading'}
+              onClick={handleOpenUnpublishModal}
+              disabled={publishState === 'loading' || userProfilesList.length === 0}
             >
-              {publishState === 'loading' ? (
-                <>
-                  <Share2 size={16} className="inline mr-2 animate-pulse" />
-                  [Unpublishing...]
-                </>
-              ) : (
-                <>
-                  <Share2 size={16} className="inline mr-2" />
-                  [Unpublish]
-                </>
-              )}
+              <Share2 size={16} className="inline mr-2" />
+              [Unpublish]
             </TerminalButton>
           )}
           
@@ -407,31 +592,98 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect }) => {
 
       <div>
         <div className="text-lg mb-5">
-          &gt; Your Projects ({projects.length})
+          &gt; Your Projects ({filteredProjects.length})
         </div>
-        {projects.length === 0 ? (
+        
+        {/* Profile Tabs */}
+        <ProfileTabs
+          profiles={userProfilesList}
+          selectedProfileId={selectedProfileId}
+          onSelectProfile={setSelectedProfileId}
+          onAddProfile={() => handleOpenProfileModal()}
+          onManageProfiles={handleOpenManageProfilesModal}
+          publishedProfileSlugs={publishedProfileSlugs}
+        />
+        
+        {filteredProjects.length === 0 ? (
           <div className="text-terminal-orange mb-5">
-            No projects yet. Add your first project to get started!
+            {selectedProfileId 
+              ? 'No projects in this profile yet. Add a project to get started!'
+              : userProfilesList.length === 0
+              ? 'No profiles yet. Create a profile and add your first project!'
+              : 'No unassigned projects. Select a profile to see its projects or add a new project.'
+            }
           </div>
         ) : (
-          <div className="bg-terminal-bg-lighter border border-terminal-border p-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start auto-rows-fr">
-              {projects.map(project => (
-                <div key={project.id} className="min-w-0 h-full">
-                  <ProjectCard
-                    project={project}
-                    onEdit={(p) => navigate(`/project/${p.id}/edit`)}
-                    onDelete={onDeleteProject}
-                    compact
-                  />
+          <>
+            {filteredProjects.some(p => {
+              const pid = p.profile_id;
+              return !pid || pid === null || pid === undefined || pid === '';
+            }) && selectedProfileId && (
+              <div className="mb-5 text-terminal-orange text-sm border border-terminal-orange/30 bg-terminal-orange/10 p-3 rounded">
+                <div className="flex items-center gap-2">
+                  <span>⚠️</span>
+                  <span>Some projects are unassigned. Edit them to assign to this profile.</span>
                 </div>
-              ))}
+              </div>
+            )}
+            <div className="bg-terminal-bg-lighter border border-terminal-border p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start auto-rows-fr">
+                {filteredProjects.map(project => (
+                  <div key={project.id} className="min-w-0 h-full">
+                    <ProjectCard
+                      project={project}
+                      onEdit={(p) => navigate(`/project/${p.id}/edit`)}
+                      onDelete={onDeleteProject}
+                      compact
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
+
+      {/* Profile Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={handleCloseProfileModal}
+        onSubmit={editingProfile ? handleUpdateProfile : handleCreateProfile}
+        profile={editingProfile}
+      />
+
+      {/* Publish Profile Modal */}
+      <PublishProfileModal
+        isOpen={isPublishModalOpen}
+        onClose={handleClosePublishModal}
+        profiles={userProfilesList}
+        onPublish={handlePublishProfile}
+        publishedProfileSlugs={publishedProfileSlugs}
+      />
+
+      {/* Unpublish Profile Modal */}
+      <UnpublishProfileModal
+        isOpen={isUnpublishModalOpen}
+        onClose={handleCloseUnpublishModal}
+        profiles={userProfilesList}
+        onUnpublish={handleUnpublishProfile}
+        publishedProfileSlugs={publishedProfileSlugs}
+      />
+
+      {/* Manage Profiles Modal */}
+      <ManageProfilesModal
+        isOpen={isManageProfilesModalOpen}
+        onClose={handleCloseManageProfilesModal}
+        profiles={userProfilesList}
+        onDeleteProfile={handleDeleteProfile}
+        onEditProfile={handleOpenProfileModal}
+        publishedProfileSlugs={publishedProfileSlugs}
+        projects={projects}
+      />
     </div>
   );
 };
 
 export default Dashboard;
+
