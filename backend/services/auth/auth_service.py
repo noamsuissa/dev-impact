@@ -5,7 +5,7 @@ import os
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from supabase import create_client, Client
+from supabase import create_client
 import jwt
 import httpx
 import traceback
