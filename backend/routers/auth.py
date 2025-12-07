@@ -1,7 +1,7 @@
 """
 Auth Router - Handle authentication endpoints
 """
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Depends
 from typing import Optional
 from schemas.auth import (
     SignUpRequest,
@@ -13,7 +13,6 @@ from schemas.auth import (
     MessageResponse,
     MFAEnrollRequest,
     MFAVerifyRequest,
-    MFAChallengeRequest,
     MFAEnrollResponse,
     MFAListResponse
 )
@@ -98,22 +97,14 @@ async def sign_out(authorization: Optional[str] = Header(None)):
 
 
 @router.get("/session", response_model=AuthResponse)
-async def get_session(authorization: Optional[str] = Header(None)):
+async def get_session(authorization: str = Depends(auth_utils.get_access_token)):
     """
     Get current session
     
     Returns current user and session data if token is valid.
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail="No authorization token provided"
-        )
-    
-    access_token = authorization.replace("Bearer ", "")
-    
     try:
-        result = await auth_utils.get_session(access_token)
+        result = await auth_utils.get_session(authorization)
         return result
     except HTTPException:
         raise
@@ -166,7 +157,7 @@ async def reset_password(request: ResetPasswordRequest):
 @router.post("/update-password", response_model=MessageResponse)
 async def update_password(
     request: UpdatePasswordRequest,
-    authorization: Optional[str] = Header(None)
+    authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Update user password
@@ -174,16 +165,8 @@ async def update_password(
     Updates the password for the currently authenticated user.
     Requires valid access token.
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required"
-        )
-    
-    access_token = authorization.replace("Bearer ", "")
-    
     try:
-        result = await AuthService.update_password(access_token, request.new_password)
+        result = await AuthService.update_password(authorization, request.new_password)
         return result
     except HTTPException:
         raise
@@ -198,7 +181,7 @@ async def update_password(
 @router.post("/mfa/enroll", response_model=MFAEnrollResponse)
 async def mfa_enroll(
     request: MFAEnrollRequest,
-    authorization: Optional[str] = Header(None)
+    authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Enroll user in MFA (TOTP)
@@ -206,16 +189,8 @@ async def mfa_enroll(
     Creates a new TOTP factor and returns QR code for setup.
     Requires valid access token.
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required"
-        )
-    
-    access_token = authorization.replace("Bearer ", "")
-    
     try:
-        result = await MFAService.mfa_enroll(access_token, request.friendly_name)
+        result = await MFAService.mfa_enroll(authorization, request.friendly_name)
         return result
     except HTTPException:
         raise
@@ -230,7 +205,7 @@ async def mfa_enroll(
 @router.post("/mfa/verify", response_model=MessageResponse)
 async def mfa_verify_enrollment(
     request: MFAVerifyRequest,
-    authorization: Optional[str] = Header(None)
+    authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Verify MFA enrollment with a code
@@ -238,16 +213,8 @@ async def mfa_verify_enrollment(
     Verifies the TOTP code to complete enrollment.
     Requires valid access token.
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required"
-        )
-    
-    access_token = authorization.replace("Bearer ", "")
-    
     try:
-        result = await MFAService.mfa_verify_enrollment(access_token, request.factor_id, request.code)
+        result = await MFAService.mfa_verify_enrollment(authorization, request.factor_id, request.code)
         return result
     except HTTPException:
         raise
@@ -260,23 +227,15 @@ async def mfa_verify_enrollment(
 
 
 @router.get("/mfa/factors", response_model=MFAListResponse)
-async def mfa_list_factors(authorization: Optional[str] = Header(None)):
+async def mfa_list_factors(authorization: str = Depends(auth_utils.get_access_token)):
     """
     List all MFA factors for the current user
     
     Returns list of enrolled MFA factors.
     Requires valid access token.
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required"
-        )
-    
-    access_token = authorization.replace("Bearer ", "")
-    
     try:
-        result = await MFAService.mfa_list_factors(access_token)
+        result = await MFAService.mfa_list_factors(authorization)
         return result
     except HTTPException:
         raise
@@ -291,7 +250,7 @@ async def mfa_list_factors(authorization: Optional[str] = Header(None)):
 @router.delete("/mfa/factors/{factor_id}", response_model=MessageResponse)
 async def mfa_unenroll(
     factor_id: str,
-    authorization: Optional[str] = Header(None)
+    authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Unenroll (remove) an MFA factor
@@ -299,16 +258,8 @@ async def mfa_unenroll(
     Removes the specified MFA factor from the user's account.
     Requires valid access token.
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required"
-        )
-    
-    access_token = authorization.replace("Bearer ", "")
-    
     try:
-        result = await MFAService.mfa_unenroll(access_token, factor_id)
+        result = await MFAService.mfa_unenroll(authorization, factor_id)
         return result
     except HTTPException:
         raise

@@ -1,11 +1,28 @@
 from typing import Optional, Dict, Any
-from fastapi import HTTPException
+from fastapi import HTTPException, Header
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from services.profile_service import ProfileService
 
 load_dotenv()
+
+async def get_access_token(
+    authorization: Optional[str] = Header(None)
+) -> str:
+    """
+    Dependency to extract and validate Bearer token from Authorization header.
+    
+    Raises HTTPException if token is missing or invalid.
+    Returns the access token string.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required"
+        )
+    
+    return authorization.replace("Bearer ", "")
 
 def get_supabase_client() -> Client:
     """Get Supabase client from environment"""
