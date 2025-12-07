@@ -8,7 +8,7 @@ from schemas.auth import AuthResponse, UserResponse, SessionResponse
 
 load_dotenv()
 
-async def get_access_token(
+def get_access_token(
     authorization: Optional[str] = Header(None)
 ) -> str:
     """

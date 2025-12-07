@@ -2,7 +2,6 @@
 Auth Service - Handle authentication operations with Supabase
 """
 import os
-from re import A
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 from fastapi import HTTPException
