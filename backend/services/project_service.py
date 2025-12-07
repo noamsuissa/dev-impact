@@ -6,6 +6,11 @@ from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from fastapi import HTTPException
 from utils.auth_utils import get_supabase_client
+from schemas.project import (
+    Project,
+    ProjectMetric,
+)
+from schemas.auth import MessageResponse
 
 # Load environment variables
 load_dotenv()
@@ -15,7 +20,7 @@ class ProjectService:
     """Service for handling project operations."""
 
     @staticmethod
-    async def list_projects(user_id: str, profile_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def list_projects(user_id: str, profile_id: Optional[str] = None) -> List[Project]:
         """
         List all projects for a user, optionally filtered by profile
         
@@ -46,43 +51,38 @@ class ProjectService:
                 if project.get("metrics"):
                     metrics = sorted(project["metrics"], key=lambda m: m.get("display_order", 0))
                     metrics = [
-                        {
-                            "primary": m["primary_value"],
-                            "label": m["label"],
-                            "detail": m.get("detail")
-                        }
-                        for m in metrics
+                        ProjectMetric(
+                            primary=metric["primary_value"],
+                            label=metric["label"],
+                            detail=metric.get("detail")
+                        )
+                        for metric in metrics
                     ]
                 
-                project_data = {
-                    "id": project["id"],
-                    "company": project["company"],
-                    "projectName": project["project_name"],
-                    "role": project["role"],
-                    "teamSize": project["team_size"],
-                    "problem": project["problem"],
-                    "contributions": project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
-                    "techStack": project["tech_stack"],
-                    "metrics": metrics
-                }
-                # Always include profile_id, even if None
-                if "profile_id" in project:
-                    project_data["profile_id"] = project["profile_id"]
-                else:
-                    project_data["profile_id"] = None
+                project_data = Project(
+                    id=project["id"],
+                    company=project["company"],
+                    projectName=project["project_name"],
+                    role=project["role"],
+                    teamSize=project["team_size"],
+                    problem=project["problem"],
+                    contributions=project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
+                    techStack=project["tech_stack"],
+                    metrics=metrics,
+                    profile_id=project["profile_id"] if "profile_id" in project else None
+                )
                 
                 projects.append(project_data)
             
             return projects
+        except HTTPException:
+            raise
         except Exception as e:
             print(f"List projects error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to fetch projects"
-            )
+            raise HTTPException(status_code=500, detail="Failed to fetch projects")
 
     @staticmethod
-    async def get_project(project_id: str, user_id: str) -> Dict[str, Any]:
+    async def get_project(project_id: str, user_id: str) -> Project:
         """
         Get a single project
         
@@ -104,10 +104,7 @@ class ProjectService:
                 .execute()
             
             if not result.data:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Project not found"
-                )
+                raise HTTPException(status_code=404, detail="Project not found")
             
             project = result.data
             
@@ -116,43 +113,36 @@ class ProjectService:
             if project.get("metrics"):
                 metrics = sorted(project["metrics"], key=lambda m: m.get("display_order", 0))
                 metrics = [
-                    {
-                        "primary": m["primary_value"],
-                        "label": m["label"],
-                        "detail": m.get("detail")
-                    }
-                    for m in metrics
+                    ProjectMetric(
+                        primary=metric["primary_value"],
+                        label=metric["label"],
+                        detail=metric.get("detail")
+                    )
+                    for metric in metrics
                 ]
             
-            project_data = {
-                "id": project["id"],
-                "company": project["company"],
-                "projectName": project["project_name"],
-                "role": project["role"],
-                "teamSize": project["team_size"],
-                "problem": project["problem"],
-                "contributions": project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
-                "techStack": project["tech_stack"],
-                "metrics": metrics
-            }
-            # Always include profile_id, even if None
-            if "profile_id" in project:
-                project_data["profile_id"] = project["profile_id"]
-            else:
-                project_data["profile_id"] = None
+            project_data = Project(
+                id=project["id"],
+                company=project["company"],
+                projectName=project["project_name"],
+                role=project["role"],
+                teamSize=project["team_size"],
+                problem=project["problem"],
+                contributions=project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
+                techStack=project["tech_stack"],
+                metrics=metrics,
+                profile_id=project["profile_id"] if "profile_id" in project else None
+            )
             
             return project_data
         except HTTPException:
             raise
         except Exception as e:
             print(f"Get project error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to fetch project"
-            )
+            raise HTTPException(status_code=500, detail="Failed to fetch project")
 
     @staticmethod
-    async def create_project(user_id: str, project_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_project(user_id: str, project_data: Dict[str, Any]) -> Project:
         """
         Create a new project
         
@@ -161,7 +151,7 @@ class ProjectService:
             project_data: Project data (may include profile_id)
             
         Returns:
-            Created project data
+            Created project
         """
         try:
             supabase = get_supabase_client()
@@ -219,12 +209,12 @@ class ProjectService:
                 metrics_insert = [
                     {
                         "project_id": project_id,
-                        "primary_value": m["primary"],
-                        "label": m["label"],
-                        "detail": m.get("detail"),
+                        "primary_value": metric["primary"],
+                        "label": metric["label"],
+                        "detail": metric.get("detail"),
                         "display_order": idx
                     }
-                    for idx, m in enumerate(metrics)
+                    for idx, metric in enumerate(metrics)
                 ]
                 
                 supabase.table("project_metrics")\
@@ -232,35 +222,28 @@ class ProjectService:
                     .execute()
             
             # Return in frontend format - use the actual database result which includes profile_id
-            project_data = {
-                "id": project_id,
-                "company": project["company"],
-                "projectName": project["project_name"],
-                "role": project["role"],
-                "teamSize": project["team_size"],
-                "problem": project["problem"],
-                "contributions": project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
-                "techStack": project["tech_stack"],
-                "metrics": metrics
-            }
-            # Always include profile_id from database result
-            if "profile_id" in project:
-                project_data["profile_id"] = project["profile_id"]
-            else:
-                project_data["profile_id"] = None
+            project_data = Project(
+                id=project_id,
+                company=project["company"],
+                projectName=project["project_name"],
+                role=project["role"],
+                teamSize=project["team_size"],
+                problem=project["problem"],
+                contributions=project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
+                techStack=project["tech_stack"],
+                metrics=metrics,
+                profile_id=project["profile_id"] if "profile_id" in project else None
+            )
             
             return project_data
         except HTTPException:
             raise
         except Exception as e:
             print(f"Create project error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to create project"
-            )
+            raise HTTPException(status_code=500, detail="Failed to create project")
 
     @staticmethod
-    async def update_project(project_id: str, user_id: str, project_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_project(project_id: str, user_id: str, project_data: Dict[str, Any]) -> Project:
         """
         Update a project
         
@@ -270,7 +253,7 @@ class ProjectService:
             project_data: Project data to update
             
         Returns:
-            Updated project data
+            Updated project
         """
         try:
             supabase = get_supabase_client()
@@ -327,12 +310,12 @@ class ProjectService:
                     metrics_insert = [
                         {
                             "project_id": project_id,
-                            "primary_value": m["primary"],
-                            "label": m["label"],
-                            "detail": m.get("detail"),
+                            "primary_value": metric["primary"],
+                            "label": metric["label"],
+                            "detail": metric.get("detail"),
                             "display_order": idx
                         }
-                        for idx, m in enumerate(metrics)
+                        for idx, metric in enumerate(metrics)
                     ]
                     
                     supabase.table("project_metrics")\
@@ -345,13 +328,10 @@ class ProjectService:
             raise
         except Exception as e:
             print(f"Update project error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to update project"
-            )
+            raise HTTPException(status_code=500, detail="Failed to update project")
 
     @staticmethod
-    async def delete_project(project_id: str, user_id: str) -> Dict[str, Any]:
+    async def delete_project(project_id: str, user_id: str) -> MessageResponse:
         """
         Delete a project
         
@@ -360,7 +340,7 @@ class ProjectService:
             user_id: User's ID (for authorization)
             
         Returns:
-            Success message
+            MessageResponse with success status
         """
         try:
             supabase = get_supabase_client()
@@ -378,16 +358,10 @@ class ProjectService:
                     detail="Project not found"
                 )
             
-            return {
-                "success": True,
-                "message": "Project deleted successfully"
-            }
+            return MessageResponse(success=True, message="Project deleted successfully")
         except HTTPException:
             raise
         except Exception as e:
             print(f"Delete project error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to delete project"
-            )
+            raise HTTPException(status_code=500, detail="Failed to delete project")
 
