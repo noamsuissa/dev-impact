@@ -29,12 +29,13 @@ class ProjectService:
         return create_client(url, key)
 
     @staticmethod
-    async def list_projects(user_id: str) -> List[Dict[str, Any]]:
+    async def list_projects(user_id: str, profile_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        List all projects for a user
+        List all projects for a user, optionally filtered by profile
         
         Args:
             user_id: User's ID
+            profile_id: Optional profile ID to filter projects
             
         Returns:
             List of projects with metrics
@@ -42,11 +43,15 @@ class ProjectService:
         try:
             supabase = ProjectService.get_supabase_client()
             
-            result = supabase.table("impact_projects")\
+            query = supabase.table("impact_projects")\
                 .select("*, metrics:project_metrics(*)")\
-                .eq("user_id", user_id)\
-                .order("display_order")\
-                .execute()
+                .eq("user_id", user_id)
+            
+            # Filter by profile_id if provided
+            if profile_id:
+                query = query.eq("profile_id", profile_id)
+            
+            result = query.order("display_order").execute()
             
             projects = []
             for project in result.data:
@@ -63,7 +68,7 @@ class ProjectService:
                         for m in metrics
                     ]
                 
-                projects.append({
+                project_data = {
                     "id": project["id"],
                     "company": project["company"],
                     "projectName": project["project_name"],
@@ -73,7 +78,14 @@ class ProjectService:
                     "contributions": project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
                     "techStack": project["tech_stack"],
                     "metrics": metrics
-                })
+                }
+                # Always include profile_id, even if None
+                if "profile_id" in project:
+                    project_data["profile_id"] = project["profile_id"]
+                else:
+                    project_data["profile_id"] = None
+                
+                projects.append(project_data)
             
             return projects
         except Exception as e:
@@ -126,7 +138,7 @@ class ProjectService:
                     for m in metrics
                 ]
             
-            return {
+            project_data = {
                 "id": project["id"],
                 "company": project["company"],
                 "projectName": project["project_name"],
@@ -137,6 +149,13 @@ class ProjectService:
                 "techStack": project["tech_stack"],
                 "metrics": metrics
             }
+            # Always include profile_id, even if None
+            if "profile_id" in project:
+                project_data["profile_id"] = project["profile_id"]
+            else:
+                project_data["profile_id"] = None
+            
+            return project_data
         except HTTPException:
             raise
         except Exception as e:
@@ -153,7 +172,7 @@ class ProjectService:
         
         Args:
             user_id: User's ID
-            project_data: Project data
+            project_data: Project data (may include profile_id)
             
         Returns:
             Created project data
@@ -161,11 +180,18 @@ class ProjectService:
         try:
             supabase = ProjectService.get_supabase_client()
             
-            # Get current project count for display_order
-            count_result = supabase.table("impact_projects")\
+            # Extract profile_id if provided
+            profile_id = project_data.pop("profile_id", None)
+            
+            # Get current project count for display_order (within profile if specified)
+            count_query = supabase.table("impact_projects")\
                 .select("id", count="exact")\
-                .eq("user_id", user_id)\
-                .execute()
+                .eq("user_id", user_id)
+            
+            if profile_id:
+                count_query = count_query.eq("profile_id", profile_id)
+            
+            count_result = count_query.execute()
             
             display_order = len(count_result.data) if count_result.data else 0
             
@@ -184,6 +210,10 @@ class ProjectService:
                 "tech_stack": project_data["techStack"],
                 "display_order": display_order
             }
+            
+            # Add profile_id if provided
+            if profile_id:
+                project_insert["profile_id"] = profile_id
             
             project_result = supabase.table("impact_projects")\
                 .insert(project_insert)\
@@ -215,8 +245,8 @@ class ProjectService:
                     .insert(metrics_insert)\
                     .execute()
             
-            # Return in frontend format
-            return {
+            # Return in frontend format - use the actual database result which includes profile_id
+            project_data = {
                 "id": project_id,
                 "company": project["company"],
                 "projectName": project["project_name"],
@@ -227,6 +257,13 @@ class ProjectService:
                 "techStack": project["tech_stack"],
                 "metrics": metrics
             }
+            # Always include profile_id from database result
+            if "profile_id" in project:
+                project_data["profile_id"] = project["profile_id"]
+            else:
+                project_data["profile_id"] = None
+            
+            return project_data
         except HTTPException:
             raise
         except Exception as e:
@@ -255,6 +292,9 @@ class ProjectService:
             # Extract metrics if provided
             metrics = project_data.pop("metrics", None)
             
+            # Extract profile_id if provided
+            profile_id = project_data.pop("profile_id", None)
+            
             # Prepare update data (convert frontend keys to backend keys)
             update_data = {}
             if "company" in project_data:
@@ -271,6 +311,8 @@ class ProjectService:
                 update_data["contributions"] = project_data["contributions"]
             if "techStack" in project_data:
                 update_data["tech_stack"] = project_data["techStack"]
+            if profile_id is not None:
+                update_data["profile_id"] = profile_id
             
             # Update project if there's data to update
             if update_data:

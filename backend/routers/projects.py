@@ -1,7 +1,7 @@
 """
 Projects Router - Handle project CRUD endpoints
 """
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Query
 from typing import Optional, List
 from schemas.project import Project, CreateProjectRequest, UpdateProjectRequest
 from services.project_service import ProjectService
@@ -35,16 +35,19 @@ async def get_user_id_from_header(authorization: Optional[str]) -> str:
 
 
 @router.get("", response_model=List[Project])
-async def list_projects(authorization: Optional[str] = Header(None)):
+async def list_projects(
+    authorization: Optional[str] = Header(None),
+    profile_id: Optional[str] = Query(None, description="Filter projects by profile ID")
+):
     """
     List all projects for current user
     
-    Returns all projects owned by the authenticated user.
+    Returns all projects owned by the authenticated user, optionally filtered by profile.
     """
     user_id = await get_user_id_from_header(authorization)
     
     try:
-        projects = await ProjectService.list_projects(user_id)
+        projects = await ProjectService.list_projects(user_id, profile_id=profile_id)
         return projects
     except HTTPException:
         raise
