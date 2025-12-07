@@ -3,8 +3,7 @@ Profile Service - Handle profile business logic and Supabase operations
 """
 import os
 import re
-import jwt
-from typing import Optional, Dict, Any, List
+from typing import Optional
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi import HTTPException
@@ -19,9 +18,6 @@ from schemas.profile import (
     UserData,
     GitHubData,
     ProfileData,
-    ProjectData,
-    MetricData,
-    ProjectMetric,
 )
 from schemas.auth import MessageResponse
 
@@ -353,39 +349,35 @@ class ProfileService:
             profiles = []
             for profile in result.data:
                 profile_data = profile["profile_data"]
-                profiles.append(ProfileResponse(
-                    username=profile["username"],
-                    profile_slug=profile.get("profile_slug"),
-                    user=UserData(
-                        name=profile_data["user"]["name"],
-                        github=GitHubData(
-                            username=profile_data["user"].get("github").get("username"),
-                            avatar_url=profile_data["user"].get("github").get("avatar_url")
-                        )
-                    ),
-                    profile=ProfileData(
-                        name=profile_data["profile"]["name"],
-                        description=profile_data["profile"].get("description")
-                    ),
-                    projects=[ProjectData(
-                        id=project["id"],
-                        company=project["company"],
-                        projectName=project["projectName"],
-                        role=project["role"],
-                        teamSize=project["teamSize"],
-                        problem=project["problem"],
-                        contributions=project["contributions"],
-                        techStack=project["techStack"],
-                        metrics=[MetricData(
-                            primary=metric["primary"],
-                            label=metric["label"],
-                            detail=metric["detail"]
-                        ) for metric in project["metrics"]]
-                    ) for project in profile_data["projects"]],
-                    viewCount=profile["view_count"],
-                    publishedAt=profile["published_at"],
-                    updatedAt=profile["updated_at"]
-                ))
+                profiles.append(
+                    ProfileResponse(
+                        username=profile["username"],
+                        profile_slug=profile.get("profile_slug"),
+                        user=UserData(
+                            name=profile_data["user"]["name"],
+                            github=GitHubData(
+                                username=profile_data["user"]
+                                .get("github")
+                                .get("username")
+                                if profile_data["user"].get("github")
+                                else None,
+                                avatar_url=profile_data["user"]
+                                .get("github")
+                                .get("avatar_url")
+                                if profile_data["user"].get("github")
+                                else None,
+                            ),
+                        ),
+                        profile=ProfileData(
+                            name=profile_data["profile"]["name"],
+                            description=profile_data["profile"].get("description"),
+                        ),
+                        projects=profile_data["projects"],
+                        viewCount=profile["view_count"],
+                        publishedAt=profile["published_at"],
+                        updatedAt=profile["updated_at"],
+                    )
+                )
             
             return ListProfilesResponse(
                 profiles=profiles,
