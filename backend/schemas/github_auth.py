@@ -15,6 +15,7 @@ class PollRequest(BaseModel):
 
 
 class TokenResponse(BaseModel):
+    status: str
     access_token: str
     token_type: str
     scope: str

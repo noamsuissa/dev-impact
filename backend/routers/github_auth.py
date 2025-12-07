@@ -4,6 +4,7 @@ from schemas.github_auth import (
     PollRequest,
     GitHubUser,
     UserProfileRequest,
+    TokenResponse,
 )
 from services.github_service import GitHubService
 
@@ -23,7 +24,7 @@ async def initiate_device_flow():
         raise HTTPException(status_code=500, detail=f"Failed to initiate device flow: {str(e)}")
 
 
-@router.post("/device/poll")
+@router.post("/device/poll", response_model=TokenResponse)
 async def poll_device_token(request: PollRequest):
     """
     Poll for GitHub access token.
@@ -34,14 +35,9 @@ async def poll_device_token(request: PollRequest):
         
         if result is None:
             # Still pending authorization
-            return {"status": "pending"}
+            return TokenResponse(status="pending")
         
-        return {
-            "status": "success",
-            "access_token": result.access_token,
-            "token_type": result.token_type,
-            "scope": result.scope,
-        }
+        return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
