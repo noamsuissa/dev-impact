@@ -2,7 +2,8 @@
 User Router - Handle user profile endpoints
 """
 from fastapi import APIRouter, Depends
-from schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest, MessageResponse
+from schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest
+from schemas.auth import MessageResponse
 from services.user_service import UserService
 from utils import auth_utils
 
