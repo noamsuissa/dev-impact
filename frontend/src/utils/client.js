@@ -470,8 +470,12 @@ export const profiles = {
   /**
    * Get published profile
    */
-  get: async (username) => {
-    const response = await fetch(`${API_URL}/api/profiles/${username}`);
+  get: async (username, profileSlug = null) => {
+    let url = `${API_URL}/api/profiles/${username}`;
+    if (profileSlug) {
+      url += `/${profileSlug}`;
+    }
+    const response = await fetch(url);
     
     if (!response.ok) {
       const error = await response.json();
@@ -484,8 +488,8 @@ export const profiles = {
   /**
    * Unpublish profile
    */
-  unpublish: async (username) => {
-    const response = await fetchWithAuth(`/api/profiles/${username}`, {
+  unpublish: async (username, profileSlug) => {
+    const response = await fetchWithAuth(`/api/profiles/${username}/${profileSlug}`, {
       method: 'DELETE',
     });
     
@@ -506,6 +510,89 @@ export const profiles = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to check username');
+    }
+    
+    return response.json();
+  },
+};
+
+/**
+ * User Profiles API (user-created profiles for grouping projects)
+ */
+export const userProfiles = {
+  /**
+   * Create a new user profile
+   */
+  create: async (profileData) => {
+    const response = await fetchWithAuth('/api/user-profiles', {
+      method: 'POST',
+      body: JSON.stringify(profileData),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to create profile');
+    }
+    
+    return response.json();
+  },
+  
+  /**
+   * List all user profiles
+   */
+  list: async () => {
+    const response = await fetchWithAuth('/api/user-profiles');
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to list profiles');
+    }
+    
+    return response.json();
+  },
+  
+  /**
+   * Get a single user profile
+   */
+  get: async (profileId) => {
+    const response = await fetchWithAuth(`/api/user-profiles/${profileId}`);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to get profile');
+    }
+    
+    return response.json();
+  },
+  
+  /**
+   * Update a user profile
+   */
+  update: async (profileId, profileData) => {
+    const response = await fetchWithAuth(`/api/user-profiles/${profileId}`, {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to update profile');
+    }
+    
+    return response.json();
+  },
+  
+  /**
+   * Delete a user profile
+   */
+  delete: async (profileId) => {
+    const response = await fetchWithAuth(`/api/user-profiles/${profileId}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to delete profile');
     }
     
     return response.json();
