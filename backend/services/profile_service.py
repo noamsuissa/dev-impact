@@ -15,6 +15,13 @@ from schemas.profile import (
     PublishProfileResponse,
     CheckUsernameResponse,
     ProfileResponse,
+    ListProfilesResponse,
+    UserData,
+    GitHubData,
+    ProfileData,
+    ProjectData,
+    MetricData,
+    ProjectMetric,
 )
 from schemas.auth import MessageResponse
 
@@ -322,7 +329,7 @@ class ProfileService:
             raise HTTPException(status_code=500, detail=f"Failed to unpublish profile: {e}")
 
     @staticmethod
-    async def list_profiles(limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+    async def list_profiles(limit: int = 50, offset: int = 0) -> ListProfilesResponse:
         """
         List all published profiles
         
@@ -331,7 +338,7 @@ class ProfileService:
             offset: Number of profiles to skip
             
         Returns:
-            Dict containing profiles list and pagination info
+            ListProfilesResponse containing profiles list and pagination info
         """
         try:
             supabase = get_supabase_client()
@@ -346,21 +353,46 @@ class ProfileService:
             profiles = []
             for profile in result.data:
                 profile_data = profile["profile_data"]
-                profiles.append({
-                    "username": profile["username"],
-                    "name": profile_data["user"]["name"],
-                    "github": profile_data["user"].get("github"),
-                    "projectCount": len(profile_data["projects"]),
-                    "viewCount": profile["view_count"],
-                    "publishedAt": profile["published_at"]
-                })
+                profiles.append(ProfileResponse(
+                    username=profile["username"],
+                    profile_slug=profile.get("profile_slug"),
+                    user=UserData(
+                        name=profile_data["user"]["name"],
+                        github=GitHubData(
+                            username=profile_data["user"].get("github").get("username"),
+                            avatar_url=profile_data["user"].get("github").get("avatar_url")
+                        )
+                    ),
+                    profile=ProfileData(
+                        name=profile_data["profile"]["name"],
+                        description=profile_data["profile"].get("description")
+                    ),
+                    projects=[ProjectData(
+                        id=project["id"],
+                        company=project["company"],
+                        projectName=project["projectName"],
+                        role=project["role"],
+                        teamSize=project["teamSize"],
+                        problem=project["problem"],
+                        contributions=project["contributions"],
+                        techStack=project["techStack"],
+                        metrics=[MetricData(
+                            primary=metric["primary"],
+                            label=metric["label"],
+                            detail=metric["detail"]
+                        ) for metric in project["metrics"]]
+                    ) for project in profile_data["projects"]],
+                    viewCount=profile["view_count"],
+                    publishedAt=profile["published_at"],
+                    updatedAt=profile["updated_at"]
+                ))
             
-            return {
-                "profiles": profiles,
-                "total": len(profiles),
-                "limit": limit,
-                "offset": offset
-            }
+            return ListProfilesResponse(
+                profiles=profiles,
+                total=len(profiles),
+                limit=limit,
+                offset=offset
+            )
         except HTTPException:
             raise
         except Exception as e:

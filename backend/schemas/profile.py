@@ -72,3 +72,9 @@ class CheckUsernameResponse(BaseModel):
     available: bool
     valid: bool
     message: Optional[str] = None
+
+class ListProfilesResponse(BaseModel):
+    profiles: Optional[List[ProfileResponse]] = None
+    total: Optional[int] = None
+    limit: Optional[int] = None
+    offset: Optional[int] = None

@@ -8,6 +8,7 @@ from schemas.profile import (
     PublishProfileResponse,
     CheckUsernameResponse,
     ProfileResponse,
+    ListProfilesResponse,
 )
 from schemas.auth import MessageResponse
 from services.profile_service import ProfileService
@@ -93,7 +94,7 @@ async def unpublish_profile(
     return result
 
 
-@router.get("")
+@router.get("", response_model=ListProfilesResponse)
 async def list_profiles(limit: int = 50, offset: int = 0):
     """
     List all published profiles
@@ -101,12 +102,5 @@ async def list_profiles(limit: int = 50, offset: int = 0):
     This is a public endpoint that returns a list of all published profiles.
     Useful for creating a directory or discovery feature.
     """
-    try:
-        result = await ProfileService.list_profiles(limit, offset)
-        return result
-    except Exception as e:
-        print(f"Error listing profiles: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to list profiles: {str(e)}"
-        )
+    result = await ProfileService.list_profiles(limit, offset)
+    return result
