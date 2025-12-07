@@ -267,7 +267,7 @@ class AuthService:
                 anon_key = os.getenv("SUPABASE_ANON_KEY")
                 
                 if not url or not anon_key:
-                    raise HTTPException(status_code=500, etail="Supabase configuration not found")
+                    raise HTTPException(status_code=500, detail="Supabase configuration not found")
                 
                 # Create client with anon key and set auth header if we have a token
                 mfa_client = create_client(url, anon_key)
