@@ -1,25 +1,9 @@
+"""
+Profile Schemas - For published profiles (user account profiles)
+"""
 from pydantic import BaseModel, Field
 from typing import List, Optional
-
-# Pydantic models for request/response
-class MetricData(BaseModel):
-    primary: str
-    label: str
-    detail: Optional[str] = None
-
-class ProjectData(BaseModel):
-    id: str
-    company: str
-    projectName: str = Field(..., alias="projectName")
-    role: str
-    teamSize: Optional[int] = Field(None, alias="teamSize")
-    problem: str
-    contributions: List[str]
-    techStack: List[str] = Field(..., alias="techStack")
-    metrics: List[MetricData] = []
-
-    class Config:
-        populate_by_name = True
+from schemas.project import Project
 
 class GitHubData(BaseModel):
     username: Optional[str] = None
@@ -34,20 +18,41 @@ class UserData(BaseModel):
 
 class PublishProfileRequest(BaseModel):
     username: str
+    profile_id: str
 
 class PublishProfileResponse(BaseModel):
     success: bool
     username: str
+    profile_slug: str
     url: str
     message: str
 
+class ProfileData(BaseModel):
+    """Published profile metadata (user profile for projects)"""
+    name: str
+    description: Optional[str] = None
+
+
 class ProfileResponse(BaseModel):
     username: str
+    profile_slug: Optional[str] = None
     user: UserData
-    projects: List[ProjectData]
+    profile: Optional[ProfileData] = None
+    projects: List[Project]
     viewCount: int = Field(..., alias="view_count")
     publishedAt: str = Field(..., alias="published_at")
     updatedAt: str = Field(..., alias="updated_at")
 
     class Config:
         populate_by_name = True
+
+class CheckUsernameResponse(BaseModel):
+    available: bool
+    valid: bool
+    message: Optional[str] = None
+
+class ListProfilesResponse(BaseModel):
+    profiles: Optional[List[ProfileResponse]] = None
+    total: Optional[int] = None
+    limit: Optional[int] = None
+    offset: Optional[int] = None

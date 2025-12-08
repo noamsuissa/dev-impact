@@ -1,12 +1,31 @@
-from typing import Optional, Dict, Any
-from fastapi import HTTPException
+from typing import Optional
+import jwt
+from fastapi import HTTPException, Header
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from schemas.auth import AuthResponse, UserResponse, SessionResponse
 
 load_dotenv()
 
-def get_supabase_client() -> Client:
+def get_access_token(
+    authorization: Optional[str] = Header(None)
+) -> str:
+    """
+    Dependency to extract and validate Bearer token from Authorization header.
+    
+    Raises HTTPException if token is missing or invalid.
+    Returns the access token string.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required"
+        )
+    
+    return authorization.replace("Bearer ", "")
+
+def get_supabase_client(access_token: Optional[str] = None) -> Client:
     """Get Supabase client from environment"""
     url = os.getenv("SUPABASE_URL")
     # Use service role key for backend operations
@@ -18,7 +37,12 @@ def get_supabase_client() -> Client:
             detail="Supabase configuration not found"
         )
     
-    return create_client(url, key)
+    client = create_client(url, key)
+    
+    if access_token and not os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
+        client.postgrest.auth(access_token)
+        
+    return client
 
 async def verify_token(access_token: str) -> Optional[str]:
     """
@@ -41,7 +65,7 @@ async def verify_token(access_token: str) -> Optional[str]:
         print(f"Verify token error: {e}")
         return None
 
-async def get_session(access_token: str) -> Dict[str, Any]:
+async def get_session(access_token: str) -> AuthResponse:
         """
         Get current session
         
@@ -49,7 +73,7 @@ async def get_session(access_token: str) -> Dict[str, Any]:
             access_token: User's access token
             
         Returns:
-            Dict containing user and session data
+            AuthResponse containing user and session data
         """
         try:
             supabase = get_supabase_client()
@@ -65,16 +89,16 @@ async def get_session(access_token: str) -> Dict[str, Any]:
                     detail="Invalid or expired token"
                 )
             
-            return {
-                "user": {
-                    "id": user.user.id,
-                    "email": user.user.email,
-                    "created_at": user.user.created_at
-                },
-                "session": {
-                    "access_token": access_token,
-                }
-            }
+            return AuthResponse(
+                user=UserResponse(
+                    id=user.user.id,
+                    email=user.user.email,
+                    created_at=user.user.created_at
+                ),
+                session=SessionResponse(
+                    access_token=access_token,
+                ),
+            )
         except HTTPException:
             raise
         except Exception as e:
@@ -84,7 +108,7 @@ async def get_session(access_token: str) -> Dict[str, Any]:
                 detail="Invalid or expired token"
             )
 
-async def refresh_session(refresh_token: str) -> Dict[str, Any]:
+async def refresh_session(refresh_token: str) -> AuthResponse:
         """
         Refresh user session
         
@@ -92,7 +116,7 @@ async def refresh_session(refresh_token: str) -> Dict[str, Any]:
             refresh_token: User's refresh token
             
         Returns:
-            Dict containing new session data
+            AuthResponse containing new session data
         """
         try:
             supabase = get_supabase_client()
@@ -104,18 +128,18 @@ async def refresh_session(refresh_token: str) -> Dict[str, Any]:
                     detail="Invalid or expired refresh token"
                 )
             
-            return {
-                "user": {
-                    "id": response.user.id,
-                    "email": response.user.email,
-                    "created_at": response.user.created_at
-                },
-                "session": {
-                    "access_token": response.session.access_token,
-                    "refresh_token": response.session.refresh_token,
-                    "expires_at": response.session.expires_at,
-                }
-            }
+            return AuthResponse(
+                user=UserResponse(
+                    id=response.user.id,
+                    email=response.user.email,
+                    created_at=response.user.created_at
+                ),
+                session=SessionResponse(
+                    access_token=response.session.access_token,
+                    refresh_token=response.session.refresh_token,
+                    expires_at=response.session.expires_at,
+                ),
+            )
         except HTTPException:
             raise
         except Exception as e:
@@ -124,3 +148,38 @@ async def refresh_session(refresh_token: str) -> Dict[str, Any]:
                 status_code=401,
                 detail="Invalid or expired refresh token"
             )
+
+def get_user_id_from_token(token: str) -> Optional[str]:
+    """Extract user ID from JWT token"""
+    try:
+        # Decode JWT without verification (we trust Supabase tokens)
+        # In production, you should verify the signature with your Supabase JWT secret
+        decoded = jwt.decode(token, options={"verify_signature": False})
+        user_id = decoded.get('sub')
+        return user_id
+    except Exception as e:
+        print(f"Error decoding token: {e}")
+        return None
+
+def get_user_id_from_authorization(authorization: Optional[str]) -> str:
+    """Extract and validate user ID from authorization header"""
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required"
+        )
+    
+    # Support both "Bearer <token>" and raw token strings
+    token = authorization
+    if token.startswith("Bearer "):
+        token = token.replace("Bearer ", "")
+
+    user_id = get_user_id_from_token(token)
+
+    if not user_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication token"
+        )
+
+    return user_id

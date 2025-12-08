@@ -5,7 +5,12 @@ import os
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from supabase import create_client, Client
+from utils.auth_utils import get_supabase_client
+from schemas.project import (
+    Project,
+    ProjectMetric,
+)
+from schemas.auth import MessageResponse
 
 # Load environment variables
 load_dotenv()
@@ -15,38 +20,29 @@ class ProjectService:
     """Service for handling project operations."""
 
     @staticmethod
-    def get_supabase_client() -> Client:
-        """Get Supabase client from environment"""
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
-        
-        if not url or not key:
-            raise HTTPException(
-                status_code=500,
-                detail="Supabase configuration not found"
-            )
-        
-        return create_client(url, key)
-
-    @staticmethod
-    async def list_projects(user_id: str) -> List[Dict[str, Any]]:
+    async def list_projects(user_id: str, profile_id: Optional[str] = None) -> List[Project]:
         """
-        List all projects for a user
+        List all projects for a user, optionally filtered by profile
         
         Args:
             user_id: User's ID
+            profile_id: Optional profile ID to filter projects
             
         Returns:
             List of projects with metrics
         """
         try:
-            supabase = ProjectService.get_supabase_client()
+            supabase = get_supabase_client()
             
-            result = supabase.table("impact_projects")\
+            query = supabase.table("impact_projects")\
                 .select("*, metrics:project_metrics(*)")\
-                .eq("user_id", user_id)\
-                .order("display_order")\
-                .execute()
+                .eq("user_id", user_id)
+            
+            # Filter by profile_id if provided
+            if profile_id:
+                query = query.eq("profile_id", profile_id)
+            
+            result = query.order("display_order").execute()
             
             projects = []
             for project in result.data:
@@ -55,36 +51,38 @@ class ProjectService:
                 if project.get("metrics"):
                     metrics = sorted(project["metrics"], key=lambda m: m.get("display_order", 0))
                     metrics = [
-                        {
-                            "primary": m["primary_value"],
-                            "label": m["label"],
-                            "detail": m.get("detail")
-                        }
-                        for m in metrics
+                        ProjectMetric(
+                            primary=metric["primary_value"],
+                            label=metric["label"],
+                            detail=metric.get("detail")
+                        )
+                        for metric in metrics
                     ]
                 
-                projects.append({
-                    "id": project["id"],
-                    "company": project["company"],
-                    "projectName": project["project_name"],
-                    "role": project["role"],
-                    "teamSize": project["team_size"],
-                    "problem": project["problem"],
-                    "contributions": project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
-                    "techStack": project["tech_stack"],
-                    "metrics": metrics
-                })
+                project_data = Project(
+                    id=project["id"],
+                    company=project["company"],
+                    projectName=project["project_name"],
+                    role=project["role"],
+                    teamSize=project["team_size"],
+                    problem=project["problem"],
+                    contributions=project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
+                    techStack=project["tech_stack"],
+                    metrics=metrics,
+                    profile_id=project["profile_id"] if "profile_id" in project else None
+                )
+                
+                projects.append(project_data)
             
             return projects
+        except HTTPException:
+            raise
         except Exception as e:
             print(f"List projects error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to fetch projects"
-            )
+            raise HTTPException(status_code=500, detail="Failed to fetch projects")
 
     @staticmethod
-    async def get_project(project_id: str, user_id: str) -> Dict[str, Any]:
+    async def get_project(project_id: str, user_id: str) -> Project:
         """
         Get a single project
         
@@ -96,7 +94,7 @@ class ProjectService:
             Project data with metrics
         """
         try:
-            supabase = ProjectService.get_supabase_client()
+            supabase = get_supabase_client()
             
             result = supabase.table("impact_projects")\
                 .select("*, metrics:project_metrics(*)")\
@@ -106,10 +104,7 @@ class ProjectService:
                 .execute()
             
             if not result.data:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Project not found"
-                )
+                raise HTTPException(status_code=404, detail="Project not found")
             
             project = result.data
             
@@ -118,54 +113,61 @@ class ProjectService:
             if project.get("metrics"):
                 metrics = sorted(project["metrics"], key=lambda m: m.get("display_order", 0))
                 metrics = [
-                    {
-                        "primary": m["primary_value"],
-                        "label": m["label"],
-                        "detail": m.get("detail")
-                    }
-                    for m in metrics
+                    ProjectMetric(
+                        primary=metric["primary_value"],
+                        label=metric["label"],
+                        detail=metric.get("detail")
+                    )
+                    for metric in metrics
                 ]
             
-            return {
-                "id": project["id"],
-                "company": project["company"],
-                "projectName": project["project_name"],
-                "role": project["role"],
-                "teamSize": project["team_size"],
-                "problem": project["problem"],
-                "contributions": project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
-                "techStack": project["tech_stack"],
-                "metrics": metrics
-            }
+            project_data = Project(
+                id=project["id"],
+                company=project["company"],
+                projectName=project["project_name"],
+                role=project["role"],
+                teamSize=project["team_size"],
+                problem=project["problem"],
+                contributions=project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
+                techStack=project["tech_stack"],
+                metrics=metrics,
+                profile_id=project["profile_id"] if "profile_id" in project else None
+            )
+            
+            return project_data
         except HTTPException:
             raise
         except Exception as e:
             print(f"Get project error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to fetch project"
-            )
+            raise HTTPException(status_code=500, detail="Failed to fetch project")
 
     @staticmethod
-    async def create_project(user_id: str, project_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_project(user_id: str, project_data: Dict[str, Any]) -> Project:
         """
         Create a new project
         
         Args:
             user_id: User's ID
-            project_data: Project data
+            project_data: Project data (may include profile_id)
             
         Returns:
-            Created project data
+            Created project
         """
         try:
-            supabase = ProjectService.get_supabase_client()
+            supabase = get_supabase_client()
             
-            # Get current project count for display_order
-            count_result = supabase.table("impact_projects")\
+            # Extract profile_id if provided
+            profile_id = project_data.pop("profile_id", None)
+            
+            # Get current project count for display_order (within profile if specified)
+            count_query = supabase.table("impact_projects")\
                 .select("id", count="exact")\
-                .eq("user_id", user_id)\
-                .execute()
+                .eq("user_id", user_id)
+            
+            if profile_id:
+                count_query = count_query.eq("profile_id", profile_id)
+            
+            count_result = count_query.execute()
             
             display_order = len(count_result.data) if count_result.data else 0
             
@@ -185,6 +187,10 @@ class ProjectService:
                 "display_order": display_order
             }
             
+            # Add profile_id if provided
+            if profile_id:
+                project_insert["profile_id"] = profile_id
+            
             project_result = supabase.table("impact_projects")\
                 .insert(project_insert)\
                 .execute()
@@ -203,41 +209,41 @@ class ProjectService:
                 metrics_insert = [
                     {
                         "project_id": project_id,
-                        "primary_value": m["primary"],
-                        "label": m["label"],
-                        "detail": m.get("detail"),
+                        "primary_value": metric["primary"],
+                        "label": metric["label"],
+                        "detail": metric.get("detail"),
                         "display_order": idx
                     }
-                    for idx, m in enumerate(metrics)
+                    for idx, metric in enumerate(metrics)
                 ]
                 
                 supabase.table("project_metrics")\
                     .insert(metrics_insert)\
                     .execute()
             
-            # Return in frontend format
-            return {
-                "id": project_id,
-                "company": project["company"],
-                "projectName": project["project_name"],
-                "role": project["role"],
-                "teamSize": project["team_size"],
-                "problem": project["problem"],
-                "contributions": project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
-                "techStack": project["tech_stack"],
-                "metrics": metrics
-            }
+            # Return in frontend format - use the actual database result which includes profile_id
+            project_data = Project(
+                id=project_id,
+                company=project["company"],
+                projectName=project["project_name"],
+                role=project["role"],
+                teamSize=project["team_size"],
+                problem=project["problem"],
+                contributions=project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
+                techStack=project["tech_stack"],
+                metrics=metrics,
+                profile_id=project["profile_id"] if "profile_id" in project else None
+            )
+            
+            return project_data
         except HTTPException:
             raise
         except Exception as e:
             print(f"Create project error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to create project"
-            )
+            raise HTTPException(status_code=500, detail="Failed to create project")
 
     @staticmethod
-    async def update_project(project_id: str, user_id: str, project_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_project(project_id: str, user_id: str, project_data: Dict[str, Any]) -> Project:
         """
         Update a project
         
@@ -247,13 +253,16 @@ class ProjectService:
             project_data: Project data to update
             
         Returns:
-            Updated project data
+            Updated project
         """
         try:
-            supabase = ProjectService.get_supabase_client()
+            supabase = get_supabase_client()
             
             # Extract metrics if provided
             metrics = project_data.pop("metrics", None)
+            
+            # Extract profile_id if provided
+            profile_id = project_data.pop("profile_id", None)
             
             # Prepare update data (convert frontend keys to backend keys)
             update_data = {}
@@ -271,6 +280,8 @@ class ProjectService:
                 update_data["contributions"] = project_data["contributions"]
             if "techStack" in project_data:
                 update_data["tech_stack"] = project_data["techStack"]
+            if profile_id is not None:
+                update_data["profile_id"] = profile_id
             
             # Update project if there's data to update
             if update_data:
@@ -299,12 +310,12 @@ class ProjectService:
                     metrics_insert = [
                         {
                             "project_id": project_id,
-                            "primary_value": m["primary"],
-                            "label": m["label"],
-                            "detail": m.get("detail"),
+                            "primary_value": metric["primary"],
+                            "label": metric["label"],
+                            "detail": metric.get("detail"),
                             "display_order": idx
                         }
-                        for idx, m in enumerate(metrics)
+                        for idx, metric in enumerate(metrics)
                     ]
                     
                     supabase.table("project_metrics")\
@@ -317,13 +328,10 @@ class ProjectService:
             raise
         except Exception as e:
             print(f"Update project error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to update project"
-            )
+            raise HTTPException(status_code=500, detail="Failed to update project")
 
     @staticmethod
-    async def delete_project(project_id: str, user_id: str) -> Dict[str, Any]:
+    async def delete_project(project_id: str, user_id: str) -> MessageResponse:
         """
         Delete a project
         
@@ -332,10 +340,10 @@ class ProjectService:
             user_id: User's ID (for authorization)
             
         Returns:
-            Success message
+            MessageResponse with success status
         """
         try:
-            supabase = ProjectService.get_supabase_client()
+            supabase = get_supabase_client()
             
             # Delete project (metrics will be cascade deleted if FK is set up correctly)
             result = supabase.table("impact_projects")\
@@ -350,16 +358,10 @@ class ProjectService:
                     detail="Project not found"
                 )
             
-            return {
-                "success": True,
-                "message": "Project deleted successfully"
-            }
+            return MessageResponse(success=True, message="Project deleted successfully")
         except HTTPException:
             raise
         except Exception as e:
             print(f"Delete project error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to delete project"
-            )
+            raise HTTPException(status_code=500, detail="Failed to delete project")
 

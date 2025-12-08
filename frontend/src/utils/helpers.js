@@ -55,17 +55,35 @@ export const isLocalhost = () => {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/);
 };
 
+// Utility function to generate slug from name
+export const generateSlug = (name) => {
+  if (!name) return '';
+  // Convert to lowercase, replace spaces and special chars with dashes
+  let slug = name.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  // Ensure it's not empty
+  if (!slug) slug = 'profile';
+  return slug;
+};
+
 // Utility function to generate profile URL based on environment
-// On localhost: uses path-based URL (http://localhost:5173/username)
-// In production: uses subdomain URL (https://username.dev-impact.io)
-export const generateProfileUrl = (username) => {
+// On localhost: uses path-based URL (http://localhost:5173/username/profile-slug)
+// In production: uses subdomain + path URL (https://username.dev-impact.io/profile-slug)
+export const generateProfileUrl = (username, profileSlug = null) => {
   if (isLocalhost()) {
     // On localhost, use path-based URL
     const port = window.location.port || '5173';
+    if (profileSlug) {
+      return `http://localhost:${port}/${username}/${profileSlug}`;
+    }
     return `http://localhost:${port}/${username}`;
   } else {
-    // In production, use subdomain URL
+    // In production, use subdomain + path URL
     const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
+    if (profileSlug) {
+      return `https://${username}.${baseDomain}/${profileSlug}`;
+    }
     return `https://${username}.${baseDomain}`;
   }
 };
