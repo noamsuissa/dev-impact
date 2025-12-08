@@ -113,6 +113,7 @@ class ProfileService:
             # Fetch latest user profile from database
             try:
                 user_profile = await UserService.get_profile(user_id)
+                user_profile_data = user_profile.model_dump()
             except Exception as e:
                 print(f"Error fetching user profile: {e}")
                 raise HTTPException(status_code=500, detail="Failed to fetch user profile")
@@ -120,6 +121,7 @@ class ProfileService:
             # Fetch latest projects from database for this profile
             try:
                 projects = await ProjectService.list_projects(user_id, profile_id=profile_id)
+                projects_data = [project.model_dump() for project in projects]
             except Exception as e:
                 print(f"Error fetching projects: {e}")
                 raise HTTPException(status_code=500, detail="Failed to fetch projects")
@@ -127,17 +129,17 @@ class ProfileService:
             # Build profile_data from fresh database data
             fresh_profile_data = {
                 "user": {
-                    "name": user_profile.get("full_name", ""),
+                    "name": user_profile_data.get("full_name", ""),
                     "github": {
-                        "username": user_profile.get("github_username"),
-                        "avatar_url": user_profile.get("github_avatar_url")
-                    } if user_profile.get("github_username") else None
+                        "username": user_profile_data.get("github_username"),
+                        "avatar_url": user_profile_data.get("github_avatar_url")
+                    } if user_profile_data.get("github_username") else None
                 },
                 "profile": {
                     "name": profile["name"],
                     "description": profile.get("description")
                 },
-                "projects": projects
+                "projects": projects_data
             }
             
             # Check if profile is already published

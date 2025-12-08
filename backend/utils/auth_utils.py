@@ -163,19 +163,23 @@ def get_user_id_from_token(token: str) -> Optional[str]:
 
 def get_user_id_from_authorization(authorization: Optional[str]) -> str:
     """Extract and validate user ID from authorization header"""
-    if not authorization or not authorization.startswith("Bearer "):
+    if not authorization:
         raise HTTPException(
             status_code=401,
             detail="Authentication required"
         )
     
-    token = authorization.replace("Bearer ", "")
+    # Support both "Bearer <token>" and raw token strings
+    token = authorization
+    if token.startswith("Bearer "):
+        token = token.replace("Bearer ", "")
+
     user_id = get_user_id_from_token(token)
-    
+
     if not user_id:
         raise HTTPException(
             status_code=401,
             detail="Invalid authentication token"
         )
-    
+
     return user_id
