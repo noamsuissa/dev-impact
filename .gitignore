@@ -24,10 +24,15 @@ dist-ssr
 
 .env
 
-# Ignore all markdown files except README.md or any README in subdirectories
+# Ignore all markdown files except README.md, CONTRIBUTING.md or any README in subdirectories
 *.md
 !README.md
-**README.md
+!**/README.md
+!CONTRIBUTING.md
+!**/CONTRIBUTING.md
+# Explicitly allow backend documentation files
+!backend/README.md
+!backend/CONTRIBUTING.md
 
 .cursor/
 
