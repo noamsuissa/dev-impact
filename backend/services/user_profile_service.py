@@ -94,7 +94,14 @@ class UserProfileService:
         except HTTPException:
             raise
         except Exception as e:
+            error_str = str(e)
             print(f"Create user profile error: {e}")
+            # Check if the error is about missing table
+            if "could not find the table" in error_str.lower() or "pgrst205" in error_str.lower():
+                raise HTTPException(
+                    status_code=500,
+                    detail="Database migration not applied. Please run migration 003_user_profiles.sql in Supabase SQL Editor. See backend/README.md for instructions."
+                )
             raise HTTPException(status_code=500, detail="Failed to create user profile")
 
     @staticmethod
@@ -138,7 +145,13 @@ class UserProfileService:
         except HTTPException:
             raise
         except Exception as e:
+            error_str = str(e)
             print(f"List user profiles error: {e}")
+            if "could not find the table" in error_str.lower() or "pgrst205" in error_str.lower():
+                raise HTTPException(
+                    status_code=500,
+                    detail="Database migration not applied. Please run migration 003_user_profiles.sql in Supabase SQL Editor. See backend/README.md for instructions."
+                )
             raise HTTPException(status_code=500, detail="Failed to list user profiles")
 
     @staticmethod
@@ -184,7 +197,13 @@ class UserProfileService:
         except HTTPException:
             raise
         except Exception as e:
+            error_str = str(e)
             print(f"Get user profile error: {e}")
+            if "could not find the table" in error_str.lower() or "pgrst205" in error_str.lower():
+                raise HTTPException(
+                    status_code=500,
+                    detail="Database migration not applied. Please run migration 003_user_profiles.sql in Supabase SQL Editor. See backend/README.md for instructions."
+                )
             raise HTTPException(status_code=500, detail="Failed to get user profile")
 
     @staticmethod
@@ -281,7 +300,13 @@ class UserProfileService:
         except HTTPException:
             raise
         except Exception as e:
+            error_str = str(e)
             print(f"Update user profile error: {e}")
+            if "could not find the table" in error_str.lower() or "pgrst205" in error_str.lower():
+                raise HTTPException(
+                    status_code=500,
+                    detail="Database migration not applied. Please run migration 003_user_profiles.sql in Supabase SQL Editor. See backend/README.md for instructions."
+                )
             raise HTTPException(status_code=500, detail="Failed to update user profile")
 
     @staticmethod
@@ -338,6 +363,12 @@ class UserProfileService:
         except HTTPException:
             raise
         except Exception as e:
+            error_str = str(e)
             print(f"Delete user profile error: {e}")
+            if "could not find the table" in error_str.lower() or "pgrst205" in error_str.lower():
+                raise HTTPException(
+                    status_code=500,
+                    detail="Database migration not applied. Please run migration 003_user_profiles.sql in Supabase SQL Editor. See backend/README.md for instructions."
+                )
             raise HTTPException(status_code=500, detail="Failed to delete user profile")
 
