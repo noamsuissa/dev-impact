@@ -96,17 +96,6 @@ class MFAVerifyRequest(BaseModel):
     code: str
 
 
-class MFAChallengeRequest(BaseModel):
-    """MFA challenge request schema"""
-    factor_id: str
-    code: str
-
-
-class SignInMFARequest(BaseModel):
-    """Sign in with MFA challenge request schema"""
-    challenge_id: str
-    code: str
-
 
 class MFAEnrollResponse(BaseModel):
     """MFA enroll response schema"""

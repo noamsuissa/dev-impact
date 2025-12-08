@@ -3,29 +3,7 @@ Profile Schemas - For published profiles (user account profiles)
 """
 from pydantic import BaseModel, Field
 from typing import List, Optional
-
-
-# Shared data models for published profiles
-class MetricData(BaseModel):
-    """Project metric data"""
-    primary: str
-    label: str
-    detail: Optional[str] = None
-
-
-class ProjectData(BaseModel):
-    id: str
-    company: str
-    projectName: str = Field(..., alias="projectName")
-    role: str
-    teamSize: Optional[int] = Field(None, alias="teamSize")
-    problem: str
-    contributions: List[str]
-    techStack: List[str] = Field(..., alias="techStack")
-    metrics: List[MetricData] = []
-
-    class Config:
-        populate_by_name = True
+from schemas.project import Project
 
 class GitHubData(BaseModel):
     username: Optional[str] = None
@@ -60,10 +38,21 @@ class ProfileResponse(BaseModel):
     profile_slug: Optional[str] = None
     user: UserData
     profile: Optional[ProfileData] = None
-    projects: List[ProjectData]
+    projects: List[Project]
     viewCount: int = Field(..., alias="view_count")
     publishedAt: str = Field(..., alias="published_at")
     updatedAt: str = Field(..., alias="updated_at")
 
     class Config:
         populate_by_name = True
+
+class CheckUsernameResponse(BaseModel):
+    available: bool
+    valid: bool
+    message: Optional[str] = None
+
+class ListProfilesResponse(BaseModel):
+    profiles: Optional[List[ProfileResponse]] = None
+    total: Optional[int] = None
+    limit: Optional[int] = None
+    offset: Optional[int] = None
