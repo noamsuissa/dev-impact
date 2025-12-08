@@ -453,6 +453,6 @@ class AuthService:
             return MessageResponse(success=True, message="Password updated successfully")
         except Exception as e:
             print(f"Update password error: {e}")
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail="Failed to update password")
 
     

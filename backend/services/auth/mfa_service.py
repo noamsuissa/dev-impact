@@ -103,7 +103,7 @@ class MFAService:
         except Exception as e:
             print(f"MFA enroll error: {e}")
             traceback.print_exc()
-            raise HTTPException(status_code=400, detail=f"Failed to enroll in MFA: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Failed to enroll in MFA")
 
     @staticmethod
     async def mfa_verify_enrollment(access_token: str, factor_id: str, code: str) -> MessageResponse:
@@ -174,7 +174,7 @@ class MFAService:
         except Exception as e:
             print(f"MFA verify enrollment error: {e}")
             traceback.print_exc()
-            raise HTTPException(status_code=400, detail=f"Invalid verification code: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Invalid verification code")
 
     @staticmethod
     async def mfa_list_factors(access_token: str) -> MFAListResponse:
