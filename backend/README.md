@@ -33,7 +33,7 @@ The backend follows a **3-tier layered architecture**:
 
 ```
 ┌─────────────────────────────────────┐
-│         API Layer (Routers)        │  ← HTTP request/response handling
+│         API Layer (Routers)         │  ← HTTP request/response handling
 ├─────────────────────────────────────┤
 │      Business Logic (Services)      │  ← Core business logic
 ├─────────────────────────────────────┤
@@ -73,7 +73,7 @@ All business logic is encapsulated in service classes with static methods:
 ```python
 class ProfileService:
     @staticmethod
-    async def publish_profile(username: str, profile_id: str, user_id: str, token: str):
+    async def publish_profile(username: str, profile_id: str, user_id: str, token: str) -> PublishProfileResponse:
         # Business logic here
         pass
 ```
@@ -126,7 +126,7 @@ class SignUpRequest(BaseModel):
 FastAPI's dependency injection for authentication and shared logic:
 
 ```python
-@router.post("/profile")
+@router.post("/profile", response_model=CreateProfileResponse)
 async def create_profile(
     request: CreateProfileRequest,
     authorization: str = Depends(auth_utils.get_access_token)
@@ -385,19 +385,9 @@ Migrations are SQL files in `migrations/` directory. Run them in order:
 4. **Register Router** (`main.py`): Include router in FastAPI app
 5. **Add Tests**: Write tests for new functionality
 
-### Testing
-
-```bash
-# Run tests (when test suite is added)
-pytest
-
-# Run with coverage
-pytest --cov=.
-```
 
 ### Debugging
 
-- Enable debug logging by setting `ENVIRONMENT` to non-production value
 - Check Supabase logs in Supabase Dashboard
 - Use FastAPI's interactive docs at `/docs` for testing endpoints
 

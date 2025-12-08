@@ -315,7 +315,7 @@ git checkout -b fix/bug-description
 ```
 
 **Branch Naming:**
-- `feature/` - New features
+- `feat/` - New features
 - `fix/` - Bug fixes
 - `refactor/` - Code refactoring
 - `docs/` - Documentation updates
