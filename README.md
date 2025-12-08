@@ -27,8 +27,8 @@ Show your work. Show your impact. Stand out.
 
 Copy `.env.example` to `.env` in both the `backend` and `frontend` folders and fill in the required values. You’ll need to provide your Supabase keys and set the correct redirect URLs.
 
-
-> Make sure to set `AUTH_REDIRECT_URL` to your frontend’s password reset route (e.g., `http://localhost:5173/reset-password`).
+> Set `AUTH_REDIRECT_URL` to your frontend’s base URL (e.g., `http://localhost:5173`).  
+> The backend uses this for Supabase email flows (signup + password reset), and the frontend automatically routes recovery links to `/reset-password`.
 
 ---
 
@@ -92,7 +92,8 @@ The frontend will run at `http://localhost:5173`
 - **Auto Username**: Uses your GitHub username or generates from your name
 
 📚 **Full Documentation**:
-Coming soon: Full API documentation, advanced configuration guides, and deployment tutorials. Stay tuned!
+- See `backend/README.md` for backend architecture, API endpoints, and environment variables
+- See `backend/CONTRIBUTING.md` for backend design patterns and contribution guidelines
 
 
 ## How to Contribute
@@ -126,7 +127,7 @@ We welcome contributions 🫶! Here's how you can help:
      ```
 
 3. **Make your changes**
-   - Backend: Follow FastAPI best practices.
+   - Backend: Follow the patterns in `backend/README.md` and `backend/CONTRIBUTING.md`.
    - Frontend: Keep the terminal aesthetic consistent.
    - Write clear commit messages.
 
@@ -173,15 +174,18 @@ Here are some additional ideas:
 
 ```
 dev-impact/
-├── backend/          # FastAPI backend
-│   ├── routers/      # API endpoints
-│   ├── services/     # Business logic
-│   └── models/       # Data models
-├── frontend/         # React frontend
-│   ├── src/
-│   │   ├── components/  # React components
-│   │   └── utils/       # Helper functions
-└── docs/            # Documentation
+├── backend/              # FastAPI backend API
+│   ├── routers/          # API route handlers
+│   ├── services/         # Business logic layer
+│   ├── schemas/          # Pydantic request/response models
+│   ├── utils/            # Shared backend utilities (auth, Supabase client, etc.)
+│   └── migrations/       # SQL database migrations
+├── frontend/             # React frontend (Vite + Tailwind)
+│   └── src/
+│       ├── components/   # React components and pages
+│       ├── contexts/     # React context (e.g., auth)
+│       ├── hooks/        # Reusable hooks
+│       └── utils/        # API client and helper functions
 ```
 
 ## Tech Stack
