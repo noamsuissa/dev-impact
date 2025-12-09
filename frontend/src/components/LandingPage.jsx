@@ -39,18 +39,18 @@ const LandingPage = () => {
       }, 0);
     } else {
       // First time - animate the boot sequence
-    bootSequence.forEach((line, i) => {
-      setTimeout(() => {
-        setLines(prev => [...prev, line]);
-        if (i === bootSequence.length - 1) {
+      bootSequence.forEach((line, i) => {
+        setTimeout(() => {
+          setLines(prev => [...prev, line]);
+          if (i === bootSequence.length - 1) {
             setTimeout(() => {
               setShowButtons(true);
               // Mark as loaded after animation completes
               localStorage.setItem('dev-impact-landing-loaded', 'true');
             }, 500);
-        }
-      }, i * 300);
-    });
+          }
+        }, i * 300);
+      });
     }
   }, []);
 
@@ -68,6 +68,11 @@ const LandingPage = () => {
               <Link to="/signin">
                 <TerminalButton>
                   [Start Building]
+                </TerminalButton>
+              </Link>
+              <Link to="/pricing">
+                <TerminalButton>
+                  [Pricing]
                 </TerminalButton>
               </Link>
               <Link to="/about">
