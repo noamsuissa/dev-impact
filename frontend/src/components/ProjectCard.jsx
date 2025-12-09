@@ -2,7 +2,7 @@ import React from 'react';
 import TerminalButton from './common/TerminalButton';
 import { repeat, padLine, centerText, wrapText } from '../utils/helpers';
 
-const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
+const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) => {
   const maxWidth = compact ? 45 : 80;
   
   const padLineLocal = (text) => padLine(text, maxWidth);
@@ -105,7 +105,10 @@ const ProjectCard = ({ project, onEdit, onDelete, compact = false }) => {
   };
 
   return (
-    <div className={`font-mono ${compact ? 'text-xs' : 'text-sm'} leading-normal text-terminal-text whitespace-pre overflow-x-auto flex flex-col h-full`}>
+    <div 
+      className={`font-mono ${compact ? 'text-xs' : 'text-sm'} leading-normal text-terminal-text whitespace-pre overflow-x-auto flex flex-col h-full ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick ? () => onClick(project) : undefined}
+    >
       <div className="inline-block min-w-fit flex-grow">
       <div>┌{repeat('─', maxWidth)}┐</div>
       <div>{renderLineWithLabel('Company:', project.company, maxWidth)}</div>

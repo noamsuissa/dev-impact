@@ -444,6 +444,62 @@ export const projects = {
     
     return response.json();
   },
+  
+  /**
+   * Get evidence for a project
+   */
+  getEvidence: async (projectId) => {
+    const response = await fetchWithAuth(`/api/projects/${projectId}/evidence`);
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to fetch evidence');
+    }
+    
+    return response.json();
+  },
+  /**
+   * Upload evidence file (backend handles all Supabase operations)
+   */
+  uploadEvidence: async (projectId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const token = storage.getToken();
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_URL}/api/projects/${projectId}/evidence`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to upload evidence');
+    }
+    
+    return response.json();
+  },
+  
+  /**
+   * Delete evidence
+   */
+  deleteEvidence: async (projectId, evidenceId) => {
+    const response = await fetchWithAuth(`/api/projects/${projectId}/evidence/${evidenceId}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to delete evidence');
+    }
+    
+    return response.json();
+  },
 };
 
 /**
