@@ -61,6 +61,14 @@ class UserProfileService:
                 if counter > 1000:
                     raise HTTPException(status_code=500, detail="Failed to generate unique slug")
             
+            # Check profile limit before creating
+            subscription_info = await UserProfileService.get_subscription_info(user_id, token)
+            if not subscription_info.get("can_add_profile", False):
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Profile limit reached. Free users are limited to {subscription_info.get('max_profiles', 3)} profiles. Upgrade to Pro for unlimited profiles."
+                )
+            
             # Get current profile count for display_order
             count_result = supabase.table("user_profiles")\
                 .select("id", count="exact")\
@@ -340,4 +348,55 @@ class UserProfileService:
         except Exception as e:
             print(f"Delete user profile error: {e}")
             raise HTTPException(status_code=500, detail="Failed to delete user profile")
+
+    @staticmethod
+    async def get_subscription_info(
+        user_id: str,
+        token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get user's subscription information and profile limits
+        
+        Args:
+            user_id: The user's ID
+            token: Optional user token for auth
+            
+        Returns:
+            Dictionary with subscription_type, profile_count, max_profiles, can_add_profile
+        """
+        try:
+            supabase = get_supabase_client(access_token=token)
+            
+            # Get user's subscription type from profiles table
+            profile_result = supabase.table("profiles")\
+                .select("subscription_type")\
+                .eq("id", user_id)\
+                .single()\
+                .execute()
+            
+            subscription_type = profile_result.data.get("subscription_type", "free") if profile_result.data else "free"
+            
+            # Count existing profiles
+            count_result = supabase.table("user_profiles")\
+                .select("id", count="exact")\
+                .eq("user_id", user_id)\
+                .execute()
+            
+            profile_count = len(count_result.data) if count_result.data else 0
+            
+            # Set max profiles based on subscription
+            if subscription_type == "pro":
+                max_profiles = 1000  # Unlimited for pro
+            else:
+                max_profiles = 3  # Free users limited to 3
+            
+            return {
+                "subscription_type": subscription_type,
+                "profile_count": profile_count,
+                "max_profiles": max_profiles,
+                "can_add_profile": profile_count < max_profiles
+            }
+        except Exception as e:
+            print(f"Get subscription info error: {e}")
+            raise HTTPException(status_code=500, detail="Failed to get subscription info")
 

@@ -36,6 +36,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
   const [editingProfile, setEditingProfile] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState(null);
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -82,7 +83,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
     setError(null);
   };
 
-  // Load user profiles on mount
+  // Load user profiles and subscription info on mount
   useEffect(() => {
     const loadProfiles = async () => {
       if (!user) return;
@@ -90,6 +91,21 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
       try {
         const profilesList = await userProfiles.list();
         setUserProfilesList(profilesList);
+        
+        // Load subscription info
+        try {
+          const subInfo = await userProfiles.getSubscriptionInfo();
+          setSubscriptionInfo(subInfo);
+        } catch (err) {
+          console.error('Failed to load subscription info:', err);
+          // Default to free tier if fetch fails
+          setSubscriptionInfo({
+            subscription_type: 'free',
+            profile_count: profilesList.length,
+            max_profiles: 3,
+            can_add_profile: profilesList.length < 3
+          });
+        }
         
         // Select first profile if available and none is currently selected
         setSelectedProfileId(prev => {
@@ -314,6 +330,14 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
     
     // Select the newly created profile
     setSelectedProfileId(newProfile.id);
+    
+    // Refresh subscription info
+    try {
+      const subInfo = await userProfiles.getSubscriptionInfo();
+      setSubscriptionInfo(subInfo);
+    } catch (err) {
+      console.error('Failed to refresh subscription info:', err);
+    }
   };
 
   const handleUpdateProfile = async (profileData) => {
@@ -350,6 +374,14 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
     // Notify parent to update projects state (filter out deleted projects)
     if (onProfileDeleted) {
       onProfileDeleted(profileId);
+    }
+    
+    // Refresh subscription info
+    try {
+      const subInfo = await userProfiles.getSubscriptionInfo();
+      setSubscriptionInfo(subInfo);
+    } catch (err) {
+      console.error('Failed to refresh subscription info:', err);
     }
   };
 
@@ -606,6 +638,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
           onAddProfile={() => handleOpenProfileModal()}
           onManageProfiles={handleOpenManageProfilesModal}
           publishedProfileSlugs={publishedProfileSlugs}
+          canAddProfile={subscriptionInfo?.can_add_profile ?? true}
         />
         
         {filteredProjects.length === 0 ? (

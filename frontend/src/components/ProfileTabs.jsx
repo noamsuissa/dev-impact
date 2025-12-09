@@ -1,14 +1,20 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 
-const ProfileTabs = ({ profiles, selectedProfileId, onSelectProfile, onAddProfile, onManageProfiles, publishedProfileSlugs = [] }) => {
+const ProfileTabs = ({ profiles, selectedProfileId, onSelectProfile, onAddProfile, onManageProfiles, publishedProfileSlugs = [], canAddProfile = true }) => {
   if (!profiles || profiles.length === 0) {
     return (
       <div className="mb-5">
         <div className="flex items-center gap-2">
           <button
             onClick={onAddProfile}
-            className="px-3 py-1.5 bg-terminal-bg-lighter border border-terminal-border hover:border-terminal-orange text-terminal-orange text-sm transition-colors flex items-center gap-2"
+            disabled={!canAddProfile}
+            className={`px-3 py-1.5 border text-sm transition-colors flex items-center gap-2 ${
+              canAddProfile
+                ? 'bg-terminal-bg-lighter border-terminal-border hover:border-terminal-orange text-terminal-orange'
+                : 'bg-terminal-bg-lighter border-terminal-border text-terminal-gray cursor-not-allowed opacity-50'
+            }`}
+            title={!canAddProfile ? 'Profile limit reached. Free users are limited to 3 profiles. Upgrade to Pro for unlimited profiles.' : ''}
           >
             <Plus size={14} />
             Add Profile
@@ -75,7 +81,13 @@ const ProfileTabs = ({ profiles, selectedProfileId, onSelectProfile, onAddProfil
           {/* Add Profile Button */}
           <button
             onClick={onAddProfile}
-            className="ml-2 px-3 py-2 bg-terminal-bg-lighter border border-terminal-border hover:border-terminal-orange text-terminal-orange text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+            disabled={!canAddProfile}
+            className={`ml-2 px-3 py-2 border text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${
+              canAddProfile
+                ? 'bg-terminal-bg-lighter border-terminal-border hover:border-terminal-orange text-terminal-orange'
+                : 'bg-terminal-bg-lighter border-terminal-border text-terminal-gray cursor-not-allowed opacity-50'
+            }`}
+            title={!canAddProfile ? 'Profile limit reached. Free users are limited to 3 profiles. Upgrade to Pro for unlimited profiles.' : ''}
           >
             <Plus size={14} />
             Add

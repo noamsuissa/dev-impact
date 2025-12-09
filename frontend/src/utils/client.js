@@ -608,6 +608,20 @@ export const userProfiles = {
   },
   
   /**
+   * Get subscription information and profile limits
+   */
+  getSubscriptionInfo: async () => {
+    const response = await fetchWithAuth('/api/user-profiles/subscription/info');
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to get subscription info');
+    }
+    
+    return response.json();
+  },
+  
+  /**
    * Get a single user profile
    */
   get: async (profileId) => {
