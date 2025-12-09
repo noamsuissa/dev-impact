@@ -1,9 +1,14 @@
 """
 Projects Router - Handle project CRUD endpoints
 """
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, UploadFile, File
 from typing import Optional, List
-from schemas.project import Project, CreateProjectRequest, UpdateProjectRequest
+from schemas.project import (
+    Project,
+    CreateProjectRequest,
+    UpdateProjectRequest,
+    ProjectEvidence,
+)
 from services.project_service import ProjectService
 from utils import auth_utils
 from schemas.auth import MessageResponse
@@ -94,5 +99,67 @@ async def delete_project(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
     result = await ProjectService.delete_project(project_id, user_id)
+    return result
+
+
+@router.get("/{project_id}/evidence", response_model=List[ProjectEvidence])
+async def list_project_evidence(
+    project_id: str,
+    authorization: str = Depends(auth_utils.get_access_token)
+):
+    """
+    List all evidence for a project
+    
+    Returns all evidence items for the project if owned by the authenticated user.
+    """
+    user_id = auth_utils.get_user_id_from_authorization(authorization)
+    
+    evidence = await ProjectService.list_project_evidence(project_id, user_id)
+    return evidence
+
+
+@router.post("/{project_id}/evidence", response_model=ProjectEvidence)
+async def upload_project_evidence(
+    project_id: str,
+    file: UploadFile = File(...),
+    authorization: str = Depends(auth_utils.get_access_token),
+):
+    """
+    Upload a screenshot for a project and create an evidence record.
+
+    Accepts an image file upload, validates it, uploads to Supabase storage,
+    and creates the evidence record in a single step.
+    """
+    user_id = auth_utils.get_user_id_from_authorization(authorization)
+
+    file_content = await file.read()
+    file_size = len(file_content)
+
+    evidence = await ProjectService.upload_evidence_file(
+        project_id=project_id,
+        user_id=user_id,
+        file_name=file.filename or "screenshot",
+        mime_type=file.content_type or "application/octet-stream",
+        file_size=file_size,
+        file_content=file_content,
+    )
+
+    return evidence
+
+
+@router.delete("/{project_id}/evidence/{evidence_id}", response_model=MessageResponse)
+async def delete_evidence(
+    project_id: str,
+    evidence_id: str,
+    authorization: str = Depends(auth_utils.get_access_token),
+):
+    """
+    Delete evidence record and file
+    
+    Deletes evidence record and associated file from storage if owned by the authenticated user.
+    """
+    user_id = auth_utils.get_user_id_from_authorization(authorization)
+    
+    result = await ProjectService.delete_evidence(evidence_id, user_id)
     return result
 
