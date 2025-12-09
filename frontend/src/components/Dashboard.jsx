@@ -8,6 +8,7 @@ import ProfileModal from './ProfileModal';
 import PublishProfileModal from './PublishProfileModal';
 import UnpublishProfileModal from './UnpublishProfileModal';
 import ManageProfilesModal from './ManageProfilesModal';
+import ProjectModal from './ProjectModal';
 import { useAuth } from '../hooks/useAuth';
 import { completeGitHubAuth } from '../utils/githubAuth';
 import { profiles, userProfiles } from '../utils/client';
@@ -33,6 +34,8 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
   const [isUnpublishModalOpen, setIsUnpublishModalOpen] = useState(false);
   const [isManageProfilesModalOpen, setIsManageProfilesModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -222,7 +225,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
       });
       
       // Use URL from backend response
-      const shareUrl = response.url || generateProfileUrl(username, response.profile_slug);
+      const shareUrl = generateProfileUrl(username, response.profile_slug);
       setPublishedUrl(shareUrl);
       
       // Mark as published
@@ -635,6 +638,10 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
                       project={project}
                       onEdit={(p) => navigate(`/project/${p.id}/edit`)}
                       onDelete={onDeleteProject}
+                      onClick={(p) => {
+                        setSelectedProject(p);
+                        setIsProjectModalOpen(true);
+                      }}
                       compact
                     />
                   </div>
@@ -669,6 +676,18 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
         profiles={userProfilesList}
         onUnpublish={handleUnpublishProfile}
         publishedProfileSlugs={publishedProfileSlugs}
+      />
+
+      {/* Project Modal */}
+      <ProjectModal
+        isOpen={isProjectModalOpen}
+        onClose={() => {
+          setIsProjectModalOpen(false);
+          setSelectedProject(null);
+        }}
+        project={selectedProject}
+        onEdit={(p) => navigate(`/project/${p.id}/edit`)}
+        onDelete={onDeleteProject}
       />
 
       {/* Manage Profiles Modal */}
