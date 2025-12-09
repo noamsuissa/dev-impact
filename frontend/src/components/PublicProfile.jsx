@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { Github, Eye } from 'lucide-react';
 import ProjectCard from './ProjectCard';
+import ProjectModal from './ProjectModal';
 import { useMetaTags } from '../hooks/useMetaTags';
 import { generateProfileUrl } from '../utils/helpers';
 import { useAuth } from '../hooks/useAuth';
@@ -12,6 +13,8 @@ const PublicProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   
   // Extract username and profile slug from subdomain/path
   const getUsernameAndSlug = () => {
@@ -237,7 +240,14 @@ const PublicProfile = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start auto-rows-fr">
                 {profile.projects.map(project => (
                   <div key={project.id} className="min-w-0 h-full">
-                    <ProjectCard project={project} compact />
+                    <ProjectCard 
+                      project={project} 
+                      compact
+                      onClick={(p) => {
+                        setSelectedProject(p);
+                        setIsProjectModalOpen(true);
+                      }}
+                    />
                   </div>
                 ))}
               </div>
@@ -263,6 +273,17 @@ const PublicProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Project Modal (Read-only) */}
+      <ProjectModal
+        isOpen={isProjectModalOpen}
+        onClose={() => {
+          setIsProjectModalOpen(false);
+          setSelectedProject(null);
+        }}
+        project={selectedProject}
+        readOnly={true}
+      />
     </div>
   );
 };
