@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ArrowLeft } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
-
-const WAITLIST_URL = 'https://forms.gle/your-waitlist-form-link'; // Replace with actual waitlist form
+import WaitlistModal from './WaitlistModal';
 
 const PricingPage = () => {
+  const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
   const plans = [
     {
       name: 'Hobby',
@@ -117,18 +117,14 @@ const PricingPage = () => {
                 </ul>
 
                 {isComingSoon ? (
-                  <a
-                    href={WAITLIST_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-auto z-20"
-                  >
+                  <div className="mt-auto z-20">
                     <TerminalButton
+                      onClick={() => setIsWaitlistModalOpen(true)}
                       className={`w-full text-center border-terminal-orange bg-terminal-orange text-terminal-bg hover:bg-terminal-orange-light`}
                     >
                       [Join Waitlist]
                     </TerminalButton>
-                  </a>
+                  </div>
                 ) : (
                   <Link to={plan.ctaLink} className="mt-auto">
                     <TerminalButton
@@ -189,6 +185,12 @@ const PricingPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Waitlist Modal */}
+      <WaitlistModal
+        isOpen={isWaitlistModalOpen}
+        onClose={() => setIsWaitlistModalOpen(false)}
+      />
     </div>
   );
 };

@@ -712,6 +712,29 @@ export const github = {
   },
 };
 
+/**
+ * Waitlist API
+ */
+export const waitlist = {
+  /**
+   * Sign up for the waitlist
+   */
+  signup: async (email, name = null) => {
+    const response = await fetch(`${API_URL}/api/waitlist/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || error.message || 'Failed to join waitlist');
+    }
+    
+    return response.json();
+  },
+};
+
 // Export storage utilities for cases where direct access is needed
 export { storage };
 
@@ -722,6 +745,7 @@ export default {
   projects,
   profiles,
   github,
+  waitlist,
   storage,
 };
 

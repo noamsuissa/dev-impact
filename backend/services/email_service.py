@@ -73,14 +73,25 @@ class EmailService:
             message.attach(html_part)
             
             # Send email
-            await aiosmtplib.send(
-                message,
-                hostname=self.smtp_host,
-                port=self.smtp_port,
-                username=self.smtp_user,
-                password=self.smtp_password,
-                use_tls=True,
-            )
+            # Port 587 uses STARTTLS, port 465 uses SSL/TLS directly
+            if self.smtp_port == 465:
+                # Port 465 uses SSL/TLS directly
+                smtp = aiosmtplib.SMTP(
+                    hostname=self.smtp_host,
+                    port=self.smtp_port,
+                    use_tls=True,
+                )
+            else:
+                # Port 587 and others use STARTTLS
+                smtp = aiosmtplib.SMTP(
+                    hostname=self.smtp_host,
+                    port=self.smtp_port,
+                    start_tls=True,
+                )
+            
+            async with smtp:
+                await smtp.login(self.smtp_user, self.smtp_password)
+                await smtp.send_message(message)
             
             logger.info(f"Email sent successfully to {to_email}")
             return True
