@@ -9,6 +9,7 @@ import PublishProfileModal from './PublishProfileModal';
 import UnpublishProfileModal from './UnpublishProfileModal';
 import ManageProfilesModal from './ManageProfilesModal';
 import ProjectModal from './ProjectModal';
+import UpgradeModal from './UpgradeModal';
 import { useAuth } from '../hooks/useAuth';
 import { completeGitHubAuth } from '../utils/githubAuth';
 import { profiles, userProfiles } from '../utils/client';
@@ -24,7 +25,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
   const [publishedUrl, setPublishedUrl] = useState(null);
   const [isPublished, setIsPublished] = useState(false);
   const [showCopied, setShowCopied] = useState(false);
-  
+
   // Profile state
   const [userProfilesList, setUserProfilesList] = useState([]);
   const [selectedProfileId, setSelectedProfileId] = useState(null);
@@ -37,6 +38,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
   const [selectedProject, setSelectedProject] = useState(null);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState(null);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -65,7 +67,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
       );
 
       setGithubState('success');
-      
+
       // Update user profile with GitHub data
       if (onGitHubConnect) {
         onGitHubConnect(result);
@@ -87,11 +89,11 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
   useEffect(() => {
     const loadProfiles = async () => {
       if (!user) return;
-      
+
       try {
         const profilesList = await userProfiles.list();
         setUserProfilesList(profilesList);
-        
+
         // Load subscription info
         try {
           const subInfo = await userProfiles.getSubscriptionInfo();
@@ -106,7 +108,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
             can_add_profile: profilesList.length < 3
           });
         }
-        
+
         // Select first profile if available and none is currently selected
         setSelectedProfileId(prev => {
           if (profilesList.length > 0 && !prev) {
@@ -132,7 +134,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
         return !pid || pid === null || pid === undefined || pid === '';
       });
     }
-    
+
     // Filter projects that belong ONLY to the selected profile
     // Also include unassigned projects (null/undefined) so user can assign them
     const filtered = projects.filter(p => {
@@ -142,7 +144,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
       const matchesProfile = pid === selectedProfileId;
       return isUnassigned || matchesProfile;
     });
-    
+
     // Debug logging
     console.log('Filtering projects:', {
       selectedProfileId,
@@ -155,7 +157,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
         matches: p.profile_id === selectedProfileId || !p.profile_id
       }))
     });
-    
+
     return filtered;
   }, [projects, selectedProfileId]);
 
@@ -163,16 +165,16 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
   useEffect(() => {
     const checkPublishedStatus = async () => {
       if (!user || userProfilesList.length === 0) return;
-      
+
       const username = user.username;
       const publishedSlugs = [];
-      
+
       // Check each profile's published status
       for (const profile of userProfilesList) {
         try {
           const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
           const response = await fetch(`${apiUrl}/api/profiles/${username}/${profile.slug}`);
-          
+
           if (response.ok) {
             publishedSlugs.push(profile.slug);
           }
@@ -180,9 +182,9 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
           // Profile not published, that's okay
         }
       }
-      
+
       setPublishedProfileSlugs(publishedSlugs);
-      
+
       // Update published state for selected profile
       if (selectedProfileId) {
         const selectedProfile = userProfilesList.find(p => p.id === selectedProfileId);
@@ -202,7 +204,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
   const handleCopyLink = async () => {
     if (!publishedUrl) return;
-    
+
     try {
       await navigator.clipboard.writeText(publishedUrl);
       setShowCopied(true);
@@ -223,7 +225,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
       const pid = p.profile_id;
       return pid && pid === profileIdToPublish;
     });
-    
+
     if (profileProjects.length === 0) {
       throw new Error('Please add at least one project to this profile before publishing. Edit your projects to assign them to this profile.');
     }
@@ -235,28 +237,28 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
       const username = user.username;
 
       // Publish via API with profile_id
-      const response = await profiles.publish({ 
+      const response = await profiles.publish({
         username,
         profile_id: profileIdToPublish
       });
-      
+
       // Use URL from backend response
       const shareUrl = generateProfileUrl(username, response.profile_slug);
       setPublishedUrl(shareUrl);
-      
+
       // Mark as published
       setIsPublished(true);
       setPublishedProfileSlugs([...publishedProfileSlugs, profileToPublish.slug]);
-      
+
       // If this is the selected profile, update the published URL
       if (profileIdToPublish === selectedProfileId) {
         setPublishedUrl(shareUrl);
       }
-      
+
       try {
         await navigator.clipboard.writeText(shareUrl);
         setPublishState('success');
-        
+
         // Reset success state after 5 seconds
         setTimeout(() => {
           setPublishState('initial');
@@ -299,13 +301,13 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
       // Mark as unpublished
       setPublishedProfileSlugs(publishedProfileSlugs.filter(s => s !== profileToUnpublish.slug));
-      
+
       // If this is the selected profile, update the published state
       if (profileIdToUnpublish === selectedProfileId) {
         setIsPublished(false);
         setPublishedUrl(null);
       }
-      
+
       setPublishState('initial');
     } catch (err) {
       console.error('Error unpublishing profile:', err);
@@ -327,10 +329,10 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
   const handleCreateProfile = async (profileData) => {
     const newProfile = await userProfiles.create(profileData);
     setUserProfilesList([...userProfilesList, newProfile]);
-    
+
     // Select the newly created profile
     setSelectedProfileId(newProfile.id);
-    
+
     // Refresh subscription info
     try {
       const subInfo = await userProfiles.getSubscriptionInfo();
@@ -342,9 +344,9 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
   const handleUpdateProfile = async (profileData) => {
     if (!editingProfile) return;
-    
+
     const updatedProfile = await userProfiles.update(editingProfile.id, profileData);
-    setUserProfilesList(userProfilesList.map(p => 
+    setUserProfilesList(userProfilesList.map(p =>
       p.id === updatedProfile.id ? updatedProfile : p
     ));
     setEditingProfile(null);
@@ -358,24 +360,24 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
     // Delete profile (backend will delete all assigned projects)
     await userProfiles.delete(profileId);
-    
+
     // Remove profile from list
     setUserProfilesList(userProfilesList.filter(p => p.id !== profileId));
-    
+
     // Note: Projects are already deleted by the backend.
     // The parent component should refetch projects or filter them from its state.
     // For now, the filteredProjects will automatically update via the useEffect
     // that filters projects by selectedProfileId.
-    
+
     // Select first remaining profile or null
     const remaining = userProfilesList.filter(p => p.id !== profileId);
     setSelectedProfileId(remaining.length > 0 ? remaining[0].id : null);
-    
+
     // Notify parent to update projects state (filter out deleted projects)
     if (onProfileDeleted) {
       onProfileDeleted(profileId);
     }
-    
+
     // Refresh subscription info
     try {
       const subInfo = await userProfiles.getSubscriptionInfo();
@@ -431,8 +433,8 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
               <div className="flex items-center gap-3 text-terminal-orange">
                 <span>Connected to GitHub:</span>
                 {user.github.avatar_url && (
-                  <img 
-                    src={user.github.avatar_url} 
+                  <img
+                    src={user.github.avatar_url}
                     alt={user.github.username}
                     className="w-6 h-6 rounded-full"
                   />
@@ -467,7 +469,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
                     </div>
                     <div>
                       <span className="text-terminal-gray text-sm">Visit: </span>
-                      <a 
+                      <a
                         href={deviceCode.verificationUri}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -529,10 +531,10 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
             <Eye size={16} className="inline mr-2" />
             [Preview Profile]
           </TerminalButton>
-          
+
           {/* Show Publish or Unpublish based on current state */}
           {!isPublished ? (
-            <TerminalButton 
+            <TerminalButton
               onClick={handleOpenPublishModal}
               disabled={publishState === 'loading' || userProfilesList.length === 0}
             >
@@ -554,7 +556,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
               )}
             </TerminalButton>
           ) : (
-            <TerminalButton 
+            <TerminalButton
               onClick={handleOpenUnpublishModal}
               disabled={publishState === 'loading' || userProfilesList.length === 0}
             >
@@ -562,7 +564,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
               [Unpublish]
             </TerminalButton>
           )}
-          
+
           <TerminalButton onClick={() => navigate('/export')}>
             <Download size={16} className="inline mr-2" />
             [Export]
@@ -572,7 +574,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
             [Account]
           </TerminalButton>
         </div>
-        
+
         {/* Published profile link (always visible when published) */}
         {isPublished && publishedUrl && (
           <div className="mt-5 bg-terminal-green/10 border border-terminal-green/30 p-4 rounded">
@@ -584,9 +586,9 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
                 </div>
                 <div className="text-terminal-gray text-sm flex items-center gap-2 flex-wrap">
                   <span className="text-terminal-orange">Link:</span>
-                  <a 
-                    href={publishedUrl} 
-                    target="_blank" 
+                  <a
+                    href={publishedUrl}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-terminal-orange underline hover:text-terminal-orange-light flex items-center gap-1"
                   >
@@ -605,7 +607,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
             </div>
           </div>
         )}
-        
+
         {/* Publish success message (temporary) */}
         {publishState === 'success' && (
           <div className="mt-5 bg-terminal-green/10 border border-terminal-green/30 p-4 rounded">
@@ -614,7 +616,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
             </div>
           </div>
         )}
-        
+
         {/* Publish error message */}
         {publishState === 'error' && error && (
           <div className="mt-5 bg-red-500/10 border border-red-500/30 p-4 rounded">
@@ -629,7 +631,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
         <div className="text-lg mb-5">
           &gt; Your Projects ({filteredProjects.length})
         </div>
-        
+
         {/* Profile Tabs */}
         <ProfileTabs
           profiles={userProfilesList}
@@ -639,15 +641,16 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
           onManageProfiles={handleOpenManageProfilesModal}
           publishedProfileSlugs={publishedProfileSlugs}
           canAddProfile={subscriptionInfo?.can_add_profile ?? true}
+          onUpgradeClick={() => setIsUpgradeModalOpen(true)}
         />
-        
+
         {filteredProjects.length === 0 ? (
           <div className="text-terminal-orange mb-5">
-            {selectedProfileId 
+            {selectedProfileId
               ? 'No projects in this profile yet. Add a project to get started!'
               : userProfilesList.length === 0
-              ? 'No profiles yet. Create a profile and add your first project!'
-              : 'No unassigned projects. Select a profile to see its projects or add a new project.'
+                ? 'No profiles yet. Create a profile and add your first project!'
+                : 'No unassigned projects. Select a profile to see its projects or add a new project.'
             }
           </div>
         ) : (
@@ -656,13 +659,13 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
               const pid = p.profile_id;
               return !pid || pid === null || pid === undefined || pid === '';
             }) && selectedProfileId && (
-              <div className="mb-5 text-terminal-orange text-sm border border-terminal-orange/30 bg-terminal-orange/10 p-3 rounded">
-                <div className="flex items-center gap-2">
-                  <span>⚠️</span>
-                  <span>Some projects are unassigned. Edit them to assign to this profile.</span>
+                <div className="mb-5 text-terminal-orange text-sm border border-terminal-orange/30 bg-terminal-orange/10 p-3 rounded">
+                  <div className="flex items-center gap-2">
+                    <span>⚠️</span>
+                    <span>Some projects are unassigned. Edit them to assign to this profile.</span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             <div className="bg-terminal-bg-lighter border border-terminal-border p-5">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start auto-rows-fr">
                 {filteredProjects.map(project => (
@@ -732,6 +735,12 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
         onEditProfile={handleOpenProfileModal}
         publishedProfileSlugs={publishedProfileSlugs}
         projects={projects}
+      />
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
       />
     </div>
   );
