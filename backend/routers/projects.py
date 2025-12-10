@@ -8,6 +8,7 @@ from schemas.project import (
     CreateProjectRequest,
     UpdateProjectRequest,
     ProjectEvidence,
+    EvidenceStatsResponse,
 )
 from services.project_service import ProjectService
 from utils import auth_utils
@@ -145,6 +146,21 @@ async def upload_project_evidence(
     )
 
     return evidence
+
+
+@router.get("/evidence/stats", response_model=EvidenceStatsResponse)
+async def get_evidence_stats(
+    authorization: str = Depends(auth_utils.get_access_token)
+):
+    """
+    Get user's evidence storage statistics
+    
+    Returns total evidence size across all projects, limit, and usage percentage.
+    """
+    user_id = auth_utils.get_user_id_from_authorization(authorization)
+    
+    stats = await ProjectService.get_evidence_stats(user_id)
+    return stats
 
 
 @router.delete("/{project_id}/evidence/{evidence_id}", response_model=MessageResponse)

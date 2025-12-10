@@ -9,8 +9,8 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
-  const [totalSize, setTotalSize] = useState(0);
-  const sizeLimit = 50 * 1024 * 1024; // 50MB default
+  const [evidenceStats, setEvidenceStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
   const [deletingId, setDeletingId] = useState(null);
@@ -18,30 +18,27 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
   useEffect(() => {
     if (isOpen && project?.id) {
       fetchEvidence();
+      if (!readOnly) {
+        fetchEvidenceStats();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, project?.id]);
 
   const fetchEvidence = async () => {
     if (!project?.id) return;
-    
+
     // If read-only and evidence is already in project data, use it
     if (readOnly && project.evidence) {
       setEvidence(project.evidence || []);
-      const total = (project.evidence || []).reduce((sum, e) => sum + (e.file_size || 0), 0);
-      setTotalSize(total);
       return;
     }
-    
+
     setLoading(true);
     setError(null);
     try {
       const evidenceList = await projects.getEvidence(project.id);
       setEvidence(evidenceList || []);
-      
-      // Calculate total size
-      const total = (evidenceList || []).reduce((sum, e) => sum + (e.file_size || 0), 0);
-      setTotalSize(total);
     } catch (err) {
       // For read-only mode, don't show error if evidence fetch fails
       if (!readOnly) {
@@ -50,6 +47,26 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
       setEvidence([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEvidenceStats = async () => {
+    setStatsLoading(true);
+    try {
+      const stats = await projects.getEvidenceStats();
+      setEvidenceStats(stats);
+    } catch (err) {
+      console.error('Failed to fetch evidence stats:', err);
+      // Don't show error to user, just use defaults
+      setEvidenceStats({
+        total_size_bytes: 0,
+        limit_bytes: 50 * 1024 * 1024,
+        total_size_mb: 0,
+        limit_mb: 50,
+        percentage_used: 0
+      });
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -75,10 +92,12 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
     }
 
     // Validate file size (check against remaining quota)
-    const remainingSpace = sizeLimit - totalSize;
-    if (file.size > remainingSpace) {
-      setError(`File size (${formatFileSize(file.size)}) exceeds remaining space (${formatFileSize(remainingSpace)})`);
-      return;
+    if (evidenceStats) {
+      const remainingSpace = evidenceStats.limit_bytes - evidenceStats.total_size_bytes;
+      if (file.size > remainingSpace) {
+        setError(`File size (${formatFileSize(file.size)}) exceeds remaining space (${formatFileSize(remainingSpace)})`);
+        return;
+      }
     }
 
     setUploading(true);
@@ -88,9 +107,10 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
       // Single-step flow: upload file and create evidence record via backend
       await projects.uploadEvidence(project.id, file);
 
-      // Refresh evidence list
+      // Refresh evidence list and stats
       await fetchEvidence();
-      
+      await fetchEvidenceStats();
+
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -111,6 +131,7 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
     try {
       await projects.deleteEvidence(project.id, evidenceId);
       await fetchEvidence();
+      await fetchEvidenceStats();
     } catch (err) {
       setError(err.message || 'Failed to delete screenshot');
     } finally {
@@ -126,7 +147,7 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
 
   return (
     <>
-      <div 
+      <div
         className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
         onClick={(e) => {
           if (e.target === e.currentTarget) {
@@ -187,9 +208,9 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
                     <div className="text-sm text-terminal-orange font-mono">
                       &gt; Screenshots
                     </div>
-                    {!readOnly && (
+                    {!readOnly && evidenceStats && (
                       <div className="text-xs text-terminal-gray">
-                        {formatFileSize(totalSize)} / {formatFileSize(sizeLimit)}
+                        {statsLoading ? 'Loading...' : `${evidenceStats.total_size_mb} MB / ${evidenceStats.limit_mb} MB remaining storage`}
                       </div>
                     )}
                   </div>
@@ -214,11 +235,11 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
                       />
                       <TerminalButton
                         onClick={() => {
-                          if (!uploading && totalSize < sizeLimit) {
+                          if (!uploading && evidenceStats && evidenceStats.total_size_bytes < evidenceStats.limit_bytes) {
                             fileInputRef.current?.click();
                           }
                         }}
-                        disabled={uploading || (totalSize >= sizeLimit)}
+                        disabled={uploading || !evidenceStats || (evidenceStats.total_size_bytes >= evidenceStats.limit_bytes)}
                         className="inline-flex items-center gap-2"
                       >
                         {uploading ? (

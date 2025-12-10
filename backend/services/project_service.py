@@ -503,8 +503,8 @@ class ProjectService:
             if not project_result.data:
                 raise HTTPException(status_code=404, detail="Project not found")
 
-            # Check user's total size limit
-            max_size_mb = int(os.getenv("MAX_USER_EVIDENCE_SIZE_MB", "50"))
+            # Check user's total size limit (free plan)
+            max_size_mb = int(os.getenv("FREE_MAX_USER_EVIDENCE_SIZE_MB", "50"))
             max_size_bytes = max_size_mb * 1024 * 1024
 
             current_total = await ProjectService.get_user_total_evidence_size(user_id)
@@ -513,7 +513,7 @@ class ProjectService:
                 max_mb = max_size_mb
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Upload would exceed size limit. Current: {used_mb:.2f} MB / {max_mb} MB"
+                    detail=f"Upload would exceed free plan storage limit. Current: {used_mb:.2f} MB / {max_mb} MB across all projects"
                 )
 
             # Generate unique file path
@@ -641,3 +641,38 @@ class ProjectService:
         except Exception as e:
             print(f"Delete evidence error: {e}")
             raise HTTPException(status_code=500, detail="Failed to delete evidence")
+
+    @staticmethod
+    async def get_evidence_stats(user_id: str) -> dict:
+        """
+        Get evidence storage statistics for a user
+        
+        Args:
+            user_id: User's ID
+            
+        Returns:
+            Dictionary with total_size_bytes, limit_bytes, total_size_mb, limit_mb, percentage_used
+        """
+        try:
+            # Get total size across all projects
+            total_size_bytes = await ProjectService.get_user_total_evidence_size(user_id)
+            
+            # Get limit from environment
+            limit_mb = int(os.getenv("FREE_MAX_USER_EVIDENCE_SIZE_MB", "50"))
+            limit_bytes = limit_mb * 1024 * 1024
+            
+            # Calculate percentage
+            percentage_used = (total_size_bytes / limit_bytes * 100) if limit_bytes > 0 else 0
+            
+            return {
+                "total_size_bytes": total_size_bytes,
+                "limit_bytes": limit_bytes,
+                "total_size_mb": round(total_size_bytes / (1024 * 1024), 2),
+                "limit_mb": limit_mb,
+                "percentage_used": round(percentage_used, 2)
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"Get evidence stats error: {e}")
+            raise HTTPException(status_code=500, detail="Failed to get evidence stats")
