@@ -3,7 +3,7 @@ import { X, Check, Sparkles } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import WaitlistModal from './WaitlistModal';
 
-const UpgradeModal = ({ isOpen, onClose }) => {
+const UpgradeModal = ({ isOpen, onClose, title = 'Upgrade to Pro', message = "You've reached the limit of 3 profiles on the free plan." }) => {
     const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
 
     const proFeatures = [
@@ -40,7 +40,7 @@ const UpgradeModal = ({ isOpen, onClose }) => {
                     <div className="flex items-center justify-between mb-6 mt-2">
                         <div className="text-xl text-terminal-orange flex items-center gap-2">
                             <Sparkles size={20} />
-                            <span>&gt; Upgrade to Pro</span>
+                            <span>&gt; {title}</span>
                         </div>
                         <button
                             onClick={onClose}
@@ -55,7 +55,7 @@ const UpgradeModal = ({ isOpen, onClose }) => {
                         {/* Limit Message */}
                         <div className="bg-terminal-orange/10 border border-terminal-orange/30 p-4 rounded">
                             <div className="text-terminal-text text-sm">
-                                You've reached the limit of 3 profiles on the free plan.
+                                {message}
                             </div>
                         </div>
 

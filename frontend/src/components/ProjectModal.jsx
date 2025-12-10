@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
+import UpgradeModal from './UpgradeModal';
 import { projects } from '../utils/client';
 
 const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = false }) => {
@@ -14,6 +15,7 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (isOpen && project?.id) {
@@ -55,6 +57,11 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
     try {
       const stats = await projects.getEvidenceStats();
       setEvidenceStats(stats);
+
+      // Show upgrade modal if storage is at 80% or more (only once per modal open)
+      if (stats.percentage_used >= 80 && !showUpgradeModal) {
+        setShowUpgradeModal(true);
+      }
     } catch (err) {
       console.error('Failed to fetch evidence stats:', err);
       // Don't show error to user, just use defaults
@@ -208,9 +215,17 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
                     <div className="text-sm text-terminal-orange font-mono">
                       &gt; Screenshots
                     </div>
-                    {!readOnly && evidenceStats && (
-                      <div className="text-xs text-terminal-gray">
-                        {statsLoading ? 'Loading...' : `${evidenceStats.total_size_mb} MB / ${evidenceStats.limit_mb} MB remaining storage`}
+                    {!readOnly && (
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="text-xs text-terminal-gray">
+                          {statsLoading ? 'Loading...' : evidenceStats ? `${evidenceStats.total_size_mb} MB / ${evidenceStats.limit_mb} MB remaining storage` : '-- MB / 50 MB remaining storage'}
+                        </div>
+                        <button
+                          onClick={() => setShowUpgradeModal(true)}
+                          className="text-xs text-terminal-orange hover:underline"
+                        >
+                          Upgrade for More Storage
+                        </button>
                       </div>
                     )}
                   </div>
@@ -237,15 +252,23 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
                         onClick={() => {
                           if (!uploading && evidenceStats && evidenceStats.total_size_bytes < evidenceStats.limit_bytes) {
                             fileInputRef.current?.click();
+                          } else if (evidenceStats && evidenceStats.total_size_bytes >= evidenceStats.limit_bytes) {
+                            // Show upgrade modal if storage is full
+                            setShowUpgradeModal(true);
                           }
                         }}
-                        disabled={uploading || !evidenceStats || (evidenceStats.total_size_bytes >= evidenceStats.limit_bytes)}
+                        disabled={uploading || !evidenceStats}
                         className="inline-flex items-center gap-2"
                       >
                         {uploading ? (
                           <>
                             <Loader2 size={16} className="animate-spin" />
                             [Uploading...]
+                          </>
+                        ) : evidenceStats && evidenceStats.total_size_bytes >= evidenceStats.limit_bytes ? (
+                          <>
+                            <Upload size={16} />
+                            [Storage Full - Upgrade]
                           </>
                         ) : (
                           <>
@@ -335,6 +358,17 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
           />
         </div>
       )}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        title="Upgrade for More Storage"
+        message={evidenceStats && evidenceStats.percentage_used >= 100
+          ? `You've used all ${evidenceStats.limit_mb} MB of storage on the free plan. Upgrade to Pro for 5GB of storage.`
+          : `Running low on storage? Upgrade to Pro for 5GB of storage.`
+        }
+      />
     </>
   );
 };
