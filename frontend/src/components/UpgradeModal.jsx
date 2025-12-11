@@ -1,10 +1,24 @@
 import React, { useState } from 'react';
-import { X, Check, Sparkles } from 'lucide-react';
+import { X, Check, Rocket, Lock } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import WaitlistModal from './WaitlistModal';
+import { subscriptions } from '../utils/client';
+import { Sparkles } from 'lucide-react';
 
-const UpgradeModal = ({ isOpen, onClose, title = 'Upgrade to Pro', message = "You've reached the limit of 3 profiles on the free plan." }) => {
+const enablePayments = import.meta.env.VITE_ENABLE_PAYMENTS === 'true';
+
+
+const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false }) => {
     const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Determine content based on context
+    const modalTitle = title || (isLimitReached ? "Limit Reached" : "Upgrade to Pro");
+    const modalMessage = message || (isLimitReached
+        ? "You've reached the limit of the free plan. Upgrade to Pro to continue adding more."
+        : "Unlock the full power of Dev Impact with a Pro subscription."
+    );
 
     const proFeatures = [
         'Everything in Free, plus:',
@@ -15,6 +29,34 @@ const UpgradeModal = ({ isOpen, onClose, title = 'Upgrade to Pro', message = "Yo
         'Priority support',
         'Early access to new features'
     ];
+
+    const handleUpgrade = async () => {
+        if (!enablePayments) {
+            setIsWaitlistModalOpen(true);
+            return;
+        }
+
+        setIsProcessing(true);
+        setError(null);
+
+        try {
+            // Get current URL for success/cancel redirects
+            const baseUrl = window.location.origin;
+            const successUrl = `${baseUrl}/subscription/success`;
+            const cancelUrl = `${baseUrl}/subscription/cancel`;
+
+            // Create checkout session
+            const { checkout_url } = await subscriptions.createCheckoutSession(successUrl, cancelUrl);
+
+            // Redirect to Stripe Checkout
+            window.location.href = checkout_url;
+        } catch (err) {
+            console.error('Failed to create checkout session:', err);
+            setError(err.message || 'Failed to start checkout process');
+            setIsProcessing(false);
+        }
+    };
+
 
     if (!isOpen) return null;
 
@@ -29,18 +71,21 @@ const UpgradeModal = ({ isOpen, onClose, title = 'Upgrade to Pro', message = "Yo
                 }}
             >
                 <div className="bg-terminal-bg border border-terminal-orange p-8 max-w-lg w-full relative">
-                    {/* Coming Soon Badge */}
-                    <div className="absolute top-4 right-4">
-                        <span className="bg-terminal-orange/80 text-terminal-bg px-3 py-1 rounded text-xs shadow">
-                            Coming Soon
-                        </span>
-                    </div>
+                    {/* Coming Soon Badge - only show when payments disabled */}
+                    {!enablePayments && (
+                        <div className="absolute top-4 right-4">
+                            <span className="bg-terminal-orange/80 text-terminal-bg px-3 py-1 rounded text-xs shadow">
+                                Coming Soon
+                            </span>
+                        </div>
+                    )}
+
 
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6 mt-2">
                         <div className="text-xl text-terminal-orange flex items-center gap-2">
                             <Sparkles size={20} />
-                            <span>&gt; {title}</span>
+                            <span>&gt; {modalTitle}</span>
                         </div>
                         <button
                             onClick={onClose}
@@ -55,7 +100,7 @@ const UpgradeModal = ({ isOpen, onClose, title = 'Upgrade to Pro', message = "Yo
                         {/* Limit Message */}
                         <div className="bg-terminal-orange/10 border border-terminal-orange/30 p-4 rounded">
                             <div className="text-terminal-text text-sm">
-                                {message}
+                                {modalMessage}
                             </div>
                         </div>
 
@@ -88,16 +133,28 @@ const UpgradeModal = ({ isOpen, onClose, title = 'Upgrade to Pro', message = "Yo
 
                         {/* CTA */}
                         <div className="pt-4">
+                            {/* Error Message */}
+                            {error && (
+                                <div className="mb-4 bg-red-900/20 border border-red-500/50 p-3 rounded">
+                                    <div className="text-red-400 text-sm">{error}</div>
+                                </div>
+                            )}
+
                             <TerminalButton
-                                onClick={() => setIsWaitlistModalOpen(true)}
+                                onClick={handleUpgrade}
+                                disabled={isProcessing}
                                 className="w-full text-center border-terminal-orange bg-terminal-orange text-terminal-bg hover:bg-terminal-orange-light"
                             >
-                                [Join Waitlist]
+                                {isProcessing ? '[Processing...]' : enablePayments ? '[Upgrade to Pro]' : '[Join Waitlist]'}
                             </TerminalButton>
                             <div className="text-terminal-gray text-xs text-center mt-3">
-                                Dev Impact Pro is coming soon. Join the waitlist to be notified when it launches.
+                                {enablePayments
+                                    ? 'You will be redirected to Stripe to complete your payment securely.'
+                                    : 'Dev Impact Pro is coming soon. Join the waitlist to be notified when it launches.'
+                                }
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
