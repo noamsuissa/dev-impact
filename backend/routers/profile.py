@@ -2,13 +2,14 @@
 Profiles Router - Handle profile publishing and retrieval
 """
 from fastapi import APIRouter, HTTPException, Header, Depends
-from typing import Optional
+from typing import Optional, Dict, Any
 from schemas.profile import (
     PublishProfileRequest, 
     PublishProfileResponse,
     CheckUsernameResponse,
     ProfileResponse,
     ListProfilesResponse,
+    SubscriptionInfoResponse,
 )
 from schemas.auth import MessageResponse
 from services.profile_service import ProfileService
@@ -34,6 +35,18 @@ async def publish_profile(
     user_id = auth_utils.get_user_id_from_token(authorization)
     result = await ProfileService.publish_profile(username=profile.username, profile_id=profile.profile_id, user_id=user_id, token=authorization)
     return result
+
+
+@router.get("/subscription/info", response_model=SubscriptionInfoResponse)
+async def get_subscription_info(
+    authorization: str = Depends(auth_utils.get_access_token)
+):
+    """
+    Get user's subscription information and profile limits
+    """
+    user_id = auth_utils.get_user_id_from_authorization(authorization)
+    info = await ProfileService.get_subscription_info(user_id, token=authorization)
+    return info
 
 
 @router.get("/check/{username}", response_model=CheckUsernameResponse)

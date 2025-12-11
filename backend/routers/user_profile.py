@@ -79,14 +79,3 @@ async def delete_user_profile(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     result = await UserProfileService.delete_user_profile(profile_id, user_id, token=authorization)
     return result
-
-@router.get("/subscription/info", response_model=Dict[str, Any])
-async def get_subscription_info(
-    authorization: str = Depends(auth_utils.get_access_token)
-):
-    """
-    Get user's subscription information and profile limits
-    """
-    user_id = auth_utils.get_user_id_from_authorization(authorization)
-    info = await UserProfileService.get_subscription_info(user_id, token=authorization)
-    return info

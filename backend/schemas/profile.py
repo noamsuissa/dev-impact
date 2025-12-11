@@ -56,3 +56,9 @@ class ListProfilesResponse(BaseModel):
     total: Optional[int] = None
     limit: Optional[int] = None
     offset: Optional[int] = None
+
+class SubscriptionInfoResponse(BaseModel):
+    subscription_type: str
+    profile_count: int
+    max_profiles: int
+    can_add_profile: bool

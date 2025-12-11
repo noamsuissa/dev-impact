@@ -625,7 +625,7 @@ export const userProfiles = {
    * Get subscription information and profile limits
    */
   getSubscriptionInfo: async () => {
-    const response = await fetchWithAuth('/api/user-profiles/subscription/info');
+    const response = await fetchWithAuth('/api/profiles/subscription/info');
 
     if (!response.ok) {
       const error = await response.json();
