@@ -763,6 +763,32 @@ export const waitlist = {
   },
 };
 
+/**
+ * Subscriptions API
+ */
+export const subscriptions = {
+  /**
+   * Create a Stripe checkout session
+   */
+  createCheckoutSession: async (successUrl, cancelUrl) => {
+    const response = await fetchWithAuth('/api/subscriptions/create-checkout-session', {
+      method: 'POST',
+      body: JSON.stringify({
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to create checkout session');
+    }
+
+    return response.json();
+  },
+};
+
+
 // Export storage utilities for cases where direct access is needed
 export { storage };
 
@@ -774,6 +800,8 @@ export default {
   profiles,
   github,
   waitlist,
+  subscriptions,
   storage,
 };
+
 
