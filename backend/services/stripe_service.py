@@ -212,6 +212,7 @@ class StripeService:
         
         if user_id and customer_id:
             await StripeService._update_customer_id(user_id, customer_id)
+            await StripeService._update_subscription_type(user_id, "pro")
 
     @staticmethod
     async def _update_customer_id(user_id: str, customer_id: str) -> None:
@@ -219,7 +220,6 @@ class StripeService:
         Update user profile with Stripe Customer ID
         """
         try:
-            from utils import auth_utils
             # Get admin client (uses Service Role Key from env)
             supabase = auth_utils.get_supabase_client()
             
@@ -231,6 +231,25 @@ class StripeService:
             
         except Exception as e:
             print(f"Failed to update Stripe customer ID: {e}")
+            # Don't raise here to avoid failing the webhook response to Stripe
+
+    @staticmethod
+    async def _update_subscription_type(user_id: str, subscription_type: str) -> None:
+        """
+        Update user profile with subscription type
+        """
+        try:
+            # Get admin client (uses Service Role Key from env)
+            supabase = auth_utils.get_supabase_client()
+            
+            supabase.table("profiles").update({
+                "subscription_type": subscription_type
+            }).eq("id", user_id).execute()
+            
+            print(f"Updated subscription type for user {user_id}")
+            
+        except Exception as e:
+            print(f"Failed to update subscription type: {e}")
             # Don't raise here to avoid failing the webhook response to Stripe
 
 
