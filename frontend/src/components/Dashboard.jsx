@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Eye, Download, LogOut, Github, Share2, CheckCircle, ExternalLink, Copy, User } from 'lucide-react';
+import { Plus, Eye, Download, LogOut, Github, Share2, CheckCircle, ExternalLink, Copy, User, Sparkles } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
 import ProfileTabs from './ProfileTabs';
@@ -12,7 +12,7 @@ import ProjectModal from './ProjectModal';
 import UpgradeModal from './UpgradeModal';
 import { useAuth } from '../hooks/useAuth';
 import { completeGitHubAuth } from '../utils/githubAuth';
-import { profiles, userProfiles } from '../utils/client';
+import { profiles, userProfiles, subscriptions } from '../utils/client';
 import { generateProfileUrl } from '../utils/helpers';
 
 const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfileDeleted }) => {
@@ -39,6 +39,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState(null);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [isRedirectingToCheckout, setIsRedirectingToCheckout] = useState(false);
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -124,6 +125,68 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
     loadProfiles();
   }, [user]);
+
+  // Check for plan=pro query parameter or pending subscription in localStorage
+  // For new/pending users, redirect DIRECTLY to checkout
+  useEffect(() => {
+    const initCheckoutRedirect = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const planParam = urlParams.get('plan');
+      const pendingSub = localStorage.getItem('pendingSubscription');
+
+      if ((planParam === 'pro' || pendingSub === 'pro') && user) {
+        setIsRedirectingToCheckout(true);
+
+        try {
+          // Create checkout session directly
+          const baseUrl = window.location.origin;
+          const successUrl = `${baseUrl}/subscription/success`;
+          const cancelUrl = `${baseUrl}/subscription/cancel`;
+
+          const { checkout_url } = await subscriptions.createCheckoutSession(successUrl, cancelUrl);
+
+          // Clean up flags only after successful creation (to avoid loops on failure, 
+          // though we redirect away anyway)
+          if (planParam) {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+          }
+          if (pendingSub) {
+            localStorage.removeItem('pendingSubscription');
+          }
+
+          // Go to Stripe
+          window.location.href = checkout_url;
+
+        } catch (err) {
+          console.error('Direct checkout redirect failed:', err);
+          // Fallback to modal on error so user isn't stuck
+          if (!subscriptionInfo?.can_add_profile) {
+            setIsUpgradeModalOpen(true);
+            // Note: UpgradeModal handles its own message logic based on isLimitReached prop we'll pass
+            return;
+          }
+        }
+      }
+    };
+
+    initCheckoutRedirect();
+  }, [user]);
+
+  if (isRedirectingToCheckout) {
+    return (
+      <div className="min-h-screen bg-[#2d2d2d] flex items-center justify-center">
+        <div className="fade-in text-center p-8 border border-terminal-orange bg-terminal-bg rounded-lg max-w-md">
+          <div className="text-3xl mb-4 animate-pulse">
+            &gt; _
+          </div>
+          <div className="text-xl text-terminal-orange mb-3">&gt; Initializing Payment Protocol...</div>
+          <div className="text-terminal-gray text-sm">Redirecting you to our secure checkout service via Stripe.</div>
+        </div>
+      </div>
+    );
+  }
+
 
   // Filter projects by selected profile (using useMemo for derived state)
   const filteredProjects = useMemo(() => {
@@ -510,11 +573,33 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
                 )}
               </div>
             )}
+
           </div>
-          <TerminalButton onClick={handleSignOut}>
-            <LogOut size={16} className="inline mr-2" />
-            [Sign Out]
-          </TerminalButton>
+          <div className="flex items-center gap-3">
+            {/* Upgrade Button - Only show if not on Pro plan */}
+            {/* Feature Badge or Upgrade Button */}
+            {subscriptionInfo === null ? (
+              <div className="h-9 w-32 bg-terminal-bg-lighter animate-pulse rounded border border-terminal-border/30"></div>
+            ) : subscriptionInfo.subscription_type === 'pro' ? (
+              <div className="px-3 py-1.5 rounded border border-terminal-orange/50 bg-terminal-orange/10 text-terminal-orange flex items-center gap-2">
+                <Sparkles size={16} />
+                <span className="font-semibold text-sm">PRO</span>
+              </div>
+            ) : (
+              <TerminalButton
+                onClick={() => setIsUpgradeModalOpen(true)}
+                className="text-terminal-orange border-terminal-orange hover:bg-terminal-orange/10"
+              >
+                <Sparkles size={16} className="inline mr-2" />
+                {import.meta.env.VITE_ENABLE_PAYMENTS === 'true' ? "[Upgrade to Pro]" : "[Join Waitlist]"}
+              </TerminalButton>
+            )}
+
+            <TerminalButton onClick={handleSignOut}>
+              <LogOut size={16} className="inline mr-2" />
+              [Sign Out]
+            </TerminalButton>
+          </div>
         </div>
       </div>
 
@@ -741,7 +826,9 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
       <UpgradeModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
+        isLimitReached={!subscriptionInfo?.can_add_profile && subscriptionInfo?.subscription_type !== 'pro'}
       />
+
     </div>
   );
 };
