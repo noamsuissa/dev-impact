@@ -3,6 +3,7 @@ import { X, CheckCircle2 } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
 import { waitlist } from '../utils/client';
+import { useNavigate } from 'react-router-dom';
 
 const WaitlistModal = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState('');
@@ -10,6 +11,8 @@ const WaitlistModal = ({ isOpen, onClose }) => {
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     if (isOpen) {
@@ -44,6 +47,10 @@ const WaitlistModal = ({ isOpen, onClose }) => {
       setTimeout(() => {
         onClose();
         setSuccess(false);
+        const currentPath = window.location.pathname;
+        if (currentPath === '/pricing') {
+          navigate('/signup');
+        }
       }, 3000);
     } catch (err) {
       setError(err.message || 'Failed to join waitlist. Please try again.');
@@ -55,7 +62,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget && !success) {
@@ -77,7 +84,7 @@ const WaitlistModal = ({ isOpen, onClose }) => {
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="text-center py-6">
               <CheckCircle2 className="mx-auto mb-4 text-terminal-green" size={48} />
               <div className="text-terminal-text mb-2">
