@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Check, ArrowLeft } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import WaitlistModal from './WaitlistModal';
+import UpgradeModal from './UpgradeModal';
+
+import { useAuth } from '../hooks/useAuth';
 
 const PricingPage = () => {
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const enablePayments = import.meta.env.VITE_ENABLE_PAYMENTS === 'true';
   const plans = [
     {
       name: 'Hobby',
@@ -44,9 +51,27 @@ const PricingPage = () => {
       cta: 'Upgrade to Pro',
       ctaLink: '/signup?plan=pro',
       highlight: true,
-      comingSoon: true // signals to use join waitlist, not disable!
+      comingSoon: !enablePayments
     }
   ];
+
+  const handleProPlanClick = (e) => {
+    e.preventDefault();
+
+    if (!enablePayments) {
+      setIsWaitlistModalOpen(true);
+      return;
+    }
+
+    // Check if user is authenticated
+    if (user) {
+      // User is logged in - show upgrade modal
+      setIsUpgradeModalOpen(true);
+    } else {
+      // User is not logged in - redirect to signup with plan parameter
+      navigate('/signup?plan=pro');
+    }
+  };
 
   return (
     <div className="min-h-screen p-5">
@@ -73,11 +98,10 @@ const PricingPage = () => {
             return (
               <div
                 key={plan.name}
-                className={`fade-in border p-8 flex flex-col h-full relative transition-opacity ${
-                  plan.highlight
-                    ? 'border-terminal-orange bg-terminal-bg-lighter'
-                    : 'border-terminal-border bg-terminal-bg'
-                }`}
+                className={`fade-in border p-8 flex flex-col h-full relative transition-opacity ${plan.highlight
+                  ? 'border-terminal-orange bg-terminal-bg-lighter'
+                  : 'border-terminal-border bg-terminal-bg'
+                  }`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 {isComingSoon && (
@@ -85,11 +109,10 @@ const PricingPage = () => {
                 )}
                 <div className="mb-6">
                   <div className="text-xl mb-2">
-                    <span className={`inline-block px-2 py-0.5 rounded ${
-                      plan.highlight 
-                        ? 'bg-terminal-orange text-terminal-bg' 
-                        : 'bg-terminal-orange/20 text-terminal-orange'
-                    }`}>
+                    <span className={`inline-block px-2 py-0.5 rounded ${plan.highlight
+                      ? 'bg-terminal-orange text-terminal-bg'
+                      : 'bg-terminal-orange/20 text-terminal-orange'
+                      }`}>
                       {plan.name}
                     </span>
                   </div>
@@ -107,9 +130,8 @@ const PricingPage = () => {
                     <li key={idx} className="flex items-start gap-3">
                       <Check
                         size={18}
-                        className={`flex-shrink-0 mt-0.5 ${
-                          plan.highlight ? 'text-terminal-green' : 'text-terminal-orange'
-                        }`}
+                        className={`flex-shrink-0 mt-0.5 ${plan.highlight ? 'text-terminal-green' : 'text-terminal-orange'
+                          }`}
                       />
                       <span className="text-terminal-text text-sm">{feature}</span>
                     </li>
@@ -125,14 +147,19 @@ const PricingPage = () => {
                       [Join Waitlist]
                     </TerminalButton>
                   </div>
+                ) : plan.highlight ? (
+                  <div className="mt-auto">
+                    <TerminalButton
+                      onClick={handleProPlanClick}
+                      className="w-full text-center bg-terminal-orange border-terminal-orange text-terminal-bg hover:bg-terminal-orange-light"
+                    >
+                      [{plan.cta}]
+                    </TerminalButton>
+                  </div>
                 ) : (
                   <Link to={plan.ctaLink} className="mt-auto">
                     <TerminalButton
-                      className={`w-full text-center ${
-                        plan.highlight
-                          ? 'bg-terminal-orange border-terminal-orange text-terminal-bg hover:bg-terminal-orange-light'
-                          : ''
-                      }`}
+                      className="w-full text-center"
                     >
                       [{plan.cta}]
                     </TerminalButton>
@@ -190,6 +217,16 @@ const PricingPage = () => {
       <WaitlistModal
         isOpen={isWaitlistModalOpen}
         onClose={() => setIsWaitlistModalOpen(false)}
+      />
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        title={enablePayments ? "Upgrade to Pro" : "Join the Waitlist"}
+        message={enablePayments
+          ? "Unlock the full power of Dev Impact with a Pro subscription."
+          : "Get unlimited profiles, 5GB storage, and more with Dev Impact Pro."}
       />
     </div>
   );
