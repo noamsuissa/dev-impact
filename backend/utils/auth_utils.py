@@ -183,3 +183,35 @@ def get_user_id_from_authorization(authorization: Optional[str]) -> str:
         )
 
     return user_id
+
+def get_user_email_from_authorization(authorization: Optional[str]) -> str:
+    """Extract and validate user email from authorization header"""
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required"
+        )
+    
+    # Support both "Bearer <token>" and raw token strings
+    token = authorization
+    if token.startswith("Bearer "):
+        token = token.replace("Bearer ", "")
+    
+    try:
+        # Decode JWT without verification (we trust Supabase tokens)
+        decoded = jwt.decode(token, options={"verify_signature": False})
+        email = decoded.get('email')
+        
+        if not email:
+            raise HTTPException(
+                status_code=401,
+                detail="Email not found in token"
+            )
+        
+        return email
+    except jwt.DecodeError as e:
+        print(f"Error decoding token: {e}")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication token"
+        )
