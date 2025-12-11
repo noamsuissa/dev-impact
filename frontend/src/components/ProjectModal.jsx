@@ -5,7 +5,7 @@ import ProjectCard from './ProjectCard';
 import UpgradeModal from './UpgradeModal';
 import { projects } from '../utils/client';
 
-const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = false }) => {
+const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = false, subscriptionInfo }) => {
   const [evidence, setEvidence] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -59,7 +59,8 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
       setEvidenceStats(stats);
 
       // Show upgrade modal if storage is at 80% or more (only once per modal open)
-      if (stats.percentage_used >= 80 && !showUpgradeModal) {
+      // Only for non-pro users
+      if (stats.percentage_used >= 80 && !showUpgradeModal && subscriptionInfo?.subscription_type !== 'pro') {
         setShowUpgradeModal(true);
       }
     } catch (err) {
@@ -220,12 +221,14 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
                         <div className="text-xs text-terminal-gray">
                           {statsLoading ? 'Loading...' : evidenceStats ? `${evidenceStats.total_size_mb} MB / ${evidenceStats.limit_mb} MB remaining storage` : '-- MB / 50 MB remaining storage'}
                         </div>
-                        <button
-                          onClick={() => setShowUpgradeModal(true)}
-                          className="text-xs text-terminal-orange hover:underline"
-                        >
-                          Upgrade for More Storage
-                        </button>
+                        {subscriptionInfo?.subscription_type !== 'pro' && (
+                          <button
+                            onClick={() => setShowUpgradeModal(true)}
+                            className="text-xs text-terminal-orange hover:underline"
+                          >
+                            Upgrade for More Storage
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -253,8 +256,12 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
                           if (!uploading && evidenceStats && evidenceStats.total_size_bytes < evidenceStats.limit_bytes) {
                             fileInputRef.current?.click();
                           } else if (evidenceStats && evidenceStats.total_size_bytes >= evidenceStats.limit_bytes) {
-                            // Show upgrade modal if storage is full
-                            setShowUpgradeModal(true);
+                            // Show upgrade modal if storage is full AND not pro (or handle pro full case differently)
+                            if (subscriptionInfo?.subscription_type !== 'pro') {
+                              setShowUpgradeModal(true);
+                            } else {
+                              setError('Storage limit reached.');
+                            }
                           }
                         }}
                         disabled={uploading || !evidenceStats}
@@ -266,10 +273,17 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
                             [Uploading...]
                           </>
                         ) : evidenceStats && evidenceStats.total_size_bytes >= evidenceStats.limit_bytes ? (
-                          <>
-                            <Upload size={16} />
-                            [Storage Full - Upgrade]
-                          </>
+                          subscriptionInfo?.subscription_type !== 'pro' ? (
+                            <>
+                              <Upload size={16} />
+                              [Storage Full - Upgrade]
+                            </>
+                          ) : (
+                            <>
+                              <Upload size={16} />
+                              [Storage Full]
+                            </>
+                          )
                         ) : (
                           <>
                             <Upload size={16} />
@@ -363,6 +377,7 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+        isLimitReached={true}
         title="Upgrade for More Storage"
         message={evidenceStats && evidenceStats.percentage_used >= 100
           ? `You've used all ${evidenceStats.limit_mb} MB of storage on the free plan. Upgrade to Pro for 5GB of storage.`

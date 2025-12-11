@@ -809,6 +809,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
         project={selectedProject}
         onEdit={(p) => navigate(`/project/${p.id}/edit`)}
         onDelete={onDeleteProject}
+        subscriptionInfo={subscriptionInfo}
       />
 
       {/* Manage Profiles Modal */}
