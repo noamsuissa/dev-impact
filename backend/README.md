@@ -266,11 +266,11 @@ backend/
    - Open Supabase SQL Editor
    - Run migrations in order: `001_initial_schema.sql`, `002_published_profiles.sql`, `003_user_profiles.sql`
 
-7. **Start the development server:**
+7. **Start the development server (from the root directory):**
    ```bash
-   python main.py
+   python -m backend.main
    # Or with uvicorn directly:
-   uvicorn main:app --reload --host 0.0.0.0 --port 3000
+   uvicorn backend.main:app --reload --host 0.0.0.0 --port 3000
    ```
 
 8. **Access API documentation:**

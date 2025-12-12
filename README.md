@@ -50,9 +50,10 @@ This will set up the database tables and policies required for dev-impact to wor
 ### Backend Setup
 
 ```bash
-cd backend
 pip install -r requirements.txt
-python main.py
+python -m backend.main
+or
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 3000
 ```
 
 The backend API will run at `http://localhost:8000`
