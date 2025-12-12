@@ -1,10 +1,11 @@
 """
 User Profile Service - Handle user profile operations with Supabase
 """
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 from fastapi import HTTPException
 from ..utils.auth_utils import get_supabase_client
 from .profile_service import ProfileService
+from .subscription_service import SubscriptionService
 from ..schemas.user_profile import (
     UserProfile,
 )
@@ -62,7 +63,7 @@ class UserProfileService:
                     raise HTTPException(status_code=500, detail="Failed to generate unique slug")
             
             # Check profile limit before creating
-            subscription_info = await UserProfileService.get_subscription_info(user_id, token)
+            subscription_info = await SubscriptionService.get_subscription_info(user_id, token)
             if not subscription_info.get("can_add_profile", False):
                 raise HTTPException(
                     status_code=403,
