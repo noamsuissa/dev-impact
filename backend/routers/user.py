@@ -2,10 +2,10 @@
 User Router - Handle user profile endpoints
 """
 from fastapi import APIRouter, Depends
-from schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest
-from schemas.auth import MessageResponse
-from services.user_service import UserService
-from utils import auth_utils
+from ..schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest, SubscriptionInfoResponse
+from ..schemas.auth import MessageResponse
+from ..services.user_service import UserService
+from ..utils import auth_utils
 
 router = APIRouter(
     prefix="/api/user",
@@ -78,3 +78,28 @@ async def delete_account(authorization: str = Depends(auth_utils.get_access_toke
     result = await UserService.delete_account(user_id)
     return result
 
+
+@router.get("/subscription/info", response_model=SubscriptionInfoResponse)
+async def get_subscription_info(
+    authorization: str = Depends(auth_utils.get_access_token)
+):
+    """
+    Get user's subscription information and profile limits
+    """
+    user_id = auth_utils.get_user_id_from_authorization(authorization)
+    info = await UserService.get_subscription_info(user_id, token=authorization)
+    return info
+
+
+@router.post("/subscription/cancel", response_model=MessageResponse)
+async def cancel_subscription(
+    authorization: str = Depends(auth_utils.get_access_token)
+):
+    """
+    Cancel subscription
+    
+    Cancels the user's subscription at the end of the current billing period.
+    """
+    user_id = auth_utils.get_user_id_from_authorization(authorization)
+    result = await UserService.cancel_subscription(user_id)
+    return result

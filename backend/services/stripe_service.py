@@ -4,8 +4,9 @@ Stripe Service - Handle Stripe payment operations
 import os
 import stripe
 from typing import Dict, Any
+from datetime import datetime
 from fastapi import HTTPException
-from utils import auth_utils
+from ..utils import auth_utils
 
 class StripeService:
     """Service for handling Stripe operations"""
@@ -193,6 +194,9 @@ class StripeService:
             if event["type"] == "checkout.session.completed":
                 session = event["data"]["object"]
                 await StripeService._handle_checkout_completed(session)
+            elif event["type"] in ["customer.subscription.updated", "customer.subscription.deleted", "customer.subscription.created"]:
+                subscription = event["data"]["object"]
+                await StripeService._handle_subscription_updated(subscription)
         except HTTPException:
             # Re-raise our own HTTPExceptions (from config validation)
             raise
@@ -253,3 +257,103 @@ class StripeService:
             # Don't raise here to avoid failing the webhook response to Stripe
 
 
+    @staticmethod
+    async def _handle_subscription_updated(subscription: Dict[str, Any]) -> None:
+        """
+        Handle subscription updates (created, updated, deleted)
+        """
+        try:
+            customer_id = subscription.get("customer")
+            status = subscription.get("status")
+            cancel_at_period_end = subscription.get("cancel_at_period_end", False)
+            current_period_end_ts = subscription.get("current_period_end")
+            
+            # Convert timestamp to datetime
+            current_period_end = datetime.fromtimestamp(current_period_end_ts) if current_period_end_ts else None
+            
+            # Determine subscription type based on status
+            # If active or trialing, it's pro. If canceled, unpaid, etc., it's free.
+            # But "canceled" usually means it's done. "active" with cancel_at_period_end means it's still pro.
+            subscription_type = "pro" if status in ["active", "trialing"] else "free"
+            
+            # Find user by stripe_customer_id
+            supabase = auth_utils.get_supabase_client()
+            response = supabase.table("profiles").select("id").eq("stripe_customer_id", customer_id).execute()
+            
+            if response.data:
+                for user in response.data:
+                    user_id = user["id"]
+                    
+                    update_data = {
+                        "subscription_type": subscription_type,
+                        "subscription_status": status,
+                        "cancel_at_period_end": cancel_at_period_end,
+                        "current_period_end": current_period_end.isoformat() if current_period_end else None
+                    }
+                    
+                    supabase.table("profiles").update(update_data).eq("id", user_id).execute()
+                    print(f"Updated subscription status for user {user_id}: {status}")
+            else:
+                print(f"No user found for Stripe customer {customer_id}")
+                
+        except Exception as e:
+            print(f"Error handling subscription update: {e}")
+            # Don't raise, just log
+
+    @staticmethod
+    async def cancel_subscription(user_id: str) -> None:
+        """
+        Cancel a user's subscription (at period end)
+        
+        Args:
+            user_id: The user's ID
+            
+        Raises:
+            HTTPException: If cancellation fails
+        """
+        try:
+            config = StripeService._get_stripe_config()
+            stripe.api_key = config["secret_key"]
+            
+            # Get customer ID
+            supabase = auth_utils.get_supabase_client()
+            profile_response = supabase.table("profiles") \
+                .select("stripe_customer_id") \
+                .eq("id", user_id) \
+                .execute()
+                
+            if not profile_response.data or not profile_response.data.get("stripe_customer_id"):
+                raise HTTPException(status_code=400, detail="No subscription found")
+                
+            stripe_customer_id = profile_response.data.get("stripe_customer_id")
+            
+            # List subscriptions
+            subscriptions = stripe.Subscription.list(
+                customer=stripe_customer_id,
+                status='active',
+                limit=1
+            )
+            
+            if not subscriptions.data:
+                raise HTTPException(status_code=400, detail="No active subscription found")
+                
+            subscription_id = subscriptions.data[0].id
+            
+            # Update subscription to cancel at period end
+            stripe.Subscription.modify(
+                subscription_id,
+                cancel_at_period_end=True
+            )
+            
+            # We don't need to manually update DB here because webhook will catch it,
+            # but for immediate feedback we optionally could. 
+            # I will trust the webhook or the user can poll.
+            
+        except HTTPException:
+            raise
+        except stripe.error.StripeError as e:
+            print(f"Stripe error canceling subscription: {e}")
+            raise HTTPException(status_code=500, detail="Failed to cancel subscription")
+        except Exception as e:
+            print(f"Error canceling subscription: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error")
