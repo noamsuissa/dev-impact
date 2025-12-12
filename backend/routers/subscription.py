@@ -2,9 +2,9 @@
 Subscription Router - Handle subscription and payment endpoints
 """
 from fastapi import APIRouter, Depends
-from schemas.subscription import CheckoutSessionRequest, CheckoutSessionResponse
-from services.stripe_service import StripeService
-from utils import auth_utils
+from ..schemas.subscription import CheckoutSessionRequest, CheckoutSessionResponse
+from ..services.stripe_service import StripeService
+from ..utils import auth_utils
 
 router = APIRouter(
     prefix="/api/subscriptions",

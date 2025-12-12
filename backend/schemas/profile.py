@@ -3,7 +3,7 @@ Profile Schemas - For published profiles (user account profiles)
 """
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from schemas.project import Project
+from .project import Project
 
 class GitHubData(BaseModel):
     username: Optional[str] = None
@@ -56,9 +56,3 @@ class ListProfilesResponse(BaseModel):
     total: Optional[int] = None
     limit: Optional[int] = None
     offset: Optional[int] = None
-
-class SubscriptionInfoResponse(BaseModel):
-    subscription_type: str
-    profile_count: int
-    max_profiles: int
-    can_add_profile: bool

@@ -3,12 +3,12 @@ User Profile Service - Handle user profile operations with Supabase
 """
 from typing import Optional, Dict, Any, List
 from fastapi import HTTPException
-from utils.auth_utils import get_supabase_client
-from services.profile_service import ProfileService
-from schemas.user_profile import (
+from ..utils.auth_utils import get_supabase_client
+from .profile_service import ProfileService
+from ..schemas.user_profile import (
     UserProfile,
 )
-from schemas.auth import MessageResponse
+from ..schemas.auth import MessageResponse
 
 class UserProfileService:
     """Service for handling user profile operations with Supabase."""

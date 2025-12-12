@@ -5,13 +5,13 @@ import os
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from utils.auth_utils import get_supabase_client
-from schemas.project import (
+from ..utils.auth_utils import get_supabase_client
+from ..schemas.project import (
     Project,
     ProjectMetric,
     ProjectEvidence,
 )
-from schemas.auth import MessageResponse
+from ..schemas.auth import MessageResponse
 import uuid
 
 # Load environment variables

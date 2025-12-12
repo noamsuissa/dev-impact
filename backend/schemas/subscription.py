@@ -1,7 +1,7 @@
 """
 Subscription Schemas - Pydantic models for subscription operations
 """
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 
 class CheckoutSessionRequest(BaseModel):

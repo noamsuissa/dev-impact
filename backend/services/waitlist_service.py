@@ -3,9 +3,9 @@ Waitlist Service - Handle waitlist operations
 """
 from typing import Optional
 from fastapi import HTTPException
-from utils.auth_utils import get_supabase_client
-from schemas.waitlist import WaitlistEntry, WaitlistResponse
-from services.email_service import EmailService
+from ..utils.auth_utils import get_supabase_client
+from ..schemas.waitlist import WaitlistEntry, WaitlistResponse
+from .email_service import EmailService
 import logging
 
 logger = logging.getLogger(__name__)

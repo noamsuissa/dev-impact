@@ -3,16 +3,16 @@ Projects Router - Handle project CRUD endpoints
 """
 from fastapi import APIRouter, Query, Depends, UploadFile, File
 from typing import Optional, List
-from schemas.project import (
+from ..schemas.project import (
     Project,
     CreateProjectRequest,
     UpdateProjectRequest,
     ProjectEvidence,
     EvidenceStatsResponse,
 )
-from services.project_service import ProjectService
-from utils import auth_utils
-from schemas.auth import MessageResponse
+from ..services.project_service import ProjectService
+from ..utils import auth_utils
+from ..schemas.auth import MessageResponse
 
 router = APIRouter(
     prefix="/api/projects",
