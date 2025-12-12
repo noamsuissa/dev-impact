@@ -97,7 +97,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
         // Load subscription info
         try {
-          const subInfo = await subscriptionClient.getSubscriptionInfo();
+          const subInfo = await subscriptions.getSubscriptionInfo();
           setSubscriptionInfo(subInfo);
         } catch (err) {
           console.error('Failed to load subscription info:', err);
