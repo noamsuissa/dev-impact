@@ -64,10 +64,10 @@ class UserProfileService:
             
             # Check profile limit before creating
             subscription_info = await SubscriptionService.get_subscription_info(user_id, token)
-            if not subscription_info.get("can_add_profile", False):
+            if not subscription_info.can_add_profile:
                 raise HTTPException(
                     status_code=403,
-                    detail=f"Profile limit reached. Free users are limited to {subscription_info.get('max_profiles', 3)} profiles. Upgrade to Pro for unlimited profiles."
+                    detail=f"Profile limit reached. Free users are limited to {subscription_info.max_profiles} profiles. Upgrade to Pro for unlimited profiles."
                 )
             
             # Get current profile count for display_order
