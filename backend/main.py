@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import github_auth, profile, auth, user, projects, user_profile, waitlist, subscription, webhook
+from .routers import github_auth, profile, auth, user, projects, user_profile, waitlist, subscription, webhook
 from dotenv import load_dotenv
 import os
 from slowapi import Limiter, _rate_limit_exceeded_handler

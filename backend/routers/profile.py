@@ -3,16 +3,16 @@ Profiles Router - Handle profile publishing and retrieval
 """
 from fastapi import APIRouter, Header, Depends
 from typing import Optional
-from schemas.profile import (
+from ..schemas.profile import (
     PublishProfileRequest, 
     PublishProfileResponse,
     CheckUsernameResponse,
     ProfileResponse,
     ListProfilesResponse,
 )
-from schemas.auth import MessageResponse
-from services.profile_service import ProfileService
-from utils import auth_utils
+from ..schemas.auth import MessageResponse
+from ..services.profile_service import ProfileService
+from ..utils import auth_utils
 
 router = APIRouter(
     prefix="/api/profiles",
