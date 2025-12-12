@@ -43,7 +43,7 @@ async def create_checkout_session(
     )
 
 
-@router.get("/subscription/info", response_model=SubscriptionInfoResponse)
+@router.get("/info", response_model=SubscriptionInfoResponse)
 async def get_subscription_info(
     authorization: str = Depends(auth_utils.get_access_token)
 ):
@@ -55,7 +55,7 @@ async def get_subscription_info(
     return info
 
 
-@router.post("/subscription/cancel", response_model=MessageResponse)
+@router.post("/cancel", response_model=MessageResponse)
 async def cancel_subscription(
     authorization: str = Depends(auth_utils.get_access_token)
 ):
