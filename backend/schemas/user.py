@@ -43,13 +43,4 @@ class OnboardingRequest(BaseModel):
     username: str
     name: str
     github: Optional[GitHubInfo] = None
-
-
-class SubscriptionInfoResponse(BaseModel):
-    subscription_type: str
-    subscription_status: Optional[str] = None
-    cancel_at_period_end: bool = False
-    current_period_end: Optional[datetime] = None
-    profile_count: int
-    max_profiles: int
-    can_add_profile: bool
+    
