@@ -5,7 +5,7 @@ import TerminalButton from './common/TerminalButton';
 import DeleteAccountModal from './DeleteAccountModal';
 import MFASetup from './auth/MFASetup';
 import UpgradeModal from './UpgradeModal';
-import { user as userClient, auth as authClient, subscriptions as subscriptionClient } from '../utils/client';
+import { user as userClient, auth as authClient, subscriptions as subscriptionsClient } from '../utils/client';
 import { useAuth } from '../hooks/useAuth';
 
 const AccountPage = ({ user, projects }) => {
@@ -33,7 +33,7 @@ const AccountPage = ({ user, projects }) => {
 
   const loadSubscriptionInfo = async () => {
     try {
-      const info = await subscriptionClient.getSubscriptionInfo();
+      const info = await subscriptionsClient.getSubscriptionInfo();
       setSubscriptionInfo(info);
     } catch (error) {
       console.error('Failed to load subscription info:', error);
@@ -47,7 +47,7 @@ const AccountPage = ({ user, projects }) => {
 
     setIsCancelling(true);
     try {
-      await subscriptionClient.cancelSubscription();
+      await subscriptionsClient.cancelSubscription();
       await loadSubscriptionInfo();
       alert('Subscription cancelled successfully. You will retain access until the end of your billing period.');
 
