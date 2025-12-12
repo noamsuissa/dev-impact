@@ -116,12 +116,20 @@ const PricingPage = () => {
                       {plan.name}
                     </span>
                   </div>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-3xl text-terminal-orange">{plan.price}</span>
-                    {plan.period && (
-                      <span className="text-terminal-gray text-sm">/{plan.period}</span>
-                    )}
-                  </div>
+                  {isComingSoon ? (
+                    <div className="text-xl mb-2">
+                      <span className="inline-block px-2 py-0.5 rounded bg-terminal-orange/20 text-terminal-orange">
+                        Coming Soon
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-2 mb-2">
+                      <span className="text-3xl text-terminal-orange">{plan.price}</span>
+                      {plan.period && (
+                        <span className="text-terminal-gray text-sm">/{plan.period}</span>
+                      )}
+                    </div>
+                  )}
                   <div className="text-terminal-gray text-sm">{plan.description}</div>
                 </div>
 
