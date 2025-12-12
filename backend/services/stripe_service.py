@@ -4,7 +4,7 @@ Stripe Service - Handle Stripe payment operations
 import os
 import stripe
 from typing import Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import HTTPException
 from ..utils import auth_utils
 
@@ -269,13 +269,13 @@ class StripeService:
             current_period_end_ts = subscription.get("current_period_end")
             
             # Convert timestamp to datetime
-            current_period_end = datetime.fromtimestamp(current_period_end_ts) if current_period_end_ts else None
+            current_period_end = datetime.fromtimestamp(current_period_end_ts, timezone.utc) if current_period_end_ts else None
             
             # Determine subscription type based on status
             # If active or trialing, it's pro. If canceled, unpaid, etc., it's free.
             # But "canceled" usually means it's done. "active" with cancel_at_period_end means it's still pro.
             subscription_type = "pro" if status in ["active", "trialing"] else "free"
-            
+
             # Find user by stripe_customer_id
             supabase = auth_utils.get_supabase_client()
             response = supabase.table("profiles").select("id").eq("stripe_customer_id", customer_id).execute()
@@ -288,8 +288,9 @@ class StripeService:
                         "subscription_type": subscription_type,
                         "subscription_status": status,
                         "cancel_at_period_end": cancel_at_period_end,
-                        "current_period_end": current_period_end.isoformat() if current_period_end else None
                     }
+                    if current_period_end:
+                         update_data["current_period_end"] = current_period_end.isoformat()
                     
                     supabase.table("profiles").update(update_data).eq("id", user_id).execute()
                     print(f"Updated subscription status for user {user_id}: {status}")
@@ -341,14 +342,25 @@ class StripeService:
             subscription_id = subscriptions.data[0].id
             
             # Update subscription to cancel at period end
-            stripe.Subscription.modify(
+            updated_subscription = stripe.Subscription.modify(
                 subscription_id,
                 cancel_at_period_end=True
             )
             
-            # We don't need to manually update DB here because webhook will catch it,
-            # but for immediate feedback we optionally could. 
-            # I will trust the webhook or the user can poll.
+            # Immediately update our database with the returned info
+            # This ensures the UI is up to date even before the webhook arrives
+             
+            # Extract current_period_end from the response
+            current_period_end_ts = updated_subscription.get("current_period_end")
+            current_period_end = datetime.fromtimestamp(current_period_end_ts, timezone.utc) if current_period_end_ts else None
+            
+            supabase.table("profiles").update({
+                "cancel_at_period_end": True,
+                "current_period_end": current_period_end.isoformat() if current_period_end else None,
+                "subscription_status": updated_subscription.get("status")
+            }).eq("id", user_id).execute()
+            
+            print(f"Cancelled subscription for user {user_id}. Access until {current_period_end}")
             
         except HTTPException:
             raise

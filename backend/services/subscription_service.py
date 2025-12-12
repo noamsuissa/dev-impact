@@ -56,7 +56,7 @@ class SubscriptionService:
             return SubscriptionInfoResponse(
                 subscription_type=subscription_type,
                 subscription_status=data.get("subscription_status"),
-                cancel_at_period_end=data.get("cancel_at_period_end", False),
+                cancel_at_period_end=data.get("cancel_at_period_end", False) if data.get("cancel_at_period_end") is not None else False,
                 current_period_end=data.get("current_period_end"),
                 profile_count=profile_count,
                 max_profiles=max_profiles,
