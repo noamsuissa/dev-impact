@@ -97,7 +97,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
         // Load subscription info
         try {
-          const subInfo = await userProfiles.getSubscriptionInfo();
+          const subInfo = await profiles.getSubscriptionInfo();
           setSubscriptionInfo(subInfo);
         } catch (err) {
           console.error('Failed to load subscription info:', err);
@@ -206,19 +206,6 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
       const isUnassigned = !pid || pid === null || pid === undefined || pid === '';
       const matchesProfile = pid === selectedProfileId;
       return isUnassigned || matchesProfile;
-    });
-
-    // Debug logging
-    console.log('Filtering projects:', {
-      selectedProfileId,
-      totalProjects: projects.length,
-      filteredCount: filtered.length,
-      projects: projects.map(p => ({
-        id: p.id,
-        name: p.projectName,
-        profile_id: p.profile_id,
-        matches: p.profile_id === selectedProfileId || !p.profile_id
-      }))
     });
 
     return filtered;
@@ -398,7 +385,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
     // Refresh subscription info
     try {
-      const subInfo = await userProfiles.getSubscriptionInfo();
+      const subInfo = await profiles.getSubscriptionInfo();
       setSubscriptionInfo(subInfo);
     } catch (err) {
       console.error('Failed to refresh subscription info:', err);
@@ -443,7 +430,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
     // Refresh subscription info
     try {
-      const subInfo = await userProfiles.getSubscriptionInfo();
+      const subInfo = await profiles.getSubscriptionInfo();
       setSubscriptionInfo(subInfo);
     } catch (err) {
       console.error('Failed to refresh subscription info:', err);

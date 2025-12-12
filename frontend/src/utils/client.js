@@ -584,6 +584,34 @@ export const profiles = {
 
     return response.json();
   },
+
+  /**
+   * Get subscription information and profile limits
+   */
+  getSubscriptionInfo: async () => {
+    const response = await fetchWithAuth('/api/profiles/subscription/info');
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to get subscription info');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Cancel subscription
+   */
+  cancelSubscription: async () => {
+    const response = await fetchWithAuth('/api/profiles/subscription/cancel');
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to cancel subscription');
+    }
+
+    return response.json();
+  },
 };
 
 /**
@@ -616,20 +644,6 @@ export const userProfiles = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to list profiles');
-    }
-
-    return response.json();
-  },
-
-  /**
-   * Get subscription information and profile limits
-   */
-  getSubscriptionInfo: async () => {
-    const response = await fetchWithAuth('/api/profiles/subscription/info');
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to get subscription info');
     }
 
     return response.json();
