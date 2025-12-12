@@ -320,6 +320,7 @@ class StripeService:
             profile_response = supabase.table("profiles") \
                 .select("stripe_customer_id") \
                 .eq("id", user_id) \
+                .single() \
                 .execute()
                 
             if not profile_response.data or not profile_response.data.get("stripe_customer_id"):
