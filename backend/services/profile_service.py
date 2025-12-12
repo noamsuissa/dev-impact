@@ -120,7 +120,7 @@ class ProfileService:
             
             # Fetch latest projects from database for this profile
             try:
-                projects = await ProjectService.list_projects(user_id, profile_id=profile_id)
+                projects = await ProjectService.list_projects(user_id, profile_id=profile_id, include_evidence=True)
                 projects_data = [project.model_dump() for project in projects]
             except Exception as e:
                 print(f"Error fetching projects: {e}")

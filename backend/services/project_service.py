@@ -22,16 +22,17 @@ class ProjectService:
     """Service for handling project operations."""
 
     @staticmethod
-    async def list_projects(user_id: str, profile_id: Optional[str] = None) -> List[Project]:
+    async def list_projects(user_id: str, profile_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
         """
         List all projects for a user, optionally filtered by profile
         
         Args:
             user_id: User's ID
             profile_id: Optional profile ID to filter projects
+            include_evidence: Whether to include evidence data
             
         Returns:
-            List of projects with metrics
+            List of projects with metrics and optional evidence
         """
         try:
             supabase = get_supabase_client()
@@ -46,6 +47,43 @@ class ProjectService:
             
             result = query.order("display_order").execute()
             
+            # If including evidence, fetch all evidence for these projects
+            evidence_map = {}
+            if include_evidence and result.data:
+                project_ids = [p["id"] for p in result.data]
+                evidence_result = supabase.table("project_evidence")\
+                    .select("*")\
+                    .in_("project_id", project_ids)\
+                    .order("display_order")\
+                    .execute()
+                
+                if evidence_result.data:
+                    supabase_url = os.getenv("SUPABASE_URL", "")
+                    bucket_name = "project-evidence"
+                    
+                    for ev in evidence_result.data:
+                        pid = ev["project_id"]
+                        if pid not in evidence_map:
+                            evidence_map[pid] = []
+                        
+                        # Generate public URL
+                        file_path = ev["file_path"]
+                        image_url = None
+                        if supabase_url and file_path:
+                            image_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_path}"
+                        
+                        evidence_map[pid].append(ProjectEvidence(
+                            id=ev["id"],
+                            project_id=ev["project_id"],
+                            file_path=ev["file_path"],
+                            file_name=ev["file_name"],
+                            file_size=ev["file_size"],
+                            mime_type=ev["mime_type"],
+                            display_order=ev["display_order"],
+                            created_at=ev["created_at"],
+                            url=image_url
+                        ))
+
             projects = []
             for project in result.data:
                 # Transform to frontend format
@@ -71,7 +109,8 @@ class ProjectService:
                     contributions=project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
                     techStack=project["tech_stack"],
                     metrics=metrics,
-                    profile_id=project["profile_id"] if "profile_id" in project else None
+                    profile_id=project["profile_id"] if "profile_id" in project else None,
+                    evidence=evidence_map.get(project["id"]) if include_evidence else None
                 )
                 
                 projects.append(project_data)
@@ -411,13 +450,13 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to calculate total evidence size")
 
     @staticmethod
-    async def list_project_evidence(project_id: str, user_id: str) -> List[ProjectEvidence]:
+    async def list_project_evidence(project_id: str, user_id: Optional[str] = None) -> List[ProjectEvidence]:
         """
         List all evidence for a project
         
         Args:
             project_id: Project ID
-            user_id: User's ID (for authorization)
+            user_id: User's ID (for authorization) or None for public access check
             
         Returns:
             List of evidence items
@@ -425,17 +464,62 @@ class ProjectService:
         try:
             supabase = get_supabase_client()
             
-            # Verify project ownership
-            project_result = supabase.table("impact_projects")\
-                .select("id")\
+            # Fetch project details to determine access
+            proj_query = supabase.table("impact_projects")\
+                .select("user_id, profile_id")\
                 .eq("id", project_id)\
-                .eq("user_id", user_id)\
-                .single()\
-                .execute()
+                .single()
             
-            if not project_result.data:
+            proj_result = proj_query.execute()
+            
+            if not proj_result.data:
                 raise HTTPException(status_code=404, detail="Project not found")
             
+            project_data = proj_result.data
+            owner_id = project_data["user_id"]
+            profile_id = project_data.get("profile_id")
+            
+            # Determine if user has access
+            has_access = False
+            
+            # 1. Access granted if user is owner
+            if user_id and user_id == owner_id:
+                has_access = True
+            
+            # 2. Access granted if project is published (skip if already granted)
+            if not has_access:
+                # Check published_profiles
+                pub_query = supabase.table("published_profiles")\
+                    .select("id")\
+                    .eq("is_published", True)
+                
+                if profile_id:
+                    # Specific profile check
+                    pub_query = pub_query.eq("profile_id", profile_id)
+                else:
+                    # Legacy/Default fallback: check if user has ANY published profile
+                    pub_query = pub_query.eq("user_id", owner_id)
+                
+                pub_result = pub_query.limit(1).execute()
+                if pub_result.data:
+                    has_access = True
+            
+            if not has_access:
+                raise HTTPException(status_code=404, detail="Project not found or access denied")
+            
+            return await ProjectService._fetch_evidence_list(supabase, project_id)
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"List project evidence error: {e}")
+            raise HTTPException(status_code=500, detail="Failed to fetch evidence")
+
+    @staticmethod
+    async def _fetch_evidence_list(supabase, project_id: str) -> List[ProjectEvidence]:
+        """
+        Fetch evidence list for a project
+        """
+        try:
             # Get evidence
             evidence_result = supabase.table("project_evidence")\
                 .select("*")\

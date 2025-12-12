@@ -1,7 +1,7 @@
 """
 Projects Router - Handle project CRUD endpoints
 """
-from fastapi import APIRouter, Query, Depends, UploadFile, File
+from fastapi import APIRouter, Query, Depends, UploadFile, File, Header
 from typing import Optional, List
 from ..schemas.project import (
     Project,
@@ -106,16 +106,15 @@ async def delete_project(
 @router.get("/{project_id}/evidence", response_model=List[ProjectEvidence])
 async def list_project_evidence(
     project_id: str,
-    authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     List all evidence for a project
     
-    Returns all evidence items for the project if owned by the authenticated user.
+    Returns all evidence items for the project.
+    Publicly accessible for published profiles.
     """
-    user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
-    evidence = await ProjectService.list_project_evidence(project_id, user_id)
+    # Public access check handled by service (user_id=None)
+    evidence = await ProjectService.list_project_evidence(project_id, None)
     return evidence
 
 
