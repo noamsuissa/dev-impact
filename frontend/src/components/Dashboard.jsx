@@ -97,7 +97,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
         // Load subscription info
         try {
-          const subInfo = await profiles.getSubscriptionInfo();
+          const subInfo = await subscriptionClient.getSubscriptionInfo();
           setSubscriptionInfo(subInfo);
         } catch (err) {
           console.error('Failed to load subscription info:', err);
@@ -385,7 +385,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
     // Refresh subscription info
     try {
-      const subInfo = await profiles.getSubscriptionInfo();
+      const subInfo = await subscriptionClient.getSubscriptionInfo();
       setSubscriptionInfo(subInfo);
     } catch (err) {
       console.error('Failed to refresh subscription info:', err);
@@ -430,7 +430,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
     // Refresh subscription info
     try {
-      const subInfo = await profiles.getSubscriptionInfo();
+      const subInfo = await subscriptionClient.getSubscriptionInfo();
       setSubscriptionInfo(subInfo);
     } catch (err) {
       console.error('Failed to refresh subscription info:', err);
