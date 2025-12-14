@@ -70,14 +70,14 @@ const LandingPage = () => {
                   [Start Building]
                 </TerminalButton>
               </Link>
-              <Link to="/pricing">
-                <TerminalButton>
-                  [Pricing]
-                </TerminalButton>
-              </Link>
               <Link to="/about">
                 <TerminalButton>
                   [About Us]
+                </TerminalButton>
+              </Link>
+              <Link to="/pricing">
+                <TerminalButton>
+                  [Pricing]
                 </TerminalButton>
               </Link>
               <Link to="/example">
@@ -86,7 +86,10 @@ const LandingPage = () => {
                 </TerminalButton>
               </Link>
             </div>
-            <div className="text-center">
+            <div className="text-center space-x-4">
+              <Link to="/terms" className="text-xs text-terminal-gray hover:text-terminal-text transition-colors">
+                [Terms of Service]
+              </Link>
               <Link to="/privacy" className="text-xs text-terminal-gray hover:text-terminal-text transition-colors">
                 [Privacy Policy]
               </Link>

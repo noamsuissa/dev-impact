@@ -274,7 +274,7 @@ const SignUp = () => {
           </div>
 
           <div className="fade-in text-xs text-terminal-gray mt-4 text-center" style={{ animationDelay: '0.35s' }}>
-            By signing up, you agree to our <Link to="/privacy" className="underline hover:text-terminal-text">Privacy Policy</Link>.
+            By signing up, you agree to our <Link to="/terms" className="underline hover:text-terminal-text">Terms of Service</Link> and <Link to="/privacy" className="underline hover:text-terminal-text">Privacy Policy</Link>.
           </div>
         </form>
 
