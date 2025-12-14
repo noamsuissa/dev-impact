@@ -22,6 +22,7 @@ import NotFound from './components/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import PricingPage from './components/PricingPage';
 import AboutPage from './components/AboutPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import ExamplePage from './components/ExamplePage';
 import SubscriptionSuccess from './components/SubscriptionSuccess';
 import SubscriptionCancel from './components/SubscriptionCancel';
@@ -428,6 +429,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/example" element={<ExamplePage />} />
           <Route path="/subscription/success" element={<SubscriptionSuccess />} />
           <Route path="/subscription/cancel" element={<SubscriptionCancel />} />

@@ -30,7 +30,7 @@ const LandingPage = () => {
 
     // Check if landing page has been loaded before
     const hasLoadedBefore = localStorage.getItem('dev-impact-landing-loaded');
-    
+
     if (hasLoadedBefore) {
       // Show all lines immediately (defer to avoid lint warning)
       setTimeout(() => {
@@ -86,10 +86,15 @@ const LandingPage = () => {
                 </TerminalButton>
               </Link>
             </div>
+            <div className="text-center">
+              <Link to="/privacy" className="text-xs text-terminal-gray hover:text-terminal-text transition-colors">
+                [Privacy Policy]
+              </Link>
+            </div>
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 

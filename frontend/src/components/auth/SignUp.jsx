@@ -272,6 +272,10 @@ const SignUp = () => {
               {loading ? '[Processing...]' : '[Create Account]'}
             </TerminalButton>
           </div>
+
+          <div className="fade-in text-xs text-terminal-gray mt-4 text-center" style={{ animationDelay: '0.35s' }}>
+            By signing up, you agree to our <Link to="/privacy" className="underline hover:text-terminal-text">Privacy Policy</Link>.
+          </div>
         </form>
 
         {/* Navigation */}
@@ -293,8 +297,8 @@ const SignUp = () => {
           <div className="mb-1">&gt; Secure authentication powered by Supabase</div>
           <div>&gt; Your data is encrypted and protected</div>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 
