@@ -56,15 +56,35 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-5">
-      <div className="max-w-[630px] w-full">
-        {lines.map((line, i) => (
-          <div key={i} className="fade-in mb-2.5">
-            {line}
+      <div className="w-full max-w-[630px]">
+        {/* Text and Logo Container */}
+        <div className="flex items-start gap-6 mb-10">
+          {/* Left column - Text content */}
+          <div className="flex-1">
+            {lines.map((line, i) => (
+              <div key={i} className="fade-in mb-2.5">
+                {line}
+              </div>
+            ))}
           </div>
-        ))}
+
+          {/* Right column - Logo */}
+          {showButtons && (
+            <div className="fade-in hidden md:block flex-shrink-0">
+              <img
+                src="/dev-impact.svg"
+                alt="dev-impact logo"
+                width={200}
+                className="opacity-90"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Buttons Container - Full Width */}
         {showButtons && (
-          <div className="fade-in mt-10">
-            <div className="flex gap-5 mb-5">
+          <div className="fade-in">
+            <div className="flex flex-wrap gap-5 mb-5">
               <Link to="/signin">
                 <TerminalButton>
                   [Start Building]
@@ -97,9 +117,8 @@ const LandingPage = () => {
           </div>
         )}
       </div>
-    </div >
+    </div>
   );
 };
 
 export default LandingPage;
-
