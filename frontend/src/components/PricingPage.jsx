@@ -202,7 +202,7 @@ const PricingPage = () => {
             <div>
               <div className="text-terminal-orange mb-2">Q: What payment methods do you accept?</div>
               <div className="text-terminal-gray text-sm">
-                A: We accept all major credit cards and PayPal. All payments are processed securely.
+                A: All payments are processed securely through Stripe. We do not store your full credit card information.
               </div>
             </div>
             <div>
@@ -212,9 +212,33 @@ const PricingPage = () => {
               </div>
             </div>
             <div>
-              <div className="text-terminal-orange mb-2">Q: What happens to my data if I cancel?</div>
+              <div className="text-terminal-orange mb-2">Q: What happens to my data if I cancel my subscription?</div>
               <div className="text-terminal-gray text-sm">
-                A: Your data remains accessible. You can export everything before canceling, and we'll keep your account active for 30 days after cancellation.
+                A: Your data remains accessible and you get downgraded to the Hobby plan.
+              </div>
+            </div>
+            <div>
+              <div className="text-terminal-orange mb-2">Q: What happens to my data if I delete my account?</div>
+              <div className="text-terminal-gray text-sm">
+                A: Your data is permanently deleted and you cannot access it again.
+              </div>
+            </div>
+            <div>
+              <div className="text-terminal-orange mb-2">Q: Can I export my data?</div>
+              <div className="text-terminal-gray text-sm">
+                A: Yes, you can export your data at any time.
+              </div>
+            </div>
+            <div>
+              <div className="text-terminal-orange mb-2">Q: How can I contribute to the project?</div>
+              <div className="text-terminal-gray text-sm">
+                A: You can contribute to the project <a href="https://github.com/dev-impact/dev-impact" className="text-terminal-orange">here</a>.
+              </div>
+            </div>
+            <div>
+              <div className="text-terminal-orange mb-2">Q: How do I contact you?</div>
+              <div className="text-terminal-gray text-sm">
+                A: You can contact us at <a href="mailto:noam@dev-impact.io" className="text-terminal-orange">noam@dev-impact.io</a>.
               </div>
             </div>
           </div>
