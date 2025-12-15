@@ -30,6 +30,12 @@ const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false 
         'Early access to new features'
     ];
 
+    const plan = {
+        name: 'Pro',
+        price: '$7',
+        period: 'per month',
+    };
+
     const handleUpgrade = async () => {
         if (!enablePayments) {
             setIsWaitlistModalOpen(true);
@@ -108,12 +114,22 @@ const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false 
                         <div>
                             <div className="mb-4">
                                 <div className="inline-block px-2 py-0.5 rounded bg-terminal-orange text-terminal-bg text-lg mb-2">
-                                    Pro
+                                    {plan.name}
                                 </div>
-                                <div className="flex items-baseline gap-2 mb-2">
-                                    <span className="text-3xl text-terminal-orange">$7</span>
-                                    <span className="text-terminal-gray text-sm">/per month</span>
-                                </div>
+                                {!enablePayments ? (
+                                    <div className="text-xl mb-2">
+                                        <span className="inline-block px-2 py-0.5 rounded bg-terminal-orange/20 text-terminal-orange">
+                                            Coming Soon
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-baseline gap-2 mb-2">
+                                        <span className="text-3xl text-terminal-orange">{plan.price}</span>
+                                        {plan.period && (
+                                            <span className="text-terminal-gray text-sm">/{plan.period}</span>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="text-terminal-gray text-sm">For serious developers</div>
                             </div>
 
