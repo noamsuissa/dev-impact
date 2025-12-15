@@ -1,12 +1,12 @@
 from fastapi import APIRouter
-from ..schemas.github_auth import (
+from backend.schemas.github_auth import (
     DeviceCodeResponse,
     PollRequest,
     GitHubUser,
     UserProfileRequest,
     TokenResponse,
 )
-from ..services.github_service import GitHubService
+from backend.services.github_service import GitHubService
 
 router = APIRouter(prefix="/api/auth/github", tags=["GitHub OAuth"])
 

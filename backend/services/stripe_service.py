@@ -6,7 +6,7 @@ import stripe
 from typing import Dict, Any
 from datetime import datetime, timezone
 from fastapi import HTTPException
-from ..utils import auth_utils
+from backend.utils import auth_utils
 
 class StripeService:
     """Service for handling Stripe operations"""

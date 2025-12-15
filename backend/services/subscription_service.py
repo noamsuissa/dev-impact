@@ -3,10 +3,10 @@ Subscription Service - Handle subscription operations
 """
 from typing import Optional
 from fastapi import HTTPException
-from ..schemas.subscription import SubscriptionInfoResponse
-from ..utils.auth_utils import get_supabase_client
-from ..schemas.auth import MessageResponse
-from ..services.stripe_service import StripeService
+from backend.schemas.subscription import SubscriptionInfoResponse
+from backend.utils.auth_utils import get_supabase_client
+from backend.schemas.auth import MessageResponse
+from backend.services.stripe_service import StripeService
 
 class SubscriptionService:
     """Service for handling subscription operations."""

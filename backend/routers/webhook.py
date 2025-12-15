@@ -2,7 +2,7 @@
 Stripe Webhook Router
 """
 from fastapi import APIRouter, Header, Request, HTTPException
-from ..services.stripe_service import StripeService
+from backend.services.stripe_service import StripeService
 
 router = APIRouter(
     prefix="/api/webhooks",

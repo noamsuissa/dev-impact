@@ -4,7 +4,7 @@ from fastapi import HTTPException, Header
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
-from ..schemas.auth import AuthResponse, UserResponse, SessionResponse
+from backend.schemas.auth import AuthResponse, UserResponse, SessionResponse
 
 load_dotenv()
 

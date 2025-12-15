@@ -2,8 +2,8 @@
 Waitlist Router - Handle waitlist endpoints
 """
 from fastapi import APIRouter
-from ..schemas.waitlist import WaitlistSignupRequest, WaitlistResponse
-from ..services.waitlist_service import WaitlistService
+from backend.schemas.waitlist import WaitlistSignupRequest, WaitlistResponse
+from backend.services.waitlist_service import WaitlistService
 
 router = APIRouter(
     prefix="/api/waitlist",

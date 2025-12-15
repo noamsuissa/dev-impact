@@ -3,10 +3,10 @@ User Service - Handle user profile operations with Supabase
 """
 from typing import Dict, Any
 from fastapi import HTTPException
-from ..utils.auth_utils import get_supabase_client
-from ..schemas.user import UserProfile
-from ..schemas.auth import MessageResponse
-from ..services.stripe_service import StripeService
+from backend.utils.auth_utils import get_supabase_client
+from backend.schemas.user import UserProfile
+from backend.schemas.auth import MessageResponse
+from backend.services.stripe_service import StripeService
 
 class UserService:
     """Service for handling user profile operations."""

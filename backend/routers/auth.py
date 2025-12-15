@@ -1,9 +1,9 @@
 """
 Auth Router - Handle authentication endpoints
 """
-from fastapi import APIRouter, HTTPException, Header, Depends
+from fastapi import APIRouter, Header, Depends
 from typing import Optional
-from ..schemas.auth import (
+from backend.schemas.auth import (
     SignUpRequest,
     SignInRequest,
     RefreshTokenRequest,
@@ -16,9 +16,9 @@ from ..schemas.auth import (
     MFAEnrollResponse,
     MFAListResponse
 )
-from ..services.auth.auth_service import AuthService
-from ..services.auth.mfa_service import MFAService
-from ..utils import auth_utils
+from backend.services.auth.auth_service import AuthService
+from backend.services.auth.mfa_service import MFAService
+from backend.utils import auth_utils
 
 router = APIRouter(
     prefix="/api/auth",

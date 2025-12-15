@@ -9,8 +9,8 @@ from supabase import create_client
 import jwt
 import httpx
 import traceback
-from ...utils import auth_utils
-from ...schemas.auth import (
+from backend.utils import auth_utils
+from backend.schemas.auth import (
     AuthResponse,
     UserResponse,
     SessionResponse,

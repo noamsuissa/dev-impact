@@ -4,8 +4,8 @@ from typing import Optional, Dict, Any
 from fastapi import HTTPException
 import httpx
 import traceback
-from ...utils import auth_utils
-from ...schemas.auth import (
+from backend.utils import auth_utils
+from backend.schemas.auth import (
     MessageResponse,
     MFAEnrollResponse,
     MFAListResponse,

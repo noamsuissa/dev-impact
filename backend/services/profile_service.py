@@ -7,10 +7,10 @@ from typing import Optional
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from ..utils.auth_utils import get_supabase_client
-from .user_service import UserService
-from .project_service import ProjectService
-from ..schemas.profile import (
+from backend.utils.auth_utils import get_supabase_client
+from backend.services.user_service import UserService
+from backend.services.project_service import ProjectService
+from backend.schemas.profile import (
     PublishProfileResponse,
     CheckUsernameResponse,
     ProfileResponse,
@@ -19,7 +19,7 @@ from ..schemas.profile import (
     GitHubData,
     ProfileData,
 )
-from ..schemas.auth import MessageResponse
+from backend.schemas.auth import MessageResponse
 
 # Load environment variables
 load_dotenv()
