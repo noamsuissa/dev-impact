@@ -449,7 +449,7 @@ export const projects = {
    * Get evidence for a project
    */
   getEvidence: async (projectId) => {
-    const response = await fetch(`${API_URL}/api/projects/${projectId}/evidence`);
+    const response = await fetchWithAuth(`/api/projects/${projectId}/evidence`);
 
     if (!response.ok) {
       const error = await response.json();

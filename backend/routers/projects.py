@@ -106,15 +106,22 @@ async def delete_project(
 @router.get("/{project_id}/evidence", response_model=List[ProjectEvidence])
 async def list_project_evidence(
     project_id: str,
+    authorization: Optional[str] = Header(None)  # optional for public access
 ):
     """
-    List all evidence for a project
-    
-    Returns all evidence items for the project.
+    List all evidence for a project.
     Publicly accessible for published profiles.
+    Owners can always see their own evidence.
     """
-    # Public access check handled by service (user_id=None)
-    evidence = await ProjectService.list_project_evidence(project_id, None)
+    user_id = None
+    if authorization:
+        # Try to extract user ID, but don't fail if token is invalid
+        try:
+            user_id = auth_utils.get_user_id_from_token(authorization.replace("Bearer ", ""))
+        except Exception:
+            pass  # keep user_id as None for public access
+    
+    evidence = await ProjectService.list_project_evidence(project_id, user_id)
     return evidence
 
 
