@@ -77,9 +77,9 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, profiles = [], 
     onSave(project);
   };
 
-  const isValid = company && projectName && role && teamSize && problem && 
-                  contributions.some(c => c.trim()) && techStack.length > 0 &&
-                  (profileId || profiles.length === 0); // Profile is required if profiles exist
+  const isValid = company && projectName && role && teamSize && problem &&
+    contributions.some(c => c.trim()) && techStack.length > 0 &&
+    (profileId || profiles.length === 0); // Profile is required if profiles exist
 
   return (
     <div className="p-10 max-w-[800px] mx-auto">
@@ -147,10 +147,10 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, profiles = [], 
         <div className="mb-2">&gt; Your Solution (3-5 bullets):</div>
         {contributions.map((contrib, i) => (
           <div key={i} className="mb-2.5 flex gap-2.5">
-            <TerminalInput 
-              value={contrib} 
-              onChange={(val) => updateContribution(i, val)} 
-              placeholder="WebSocket-based real-time updates" 
+            <TerminalInput
+              value={contrib}
+              onChange={(val) => updateContribution(i, val)}
+              placeholder="WebSocket-based real-time updates"
             />
             <TerminalButton onClick={() => removeContribution(i)}>
               [-]
@@ -169,27 +169,27 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, profiles = [], 
             <div className="grid grid-cols-2 gap-2.5 mb-2.5">
               <div>
                 <div className="mb-1 text-xs">Value:</div>
-                <TerminalInput 
-                  value={metric.primary} 
-                  onChange={(val) => updateMetric(i, 'primary', val)} 
-                  placeholder="96%" 
+                <TerminalInput
+                  value={metric.primary}
+                  onChange={(val) => updateMetric(i, 'primary', val)}
+                  placeholder="96%"
                 />
               </div>
               <div>
                 <div className="mb-1 text-xs">Label:</div>
-                <TerminalInput 
-                  value={metric.label} 
-                  onChange={(val) => updateMetric(i, 'label', val)} 
-                  placeholder="faster" 
+                <TerminalInput
+                  value={metric.label}
+                  onChange={(val) => updateMetric(i, 'label', val)}
+                  placeholder="faster"
                 />
               </div>
             </div>
             <div className="mb-2.5">
               <div className="mb-1 text-xs">Detail (optional):</div>
-              <TerminalInput 
-                value={metric.detail} 
-                onChange={(val) => updateMetric(i, 'detail', val)} 
-                placeholder="5min→2sec" 
+              <TerminalInput
+                value={metric.detail}
+                onChange={(val) => updateMetric(i, 'detail', val)}
+                placeholder="5min→2sec"
               />
             </div>
             <TerminalButton onClick={() => removeMetric(i)}>
@@ -208,7 +208,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, profiles = [], 
           {techStack.map(tech => (
             <div key={tech} className="border border-terminal-orange py-1 px-2.5 flex items-center gap-2 bg-terminal-bg-lighter">
               {tech}
-              <button 
+              <button
                 onClick={() => removeTech(tech)}
                 className="bg-transparent border-none text-terminal-orange cursor-pointer p-0 text-xl"
               >
@@ -218,10 +218,10 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, profiles = [], 
           ))}
         </div>
         <div className="flex gap-2.5">
-          <TerminalInput 
-            value={newTech} 
-            onChange={setNewTech} 
-            placeholder="React" 
+          <TerminalInput
+            value={newTech}
+            onChange={setNewTech}
+            placeholder="React"
           />
           <TerminalButton onClick={addTech}>
             [Add]
@@ -245,25 +245,22 @@ const ProjectBuilder = ({ onSave, projects = [], profiles = [], selectedProfileI
   const navigate = useNavigate();
   const { projectId } = useParams();
   const isEditing = projectId && projectId !== 'new';
-  
+
   // Ensure profiles is an array
   const profilesList = Array.isArray(profiles) ? profiles : [];
-  
-  // Debug: log profiles to see if they're being passed
-  console.log('ProjectBuilder - profiles:', profilesList, 'selectedProfileId:', selectedProfileId);
-  
+
   // Derive project from props instead of syncing to state
-  const project = isEditing && projects.length > 0 
+  const project = isEditing && projects.length > 0
     ? projects.find(p => p.id === projectId)
     : null;
 
   // If editing but project not found yet (and projects likely loading or empty),
   // we can show a loading state or just wait.
   const isLoading = isEditing && !project && projects.length === 0;
-  
+
   // If projects have loaded but the specific project isn't found, it's a 404 case.
   const isNotFound = isEditing && !project && projects.length > 0;
-  
+
   if (isLoading) {
     return (
       <div className="p-10 text-center">

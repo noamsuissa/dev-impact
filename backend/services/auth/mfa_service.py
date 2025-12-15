@@ -4,17 +4,9 @@ from typing import Optional, Dict, Any
 from fastapi import HTTPException
 import httpx
 import traceback
-from utils import auth_utils
-from schemas.auth import (
-    SignUpRequest,
-    SignInRequest,
-    RefreshTokenRequest,
-    ResetPasswordRequest,
-    UpdatePasswordRequest,
-    AuthResponse,
+from ...utils import auth_utils
+from ...schemas.auth import (
     MessageResponse,
-    MFAEnrollRequest,
-    MFAVerifyRequest,
     MFAEnrollResponse,
     MFAListResponse,
     MFAFactorResponse

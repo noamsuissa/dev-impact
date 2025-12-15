@@ -7,10 +7,10 @@ from typing import Optional
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from utils.auth_utils import get_supabase_client
-from services.user_service import UserService
-from services.project_service import ProjectService
-from schemas.profile import (
+from ..utils.auth_utils import get_supabase_client
+from .user_service import UserService
+from .project_service import ProjectService
+from ..schemas.profile import (
     PublishProfileResponse,
     CheckUsernameResponse,
     ProfileResponse,
@@ -19,7 +19,7 @@ from schemas.profile import (
     GitHubData,
     ProfileData,
 )
-from schemas.auth import MessageResponse
+from ..schemas.auth import MessageResponse
 
 # Load environment variables
 load_dotenv()
@@ -120,7 +120,7 @@ class ProfileService:
             
             # Fetch latest projects from database for this profile
             try:
-                projects = await ProjectService.list_projects(user_id, profile_id=profile_id)
+                projects = await ProjectService.list_projects(user_id, profile_id=profile_id, include_evidence=True)
                 projects_data = [project.model_dump() for project in projects]
             except Exception as e:
                 print(f"Error fetching projects: {e}")

@@ -3,7 +3,7 @@ Profile Schemas - For published profiles (user account profiles)
 """
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from schemas.project import Project
+from .project import Project
 
 class GitHubData(BaseModel):
     username: Optional[str] = None

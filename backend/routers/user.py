@@ -2,10 +2,10 @@
 User Router - Handle user profile endpoints
 """
 from fastapi import APIRouter, Depends
-from schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest
-from schemas.auth import MessageResponse
-from services.user_service import UserService
-from utils import auth_utils
+from ..schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest
+from ..schemas.auth import MessageResponse
+from ..services.user_service import UserService
+from ..utils import auth_utils
 
 router = APIRouter(
     prefix="/api/user",
@@ -77,4 +77,3 @@ async def delete_account(authorization: str = Depends(auth_utils.get_access_toke
     
     result = await UserService.delete_account(user_id)
     return result
-

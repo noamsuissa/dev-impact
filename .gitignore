@@ -33,6 +33,7 @@ dist-ssr
 # Explicitly allow backend documentation files
 !backend/README.md
 !backend/CONTRIBUTING.md
+!.agent/rules/backend-patterns.md
 
 .cursor/
 

@@ -20,8 +20,13 @@ import AccountPage from './components/AccountPage';
 import PublicProfile from './components/PublicProfile';
 import NotFound from './components/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
+import PricingPage from './components/PricingPage';
 import AboutPage from './components/AboutPage';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 import ExamplePage from './components/ExamplePage';
+import SubscriptionSuccess from './components/SubscriptionSuccess';
+import SubscriptionCancel from './components/SubscriptionCancel';
 
 import './index.css';
 
@@ -66,17 +71,17 @@ const AuthenticatedLayout = () => {
             } : null
           });
         } else {
-             // No profile found -> Onboarding
-             // We can't navigate here if we are already on onboarding path, avoid loops
-             if (window.location.pathname !== '/onboarding') {
-                navigate('/onboarding');
-             }
+          // No profile found -> Onboarding
+          // We can't navigate here if we are already on onboarding path, avoid loops
+          if (window.location.pathname !== '/onboarding') {
+            navigate('/onboarding');
+          }
         }
       } catch (err) {
         console.error('Failed to load profile:', err);
         // If profile load fails, we assume onboarding is needed or error state
         if (window.location.pathname !== '/onboarding') {
-            navigate('/onboarding');
+          navigate('/onboarding');
         }
       } finally {
         setIsLoadingProfile(false);
@@ -236,18 +241,18 @@ const AuthenticatedLayout = () => {
   // Pass props to children via Outlet context or cloneElement?
   // React Router v6 Outlet context is cleaner.
   return (
-    <Outlet context={{ 
-        userProfile, 
-        projects,
-        profiles,
-        handleOnboardingComplete, 
-        handleSaveProject, 
-        handleDeleteProject,
-        handleSaveProfile,
-        handleUpdateProfile,
-        handleDeleteProfile,
-        handleProfileDeleted,
-        handleGitHubConnect 
+    <Outlet context={{
+      userProfile,
+      projects,
+      profiles,
+      handleOnboardingComplete,
+      handleSaveProject,
+      handleDeleteProject,
+      handleSaveProfile,
+      handleUpdateProfile,
+      handleDeleteProfile,
+      handleProfileDeleted,
+      handleGitHubConnect
     }} />
   );
 };
@@ -257,150 +262,150 @@ const AuthenticatedLayout = () => {
 import { useOutletContext } from 'react-router-dom';
 
 const OnboardingRoute = () => {
-    const { userProfile, handleOnboardingComplete } = useOutletContext();
-    const navigate = useNavigate();
-    
-    // If profile exists, redirect to dashboard
-    useEffect(() => {
-        if (userProfile) navigate('/dashboard');
-    }, [userProfile, navigate]);
+  const { userProfile, handleOnboardingComplete } = useOutletContext();
+  const navigate = useNavigate();
 
-    if (userProfile) return null;
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+  // If profile exists, redirect to dashboard
+  useEffect(() => {
+    if (userProfile) navigate('/dashboard');
+  }, [userProfile, navigate]);
+
+  if (userProfile) return null;
+  return <Onboarding onComplete={handleOnboardingComplete} />;
 }
 
 const DashboardRoute = () => {
-    const { userProfile, projects, handleDeleteProject, handleGitHubConnect, handleSaveProject, handleProfileDeleted } = useOutletContext();
-    const navigate = useNavigate();
+  const { userProfile, projects, handleDeleteProject, handleGitHubConnect, handleSaveProject, handleProfileDeleted } = useOutletContext();
+  const navigate = useNavigate();
 
-    // If no profile, redirect to onboarding (double check, though layout handles it too)
-    useEffect(() => {
-        if (!userProfile) navigate('/onboarding');
-    }, [userProfile, navigate]);
+  // If no profile, redirect to onboarding (double check, though layout handles it too)
+  useEffect(() => {
+    if (!userProfile) navigate('/onboarding');
+  }, [userProfile, navigate]);
 
-    if (!userProfile) return null;
+  if (!userProfile) return null;
 
-    return <Dashboard 
-        user={userProfile} 
-        projects={projects} 
-        onDeleteProject={handleDeleteProject}
-        onSaveProject={handleSaveProject}
-        onGitHubConnect={handleGitHubConnect}
-        onProfileDeleted={handleProfileDeleted}
-    />;
+  return <Dashboard
+    user={userProfile}
+    projects={projects}
+    onDeleteProject={handleDeleteProject}
+    onSaveProject={handleSaveProject}
+    onGitHubConnect={handleGitHubConnect}
+    onProfileDeleted={handleProfileDeleted}
+  />;
 }
 
 const ProjectBuilderRoute = () => {
-    const { userProfile, projects, profiles, handleSaveProject } = useOutletContext();
-    const navigate = useNavigate();
-    
-    if (!userProfile) {
-        navigate('/onboarding');
-        return null;
+  const { userProfile, projects, profiles, handleSaveProject } = useOutletContext();
+  const navigate = useNavigate();
+
+  if (!userProfile) {
+    navigate('/onboarding');
+    return null;
+  }
+
+  // Ensure profiles is an array
+  const profilesList = Array.isArray(profiles) ? profiles : [];
+
+  // Get selected profile ID from localStorage or use first profile
+  const getSelectedProfileId = () => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('selectedProfileId');
+      if (stored && profilesList.some(p => p.id === stored)) {
+        return stored;
+      }
     }
+    return profilesList.length > 0 ? profilesList[0].id : null;
+  };
 
-    // Ensure profiles is an array
-    const profilesList = Array.isArray(profiles) ? profiles : [];
-
-    // Get selected profile ID from localStorage or use first profile
-    const getSelectedProfileId = () => {
-        if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('selectedProfileId');
-            if (stored && profilesList.some(p => p.id === stored)) {
-                return stored;
-            }
-        }
-        return profilesList.length > 0 ? profilesList[0].id : null;
-    };
-
-    return <ProjectBuilder 
-        onSave={handleSaveProject} 
-        projects={projects || []} 
-        profiles={profilesList}
-        selectedProfileId={getSelectedProfileId()}
-    />;
+  return <ProjectBuilder
+    onSave={handleSaveProject}
+    projects={projects || []}
+    profiles={profilesList}
+    selectedProfileId={getSelectedProfileId()}
+  />;
 }
 
 const ProfileViewRoute = () => {
-    const { userProfile, projects } = useOutletContext();
-    const navigate = useNavigate();
-    
-    if (!userProfile) {
-        navigate('/onboarding');
-        return null;
-    }
+  const { userProfile, projects } = useOutletContext();
+  const navigate = useNavigate();
 
-    return <ProfileView user={userProfile} projects={projects} />;
+  if (!userProfile) {
+    navigate('/onboarding');
+    return null;
+  }
+
+  return <ProfileView user={userProfile} projects={projects} />;
 }
 
 const ExportPageRoute = () => {
-    const { userProfile, projects } = useOutletContext();
-    const navigate = useNavigate();
-    
-    if (!userProfile) {
-        navigate('/onboarding');
-        return null;
-    }
+  const { userProfile, projects } = useOutletContext();
+  const navigate = useNavigate();
 
-    return <ExportPage user={userProfile} projects={projects} />;
+  if (!userProfile) {
+    navigate('/onboarding');
+    return null;
+  }
+
+  return <ExportPage user={userProfile} projects={projects} />;
 }
 
 const AccountPageRoute = () => {
-    const { userProfile, projects } = useOutletContext();
-    const navigate = useNavigate();
-    
-    if (!userProfile) {
-        navigate('/onboarding');
-        return null;
-    }
+  const { userProfile, projects } = useOutletContext();
+  const navigate = useNavigate();
 
-    return <AccountPage user={userProfile} projects={projects} />;
+  if (!userProfile) {
+    navigate('/onboarding');
+    return null;
+  }
+
+  return <AccountPage user={userProfile} projects={projects} />;
 }
 
 // Helper function to check if we're on a subdomain and extract username
 const getSubdomainUsername = () => {
   const hostname = window.location.hostname;
   const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
-  
+
   // Check if we're on a subdomain (e.g., username.dev-impact.io)
   // Exclude localhost and IP addresses
-  if (hostname !== 'localhost' && 
-      !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) && 
-      hostname.includes('.')) {
-    
+  if (hostname !== 'localhost' &&
+    !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) &&
+    hostname.includes('.')) {
+
     // Extract subdomain (everything before the first dot)
     const parts = hostname.split('.');
     const subdomain = parts[0];
-    
+
     // Check if subdomain is not the main domain parts
     // For dev-impact.io, we want to catch username.dev-impact.io
     const domainParts = baseDomain.split('.');
     const isSubdomain = parts.length > domainParts.length;
-    
+
     if (isSubdomain && subdomain && subdomain !== 'www') {
       return subdomain;
     }
   }
-  
+
   return null;
 };
 
 // Component to conditionally render LandingPage or PublicProfile based on subdomain
 const RootRoute = () => {
   const subdomainUsername = getSubdomainUsername();
-  
+
   // If we're on a subdomain, show the profile
   if (subdomainUsername) {
     return <PublicProfile />;
   }
-  
+
   // Otherwise, show the landing page
   return <LandingPage />;
 };
 
 export default function App() {
   const { loading: authLoading } = useAuth();
-  
+
   // Loading screen
   if (authLoading) {
     return (
@@ -423,25 +428,30 @@ export default function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/pricing" element={<PricingPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="/example" element={<ExamplePage />} />
-          
+          <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+          <Route path="/subscription/cancel" element={<SubscriptionCancel />} />
+
           {/* Protected Routes - All nested under a Layout */}
           <Route element={<ProtectedRoute><AuthenticatedLayout /></ProtectedRoute>}>
-              <Route path="/onboarding" element={<OnboardingRoute />} />
-              <Route path="/dashboard" element={<DashboardRoute />} />
-              <Route path="/project/new" element={<ProjectBuilderRoute />} />
-              <Route path="/project/:projectId/edit" element={<ProjectBuilderRoute />} />
-              <Route path="/profile" element={<ProfileViewRoute />} />
-              <Route path="/export" element={<ExportPageRoute />} />
-              <Route path="/account" element={<AccountPageRoute />} />
+            <Route path="/onboarding" element={<OnboardingRoute />} />
+            <Route path="/dashboard" element={<DashboardRoute />} />
+            <Route path="/project/new" element={<ProjectBuilderRoute />} />
+            <Route path="/project/:projectId/edit" element={<ProjectBuilderRoute />} />
+            <Route path="/profile" element={<ProfileViewRoute />} />
+            <Route path="/export" element={<ExportPageRoute />} />
+            <Route path="/account" element={<AccountPageRoute />} />
           </Route>
-          
+
           {/* Public Profile Route - supports both subdomain and path-based access */}
           <Route path="/404" element={<NotFound />} />
           <Route path="/:username/:profileSlug" element={<PublicProfile />} />
           <Route path="/:username" element={<PublicProfile />} />
-          
+
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>

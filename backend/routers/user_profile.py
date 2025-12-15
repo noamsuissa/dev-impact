@@ -3,10 +3,10 @@ User Profiles Router - Handle user profile endpoints
 """
 from fastapi import APIRouter, Depends
 from typing import List
-from schemas.user_profile import UserProfile, CreateUserProfileRequest, UpdateUserProfileRequest
-from services.user_profile_service import UserProfileService
-from utils import auth_utils
-from schemas.auth import MessageResponse
+from ..schemas.user_profile import UserProfile, CreateUserProfileRequest, UpdateUserProfileRequest
+from ..services.user_profile_service import UserProfileService
+from ..utils import auth_utils
+from ..schemas.auth import MessageResponse
 
 router = APIRouter(
     prefix="/api/user-profiles",

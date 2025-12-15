@@ -14,11 +14,11 @@ const storage = {
   getToken: () => localStorage.getItem(TOKEN_KEY),
   setToken: (token) => localStorage.setItem(TOKEN_KEY, token),
   removeToken: () => localStorage.removeItem(TOKEN_KEY),
-  
+
   getRefreshToken: () => localStorage.getItem(REFRESH_TOKEN_KEY),
   setRefreshToken: (token) => localStorage.setItem(REFRESH_TOKEN_KEY, token),
   removeRefreshToken: () => localStorage.removeItem(REFRESH_TOKEN_KEY),
-  
+
   clear: () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
@@ -30,26 +30,26 @@ const storage = {
  */
 async function fetchWithAuth(url, options = {}) {
   const token = storage.getToken();
-  
+
   // Add authorization header if token exists
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   const response = await fetch(`${API_URL}${url}`, {
     ...options,
     headers,
   });
-  
+
   // If unauthorized, try to refresh token
   if (response.status === 401 && token) {
     const refreshToken = storage.getRefreshToken();
-    
+
     if (refreshToken) {
       try {
         const refreshResponse = await fetch(`${API_URL}/api/auth/refresh`, {
@@ -57,14 +57,14 @@ async function fetchWithAuth(url, options = {}) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refresh_token: refreshToken }),
         });
-        
+
         if (refreshResponse.ok) {
           const data = await refreshResponse.json();
           storage.setToken(data.session.access_token);
           if (data.session.refresh_token) {
             storage.setRefreshToken(data.session.refresh_token);
           }
-          
+
           // Retry original request with new token
           headers['Authorization'] = `Bearer ${data.session.access_token}`;
           return fetch(`${API_URL}${url}`, {
@@ -78,7 +78,7 @@ async function fetchWithAuth(url, options = {}) {
       }
     }
   }
-  
+
   return response;
 }
 
@@ -95,14 +95,14 @@ export const auth = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, captcha_token: captchaToken }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to sign up');
     }
-    
+
     const data = await response.json();
-    
+
     // Store tokens if session exists
     if (data.session) {
       storage.setToken(data.session.access_token);
@@ -110,10 +110,10 @@ export const auth = {
         storage.setRefreshToken(data.session.refresh_token);
       }
     }
-    
+
     return data;
   },
-  
+
   /**
    * Sign in an existing user
    */
@@ -121,22 +121,22 @@ export const auth = {
     const response = await fetch(`${API_URL}/api/auth/signin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        email, 
+      body: JSON.stringify({
+        email,
         password,
         mfa_challenge_id: mfaChallengeId,
         mfa_code: mfaCode,
         mfa_factor_id: mfaFactorId
       }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Invalid email or password');
     }
-    
+
     const data = await response.json();
-    
+
     // Store tokens only if session exists (not MFA challenge)
     if (data.session) {
       storage.setToken(data.session.access_token);
@@ -144,10 +144,10 @@ export const auth = {
         storage.setRefreshToken(data.session.refresh_token);
       }
     }
-    
+
     return data;
   },
-  
+
   /**
    * Sign out current user
    */
@@ -162,25 +162,25 @@ export const auth = {
       storage.clear();
     }
   },
-  
+
   /**
    * Get current session
    */
   getSession: async () => {
     const token = storage.getToken();
-    
+
     if (!token) {
       return { user: null, session: null };
     }
-    
+
     try {
       const response = await fetchWithAuth('/api/auth/session');
-      
+
       if (!response.ok) {
         storage.clear();
         return { user: null, session: null };
       }
-      
+
       const data = await response.json();
       return data;
     } catch (err) {
@@ -189,7 +189,7 @@ export const auth = {
       return { user: null, session: null };
     }
   },
-  
+
   /**
    * Reset password (send email)
    */
@@ -199,15 +199,15 @@ export const auth = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to send reset email');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Update password
    */
@@ -220,15 +220,15 @@ export const auth = {
       },
       body: JSON.stringify({ new_password: newPassword }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to update password');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * MFA: Enroll in TOTP MFA
    */
@@ -237,15 +237,15 @@ export const auth = {
       method: 'POST',
       body: JSON.stringify({ friendly_name: friendlyName }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to enroll in MFA');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * MFA: Verify enrollment with TOTP code
    */
@@ -254,29 +254,29 @@ export const auth = {
       method: 'POST',
       body: JSON.stringify({ factor_id: factorId, code }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Invalid verification code');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * MFA: List all factors
    */
   mfaListFactors: async () => {
     const response = await fetchWithAuth('/api/auth/mfa/factors');
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to list MFA factors');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * MFA: Unenroll (remove) a factor
    */
@@ -284,12 +284,12 @@ export const auth = {
     const response = await fetchWithAuth(`/api/auth/mfa/factors/${factorId}`, {
       method: 'DELETE',
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to remove MFA factor');
     }
-    
+
     return response.json();
   },
 };
@@ -303,15 +303,15 @@ export const user = {
    */
   getProfile: async () => {
     const response = await fetchWithAuth('/api/user/profile');
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to fetch profile');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Update current user's profile
    */
@@ -320,15 +320,15 @@ export const user = {
       method: 'PUT',
       body: JSON.stringify(profileData),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to update profile');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Complete onboarding
    */
@@ -337,15 +337,15 @@ export const user = {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to complete onboarding');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Delete current user's account
    */
@@ -353,12 +353,12 @@ export const user = {
     const response = await fetchWithAuth('/api/user/account', {
       method: 'DELETE',
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to delete account');
     }
-    
+
     return response.json();
   },
 };
@@ -372,29 +372,29 @@ export const projects = {
    */
   list: async () => {
     const response = await fetchWithAuth('/api/projects');
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to fetch projects');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Get a single project
    */
   get: async (projectId) => {
     const response = await fetchWithAuth(`/api/projects/${projectId}`);
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to fetch project');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Create a new project
    */
@@ -403,15 +403,15 @@ export const projects = {
       method: 'POST',
       body: JSON.stringify(projectData),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to create project');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Update a project
    */
@@ -420,15 +420,15 @@ export const projects = {
       method: 'PUT',
       body: JSON.stringify(projectData),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to update project');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Delete a project
    */
@@ -436,26 +436,26 @@ export const projects = {
     const response = await fetchWithAuth(`/api/projects/${projectId}`, {
       method: 'DELETE',
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to delete project');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Get evidence for a project
    */
   getEvidence: async (projectId) => {
-    const response = await fetchWithAuth(`/api/projects/${projectId}/evidence`);
-    
+    const response = await fetch(`${API_URL}/api/projects/${projectId}/evidence`);
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to fetch evidence');
     }
-    
+
     return response.json();
   },
   /**
@@ -464,27 +464,27 @@ export const projects = {
   uploadEvidence: async (projectId, file) => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const token = storage.getToken();
     const headers = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     const response = await fetch(`${API_URL}/api/projects/${projectId}/evidence`, {
       method: 'POST',
       headers,
       body: formData,
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to upload evidence');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Delete evidence
    */
@@ -492,12 +492,26 @@ export const projects = {
     const response = await fetchWithAuth(`/api/projects/${projectId}/evidence/${evidenceId}`, {
       method: 'DELETE',
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to delete evidence');
     }
-    
+
+    return response.json();
+  },
+
+  /**
+   * Get evidence storage statistics
+   */
+  getEvidenceStats: async () => {
+    const response = await fetchWithAuth('/api/projects/evidence/stats');
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to fetch evidence stats');
+    }
+
     return response.json();
   },
 };
@@ -514,15 +528,15 @@ export const profiles = {
       method: 'POST',
       body: JSON.stringify(profileData),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to publish profile');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Get published profile
    */
@@ -532,15 +546,15 @@ export const profiles = {
       url += `/${profileSlug}`;
     }
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Profile not found');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Unpublish profile
    */
@@ -548,12 +562,12 @@ export const profiles = {
     const response = await fetchWithAuth(`/api/profiles/${username}/${profileSlug}`, {
       method: 'DELETE',
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to unpublish profile');
     }
-    
+
     return response.json();
   },
 
@@ -562,12 +576,12 @@ export const profiles = {
    */
   checkUsername: async (username) => {
     const response = await fetch(`${API_URL}/api/profiles/check/${username}`);
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to check username');
     }
-    
+
     return response.json();
   },
 };
@@ -584,43 +598,43 @@ export const userProfiles = {
       method: 'POST',
       body: JSON.stringify(profileData),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to create profile');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * List all user profiles
    */
   list: async () => {
     const response = await fetchWithAuth('/api/user-profiles');
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to list profiles');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Get a single user profile
    */
   get: async (profileId) => {
     const response = await fetchWithAuth(`/api/user-profiles/${profileId}`);
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to get profile');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Update a user profile
    */
@@ -629,15 +643,15 @@ export const userProfiles = {
       method: 'PUT',
       body: JSON.stringify(profileData),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to update profile');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Delete a user profile
    */
@@ -645,12 +659,12 @@ export const userProfiles = {
     const response = await fetchWithAuth(`/api/user-profiles/${profileId}`, {
       method: 'DELETE',
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to delete profile');
     }
-    
+
     return response.json();
   },
 };
@@ -666,15 +680,15 @@ export const github = {
     const response = await fetch(`${API_URL}/api/auth/github/device/code`, {
       method: 'POST',
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to initiate GitHub auth');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Poll for GitHub token
    */
@@ -684,15 +698,15 @@ export const github = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ device_code: deviceCode }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to poll GitHub auth');
     }
-    
+
     return response.json();
   },
-  
+
   /**
    * Get GitHub user profile
    */
@@ -702,15 +716,94 @@ export const github = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ access_token: accessToken }),
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to fetch GitHub profile');
     }
-    
+
     return response.json();
   },
 };
+
+/**
+ * Waitlist API
+ */
+export const waitlist = {
+  /**
+   * Sign up for the waitlist
+   */
+  signup: async (email, name = null) => {
+    const response = await fetch(`${API_URL}/api/waitlist/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || error.message || 'Failed to join waitlist');
+    }
+
+    return response.json();
+  },
+};
+
+/**
+ * Subscriptions API
+ */
+export const subscriptions = {
+  /**
+   * Create a Stripe checkout session
+   */
+  createCheckoutSession: async (successUrl, cancelUrl) => {
+    const response = await fetchWithAuth('/api/subscriptions/create-checkout-session', {
+      method: 'POST',
+      body: JSON.stringify({
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to create checkout session');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get subscription information and profile limits
+   */
+  getSubscriptionInfo: async () => {
+    const response = await fetchWithAuth('/api/subscriptions/info');
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to get subscription info');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Cancel subscription
+   */
+  cancelSubscription: async () => {
+    const response = await fetchWithAuth('/api/subscriptions/cancel', {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to cancel subscription');
+    }
+
+    return response.json();
+  },
+};
+
 
 // Export storage utilities for cases where direct access is needed
 export { storage };
@@ -722,6 +815,9 @@ export default {
   projects,
   profiles,
   github,
+  waitlist,
+  subscriptions,
   storage,
 };
+
 

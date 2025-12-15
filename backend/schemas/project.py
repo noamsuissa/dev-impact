@@ -98,3 +98,12 @@ class UpdateProjectRequest(BaseModel):
     metrics: Optional[List[ProjectMetric]] = None
     profile_id: Optional[str] = None
 
+
+class EvidenceStatsResponse(BaseModel):
+    """Evidence storage statistics response"""
+    total_size_bytes: int
+    limit_bytes: int
+    total_size_mb: float
+    limit_mb: int
+    percentage_used: float
+

@@ -2,15 +2,15 @@
 Auth Service - Handle authentication operations with Supabase
 """
 import os
-from typing import Optional, Dict, Any
+from typing import Optional
 from dotenv import load_dotenv
 from fastapi import HTTPException
 from supabase import create_client
 import jwt
 import httpx
 import traceback
-from utils import auth_utils
-from schemas.auth import (
+from ...utils import auth_utils
+from ...schemas.auth import (
     AuthResponse,
     UserResponse,
     SessionResponse,

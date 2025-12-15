@@ -43,4 +43,4 @@ class OnboardingRequest(BaseModel):
     username: str
     name: str
     github: Optional[GitHubInfo] = None
-
+    

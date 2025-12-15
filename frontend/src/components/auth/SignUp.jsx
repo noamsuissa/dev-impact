@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import HCaptcha from '@hcaptcha/react-hcaptcha';
 import TerminalButton from '../common/TerminalButton';
@@ -43,9 +43,19 @@ const SignUp = () => {
     };
 
     const isValid = rules.minLength && rules.hasUpperCase && rules.hasLowerCase && rules.hasNumber && rules.hasSpecial;
-    
+
     return { rules, isValid };
   }, [password]);
+
+  // Check for plan query param to persist across email verification
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const plan = urlParams.get('plan');
+    if (plan === 'pro') {
+      localStorage.setItem('pendingSubscription', 'pro');
+    }
+  }, []);
+
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -77,8 +87,8 @@ const SignUp = () => {
     try {
       // Sign up the user
       const data = await authClient.signUp(
-        email, 
-        password, 
+        email,
+        password,
         isCaptchaEnabled ? captchaToken : 'localhost_bypass'
       );
 
@@ -93,7 +103,7 @@ const SignUp = () => {
         setMessage('Account created! Redirecting...');
         await refreshSession();
         setTimeout(() => {
-            navigate('/onboarding');
+          navigate('/onboarding');
         }, 1500);
       } else {
         setError('Unexpected response from authentication service');
@@ -247,20 +257,24 @@ const SignUp = () => {
 
           {/* Submit Button */}
           <div className="fade-in flex gap-5 pt-5" style={{ animationDelay: '0.3s' }}>
-            <TerminalButton 
-              type="submit" 
+            <TerminalButton
+              type="submit"
               disabled={
-                loading || 
-                !email || 
+                loading ||
+                !email ||
                 !password ||
-                !confirmPassword || 
-                !passwordValidation.isValid || 
+                !confirmPassword ||
+                !passwordValidation.isValid ||
                 password !== confirmPassword ||
                 (import.meta.env.VITE_HCAPTCHA_SITE_KEY && !captchaToken)
               }
             >
               {loading ? '[Processing...]' : '[Create Account]'}
             </TerminalButton>
+          </div>
+
+          <div className="fade-in text-xs text-terminal-gray mt-4 text-center" style={{ animationDelay: '0.35s' }}>
+            By signing up, you agree to our <Link to="/terms" className="underline hover:text-terminal-text">Terms of Service</Link> and <Link to="/privacy" className="underline hover:text-terminal-text">Privacy Policy</Link>.
           </div>
         </form>
 
@@ -283,8 +297,8 @@ const SignUp = () => {
           <div className="mb-1">&gt; Secure authentication powered by Supabase</div>
           <div>&gt; Your data is encrypted and protected</div>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

@@ -30,7 +30,7 @@ const LandingPage = () => {
 
     // Check if landing page has been loaded before
     const hasLoadedBefore = localStorage.getItem('dev-impact-landing-loaded');
-    
+
     if (hasLoadedBefore) {
       // Show all lines immediately (defer to avoid lint warning)
       setTimeout(() => {
@@ -39,32 +39,52 @@ const LandingPage = () => {
       }, 0);
     } else {
       // First time - animate the boot sequence
-    bootSequence.forEach((line, i) => {
-      setTimeout(() => {
-        setLines(prev => [...prev, line]);
-        if (i === bootSequence.length - 1) {
+      bootSequence.forEach((line, i) => {
+        setTimeout(() => {
+          setLines(prev => [...prev, line]);
+          if (i === bootSequence.length - 1) {
             setTimeout(() => {
               setShowButtons(true);
               // Mark as loaded after animation completes
               localStorage.setItem('dev-impact-landing-loaded', 'true');
             }, 500);
-        }
-      }, i * 300);
-    });
+          }
+        }, i * 300);
+      });
     }
   }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-5">
-      <div className="max-w-[630px] w-full">
-        {lines.map((line, i) => (
-          <div key={i} className="fade-in mb-2.5">
-            {line}
+      <div className="w-full max-w-[630px]">
+        {/* Text and Logo Container */}
+        <div className="flex items-start gap-6 mb-10">
+          {/* Left column - Text content */}
+          <div className="flex-1">
+            {lines.map((line, i) => (
+              <div key={i} className="fade-in mb-2.5">
+                {line}
+              </div>
+            ))}
           </div>
-        ))}
+
+          {/* Right column - Logo */}
+          {showButtons && (
+            <div className="fade-in hidden md:block flex-shrink-0">
+              <img
+                src="/dev-impact.svg"
+                alt="dev-impact logo"
+                width={200}
+                className="opacity-90"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Buttons Container - Full Width */}
         {showButtons && (
-          <div className="fade-in mt-10">
-            <div className="flex gap-5 mb-5">
+          <div className="fade-in">
+            <div className="flex flex-wrap gap-5 mb-5">
               <Link to="/signin">
                 <TerminalButton>
                   [Start Building]
@@ -75,10 +95,23 @@ const LandingPage = () => {
                   [About Us]
                 </TerminalButton>
               </Link>
+              <Link to="/pricing">
+                <TerminalButton>
+                  [Pricing]
+                </TerminalButton>
+              </Link>
               <Link to="/example">
                 <TerminalButton>
                   [View Example]
                 </TerminalButton>
+              </Link>
+            </div>
+            <div className="text-center space-x-4">
+              <Link to="/terms" className="text-xs text-terminal-gray hover:text-terminal-text transition-colors">
+                [Terms of Service]
+              </Link>
+              <Link to="/privacy" className="text-xs text-terminal-gray hover:text-terminal-text transition-colors">
+                [Privacy Policy]
               </Link>
             </div>
           </div>
@@ -89,4 +122,3 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
-

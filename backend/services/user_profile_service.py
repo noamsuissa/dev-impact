@@ -1,14 +1,15 @@
 """
 User Profile Service - Handle user profile operations with Supabase
 """
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 from fastapi import HTTPException
-from utils.auth_utils import get_supabase_client
-from services.profile_service import ProfileService
-from schemas.user_profile import (
+from ..utils.auth_utils import get_supabase_client
+from .profile_service import ProfileService
+from .subscription_service import SubscriptionService
+from ..schemas.user_profile import (
     UserProfile,
 )
-from schemas.auth import MessageResponse
+from ..schemas.auth import MessageResponse
 
 class UserProfileService:
     """Service for handling user profile operations with Supabase."""
@@ -60,6 +61,14 @@ class UserProfileService:
                 # Safety check to prevent infinite loop
                 if counter > 1000:
                     raise HTTPException(status_code=500, detail="Failed to generate unique slug")
+            
+            # Check profile limit before creating
+            subscription_info = await SubscriptionService.get_subscription_info(user_id, token)
+            if not subscription_info.can_add_profile:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Profile limit reached. Free users are limited to {subscription_info.max_profiles} profiles. Upgrade to Pro for unlimited profiles."
+                )
             
             # Get current profile count for display_order
             count_result = supabase.table("user_profiles")\
@@ -341,3 +350,4 @@ class UserProfileService:
             print(f"Delete user profile error: {e}")
             raise HTTPException(status_code=500, detail="Failed to delete user profile")
 
+    

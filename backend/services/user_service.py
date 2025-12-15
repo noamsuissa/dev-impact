@@ -3,9 +3,10 @@ User Service - Handle user profile operations with Supabase
 """
 from typing import Dict, Any
 from fastapi import HTTPException
-from utils.auth_utils import get_supabase_client
-from schemas.user import UserProfile
-from schemas.auth import MessageResponse
+from ..utils.auth_utils import get_supabase_client
+from ..schemas.user import UserProfile
+from ..schemas.auth import MessageResponse
+from ..services.stripe_service import StripeService
 
 class UserService:
     """Service for handling user profile operations."""
@@ -158,15 +159,22 @@ class UserService:
             MessageResponse with success message
         """
         try:
+            # 1. Try to cancel subscription if exists
+            try:
+                await StripeService.cancel_subscription(user_id)
+            except Exception as e:
+                # Log but continue - user might not have a subscription
+                print(f"Subscription cancellation check during account delete: {e}")
+
             supabase = get_supabase_client()
             
-            # Delete profile (this will cascade delete related data if FK constraints are set)
+            # 2. Delete profile (this will cascade delete related data if FK constraints are set)
             supabase.table("profiles")\
                 .delete()\
                 .eq("id", user_id)\
                 .execute()
             
-            # Delete auth user using Admin API
+            # 3. Delete auth user using Admin API
             supabase.auth.admin.delete_user(user_id)
             
             return MessageResponse(
@@ -178,4 +186,3 @@ class UserService:
         except Exception as e:
             print(f"Delete account error: {e}")
             raise HTTPException(status_code=500, detail="Failed to delete account")
-

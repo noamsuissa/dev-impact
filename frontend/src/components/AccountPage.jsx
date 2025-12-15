@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Github, ArrowLeft, Trash2, User, Shield, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Github, ArrowLeft, Trash2, User, Shield, ShieldCheck, ShieldOff, CreditCard, Sparkles } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import DeleteAccountModal from './DeleteAccountModal';
 import MFASetup from './auth/MFASetup';
-import { user as userClient, auth as authClient } from '../utils/client';
+import UpgradeModal from './UpgradeModal';
+import { user as userClient, auth as authClient, subscriptions as subscriptionsClient } from '../utils/client';
 import { useAuth } from '../hooks/useAuth';
 
 const AccountPage = ({ user, projects }) => {
@@ -16,10 +17,58 @@ const AccountPage = ({ user, projects }) => {
   const [loadingMFA, setLoadingMFA] = useState(false);
   const [showMFASetup, setShowMFASetup] = useState(false);
   const [mfaError, setMfaError] = useState(null);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   useEffect(() => {
     loadMFAFactors();
   }, []);
+
+  const [subscriptionInfo, setSubscriptionInfo] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  useEffect(() => {
+    loadMFAFactors();
+    loadSubscriptionInfo();
+  }, []);
+
+  const loadSubscriptionInfo = async () => {
+    try {
+      const info = await subscriptionsClient.getSubscriptionInfo();
+      setSubscriptionInfo(info);
+    } catch (error) {
+      console.error('Failed to load subscription info:', error);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your Pro subscription? You will lose access to Pro features at the end of your billing period.')) {
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      await subscriptionsClient.cancelSubscription();
+      await loadSubscriptionInfo();
+      alert('Subscription cancelled successfully. You will retain access until the end of your billing period.');
+
+      // Poll for update
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        attempts++;
+        if (attempts > 5) {
+          clearInterval(interval);
+          return;
+        }
+        await loadSubscriptionInfo();
+      }, 2000);
+
+    } catch (error) {
+      console.error('Failed to cancel subscription:', error);
+      alert('Failed to cancel subscription: ' + error.message);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const loadMFAFactors = async () => {
     setLoadingMFA(true);
@@ -138,6 +187,65 @@ const AccountPage = ({ user, projects }) => {
         </div>
       </div>
 
+      {/* Subscription Section */}
+      <div className="border border-terminal-border p-10 mb-10">
+        <div className="mb-6">
+          <h3 className="text-lg text-terminal-orange mb-2 flex items-center gap-2">
+            <CreditCard size={20} />
+            Subscription Plan
+          </h3>
+          <p className="text-terminal-gray text-sm">
+            Manage your subscription and billing details.
+          </p>
+        </div>
+
+        {subscriptionInfo ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border border-terminal-border p-4 bg-terminal-bg-lighter">
+              <div>
+                <div className="text-terminal-orange font-medium flex items-center gap-2">
+                  {subscriptionInfo.subscription_type === 'pro' ? 'Pro Plan' : 'Free Plan'}
+                  {subscriptionInfo.cancel_at_period_end && (
+                    <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded border border-yellow-500/30">
+                      Cancellation Pending
+                    </span>
+                  )}
+                </div>
+                <div className="text-terminal-gray text-sm mt-1">
+                  {subscriptionInfo.subscription_type === 'pro'
+                    ? (subscriptionInfo.cancel_at_period_end
+                      ? `Access until ${subscriptionInfo.current_period_end ? new Date(subscriptionInfo.current_period_end).toLocaleDateString() : 'period end'}`
+                      : 'Unlimited portfolios and more features')
+                    : 'Limited to 3 portfolios and basic features'}
+                </div>
+              </div>
+
+              {subscriptionInfo.subscription_type === 'pro' && !subscriptionInfo.cancel_at_period_end && (
+                <TerminalButton
+                  onClick={handleCancelSubscription}
+                  disabled={isCancelling}
+                  className="bg-red-500/10 hover:bg-red-500/20 border-red-500/30 text-red-400"
+                >
+                  {isCancelling ? '[Cancelling...]' : '[Cancel Subscription]'}
+                </TerminalButton>
+              )}
+
+              {subscriptionInfo.subscription_type === 'free' && (
+                <TerminalButton
+                  onClick={() => setIsUpgradeModalOpen(true)}
+                  className="text-terminal-orange border-terminal-orange hover:bg-terminal-orange/10"
+                >
+                  <Sparkles size={16} className="inline mr-2" />
+                  {import.meta.env.VITE_ENABLE_PAYMENTS === 'true' ? "[Upgrade to Pro]" : "[Join Waitlist]"}
+                </TerminalButton>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-terminal-gray">&gt; Loading subscription info...</div>
+        )}
+      </div>
+
       {/* MFA Section */}
       {import.meta.env.VITE_ENVIRONMENT === 'production' && (
         <div className="border border-terminal-border p-10 mb-10">
@@ -197,7 +305,7 @@ const AccountPage = ({ user, projects }) => {
                           <span>Two-factor authentication setup incomplete - please verify your authenticator app</span>
                         </div>
                       )}
-                      
+
                       <div className="space-y-3">
                         {mfaFactors.map((factor) => (
                           <div
@@ -288,6 +396,13 @@ const AccountPage = ({ user, projects }) => {
           isDeleting={isDeleting}
         />
       )}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        isLimitReached={!subscriptionInfo?.can_add_profile && subscriptionInfo?.subscription_type !== 'pro'}
+      />
     </div>
   );
 };

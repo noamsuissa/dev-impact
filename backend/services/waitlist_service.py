@@ -1,0 +1,88 @@
+"""
+Waitlist Service - Handle waitlist operations
+"""
+from typing import Optional
+from fastapi import HTTPException
+from ..utils.auth_utils import get_supabase_client
+from ..schemas.waitlist import WaitlistEntry, WaitlistResponse
+from .email_service import EmailService
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class WaitlistService:
+    """Service for handling waitlist operations"""
+    
+    @staticmethod
+    async def signup(email: str, name: Optional[str] = None) -> WaitlistResponse:
+        """
+        Add a user to the waitlist and send confirmation email
+        
+        Args:
+            email: User's email address
+            name: Optional user's name
+            
+        Returns:
+            WaitlistResponse with success status and entry data
+        """
+        try:
+            supabase = get_supabase_client()
+            
+            # Check if email already exists
+            existing = supabase.table("waitlist")\
+                .select("*")\
+                .eq("email", email.lower().strip())\
+                .execute()
+            
+            if existing.data:
+                # Email already exists, return existing entry
+                entry_data = existing.data[0]
+                return WaitlistResponse(
+                    success=True,
+                    message="You're already on the waitlist!",
+                    entry=WaitlistEntry(**entry_data)
+                )
+            
+            # Insert new waitlist entry
+            entry_data = {
+                "email": email.lower().strip(),
+                "name": name.strip() if name and name.strip() else None
+            }
+            
+            result = supabase.table("waitlist")\
+                .insert(entry_data)\
+                .execute()
+            
+            if not result.data:
+                raise HTTPException(status_code=500, detail="Failed to add to waitlist")
+            
+            entry = WaitlistEntry(**result.data[0])
+            
+            # Send confirmation email
+            email_service = EmailService.get_instance()
+            email_sent = await email_service.send_email(
+                to_email=email,
+                subject="Welcome to the Dev Impact Waitlist!",
+                template_name="waitlist_confirmation.html",
+                template_vars={
+                    "name": name or "there",
+                    "email": email
+                }
+            )
+            
+            if not email_sent:
+                logger.warning(f"Failed to send confirmation email to {email}, but user was added to waitlist")
+            
+            return WaitlistResponse(
+                success=True,
+                message="Successfully added to waitlist! Check your email for confirmation.",
+                entry=entry
+            )
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Waitlist signup error: {e}")
+            raise HTTPException(status_code=500, detail="Failed to add to waitlist")
+
