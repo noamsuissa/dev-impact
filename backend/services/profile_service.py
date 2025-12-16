@@ -7,7 +7,7 @@ from typing import Optional
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from backend.utils.auth_utils import get_supabase_client
+from backend.db.client import get_user_client, get_service_client
 from backend.services.user_service import UserService
 from backend.services.project_service import ProjectService
 from backend.schemas.profile import (
@@ -61,7 +61,7 @@ class ProfileService:
         return bool(re.match(pattern, slug))
 
     @staticmethod
-    async def publish_profile(username: str, profile_id: str, user_id: str, token: str) -> PublishProfileResponse:
+    async def publish_profile(username: str, profile_id: str, user_id: str, token: Optional[str] = None) -> PublishProfileResponse:
         """
         Publish or update a user profile in Supabase
         
@@ -81,7 +81,7 @@ class ProfileService:
             # Ensure username consistency (lowercase)
             username = username.lower()
             
-            supabase = get_supabase_client(access_token=token)
+            supabase = get_user_client(token)
             
             # Verify profile exists and belongs to user
             profile_result = supabase.table("user_profiles")\
@@ -215,7 +215,7 @@ class ProfileService:
             if not ProfileService.validate_username(username):
                 raise HTTPException(status_code=400, detail="Invalid username format")
             
-            supabase = get_supabase_client()
+            supabase = get_service_client()
             
             # Build query
             query = supabase.table("published_profiles")\
@@ -262,9 +262,9 @@ class ProfileService:
                 user=profile_data["user"],
                 profile=profile_data.get("profile"),  # Profile name and description
                 projects=profile_data["projects"],
-                viewCount=profile["view_count"] + 1,
-                publishedAt=profile["published_at"],
-                updatedAt=profile["updated_at"]
+                view_count=profile["view_count"] + 1,
+                published_at=profile["published_at"],
+                updated_at=profile["updated_at"]
             )
         except HTTPException:
             raise
@@ -273,7 +273,7 @@ class ProfileService:
             raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching the profile")
 
     @staticmethod
-    async def unpublish_profile(username: str, profile_slug: str, user_id: str) -> MessageResponse:
+    async def unpublish_profile(username: str, profile_slug: str, user_id: str, token: Optional[str] = None) -> MessageResponse:
         """
         Unpublish a profile
         
@@ -286,7 +286,7 @@ class ProfileService:
             MessageResponse with success status and message
         """
         try:
-            supabase = get_supabase_client()
+            supabase = get_user_client(token)
             
             # Verify ownership via profile_id
             result = supabase.table("published_profiles")\
@@ -339,7 +339,7 @@ class ProfileService:
             ListProfilesResponse containing profiles list and pagination info
         """
         try:
-            supabase = get_supabase_client()
+            supabase = get_service_client()
             
             result = supabase.table("published_profiles")\
                 .select("username, profile_data, view_count, published_at, updated_at")\
@@ -375,9 +375,9 @@ class ProfileService:
                             description=profile_data["profile"].get("description"),
                         ),
                         projects=profile_data["projects"],
-                        viewCount=profile["view_count"],
-                        publishedAt=profile["published_at"],
-                        updatedAt=profile["updated_at"],
+                        view_count=profile["view_count"],
+                        published_at=profile["published_at"],
+                        updated_at=profile["updated_at"],
                     )
                 )
             
@@ -412,7 +412,7 @@ class ProfileService:
                     message="Username must be 3-50 characters, lowercase letters, numbers, and hyphens only"
                 )
         
-            supabase = get_supabase_client()
+            supabase = get_service_client()
             
             # Use RPC call to check availability (checks format, reserved names, and existing profiles)
             result = supabase.rpc("is_username_available", {"desired_username": username}).execute()

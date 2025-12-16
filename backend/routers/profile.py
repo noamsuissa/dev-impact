@@ -90,7 +90,7 @@ async def unpublish_profile(
     # Get user ID from token
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    result = await ProfileService.unpublish_profile(username, profile_slug, user_id)
+    result = await ProfileService.unpublish_profile(username, profile_slug, user_id, authorization)
     return result
 
 
