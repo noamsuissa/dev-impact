@@ -4,7 +4,7 @@ Subscription Service - Handle subscription operations
 from typing import Optional
 from fastapi import HTTPException
 from backend.schemas.subscription import SubscriptionInfoResponse
-from backend.utils.auth_utils import get_supabase_client
+from backend.db.client import get_user_client
 from backend.schemas.auth import MessageResponse
 from backend.services.stripe_service import StripeService
 
@@ -27,7 +27,7 @@ class SubscriptionService:
             SubscriptionInfoResponse with subscription_type, profile_count, max_profiles, can_add_profile
         """
         try:
-            supabase = get_supabase_client(access_token=token)
+            supabase = get_user_client(token)
             
             # Get user's subscription type from profiles table
             profile_result = supabase.table("profiles")\
@@ -40,10 +40,10 @@ class SubscriptionService:
             subscription_type = data.get("subscription_type", "free")
             
             # Count existing profiles
-            count_result = supabase.table("user_profiles")\
-                .select("id", count="exact")\
-                .eq("user_id", user_id)\
-                .execute()
+            count_result = (supabase.table("user_profiles")
+                .select("id", count="exact") # type: ignore[arg-type]
+                .eq("user_id", user_id)
+                .execute())
             
             profile_count = len(count_result.data) if count_result.data else 0
             
