@@ -1,9 +1,9 @@
 """
 User Service - Handle user profile operations with Supabase
 """
-from typing import Dict, Any
+from typing import Dict, Any, cast, Optional
 from fastapi import HTTPException
-from backend.utils.auth_utils import get_supabase_client
+from backend.db.client import get_user_client
 from backend.schemas.user import UserProfile
 from backend.schemas.auth import MessageResponse
 from backend.services.stripe_service import StripeService
@@ -12,7 +12,7 @@ class UserService:
     """Service for handling user profile operations."""
 
     @staticmethod
-    async def get_profile(user_id: str) -> UserProfile:
+    async def get_profile(user_id: str, authorization: Optional[str] = None) -> UserProfile:
         """
         Get user profile by ID
         
@@ -23,7 +23,7 @@ class UserService:
             UserProfile containing user profile data
         """
         try:
-            supabase = get_supabase_client()
+            supabase = get_user_client(authorization)
             
             result = supabase.table("profiles")\
                 .select("*")\
@@ -51,7 +51,7 @@ class UserService:
             raise HTTPException(status_code=500, detail="Failed to fetch profile")
 
     @staticmethod
-    async def update_profile(user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
+    async def update_profile(user_id: str, profile_data: Dict[str, Any], authorization: Optional[str] = None) -> UserProfile:
         """
         Update user profile
         
@@ -63,7 +63,7 @@ class UserService:
             UserProfile containing updated profile data
         """
         try:
-            supabase = get_supabase_client()
+            supabase = get_user_client(authorization)
             
             # Prepare update data (only include non-None values)
             update_data = {k: v for k, v in profile_data.items() if v is not None}
@@ -80,15 +80,17 @@ class UserService:
             if not result.data:
                 raise HTTPException(status_code=404, detail="Profile not found")
             
+            data = cast(Dict[str, Any], result.data)
+            
             return UserProfile(
-                id=result.data["id"],
-                username=result.data["username"],
-                full_name=result.data["full_name"],
-                github_username=result.data["github_username"],
-                github_avatar_url=result.data["github_avatar_url"],
-                is_published=result.data["is_published"],
-                created_at=result.data["created_at"],
-                updated_at=result.data["updated_at"]
+                id=data["id"],
+                username=data["username"],
+                full_name=data["full_name"],
+                github_username=data["github_username"],
+                github_avatar_url=data["github_avatar_url"],
+                is_published=data["is_published"],
+                created_at=data["created_at"],
+                updated_at=data["updated_at"]
             )
         except HTTPException:
             raise
@@ -97,7 +99,7 @@ class UserService:
             raise HTTPException(status_code=500, detail="Failed to update profile")
 
     @staticmethod
-    async def create_or_update_profile(user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
+    async def create_or_update_profile(user_id: str, profile_data: Dict[str, Any], authorization: Optional[str] = None) -> UserProfile:
         """
         Create or update user profile (for onboarding)
         
@@ -109,7 +111,7 @@ class UserService:
             UserProfile containing profile data
         """
         try:
-            supabase = get_supabase_client()
+            supabase = get_user_client(authorization)
             
             # Prepare upsert data
             upsert_data = {
@@ -131,15 +133,17 @@ class UserService:
             if not result.data:
                 raise HTTPException(status_code=500, detail="Failed to create/update profile")
             
+            data = cast(Dict[str, Any], result.data)
+            
             return UserProfile(
-                id=result.data["id"],
-                username=result.data["username"],
-                full_name=result.data["full_name"],
-                github_username=result.data["github_username"],
-                github_avatar_url=result.data["github_avatar_url"],
-                is_published=result.data["is_published"],
-                created_at=result.data["created_at"],
-                updated_at=result.data["updated_at"]
+                id=data["id"],
+                username=data["username"],
+                full_name=data["full_name"],
+                github_username=data["github_username"],
+                github_avatar_url=data["github_avatar_url"],
+                is_published=data["is_published"],
+                created_at=data["created_at"],
+                updated_at=data["updated_at"]
             )
         except HTTPException:
             raise
@@ -166,7 +170,7 @@ class UserService:
                 # Log but continue - user might not have a subscription
                 print(f"Subscription cancellation check during account delete: {e}")
 
-            supabase = get_supabase_client()
+            supabase = get_user_client()
             
             # 2. Delete profile (this will cascade delete related data if FK constraints are set)
             supabase.table("profiles")\

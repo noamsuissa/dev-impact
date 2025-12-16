@@ -22,7 +22,7 @@ async def get_profile(authorization: str = Depends(auth_utils.get_access_token))
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    profile = await UserService.get_profile(user_id)
+    profile = await UserService.get_profile(user_id, authorization)
     return profile
 
 
@@ -39,7 +39,7 @@ async def update_profile(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
     profile_data = request.model_dump(exclude_none=True)
-    profile = await UserService.update_profile(user_id, profile_data)
+    profile = await UserService.update_profile(user_id, profile_data, authorization)
     return profile
 
 
@@ -61,7 +61,7 @@ async def complete_onboarding(
         "github_username": request.github.username if request.github else None,
         "github_avatar_url": request.github.avatar_url if request.github else None,
     }
-    profile = await UserService.create_or_update_profile(user_id, profile_data)
+    profile = await UserService.create_or_update_profile(user_id, profile_data, authorization)
     return profile
 
 
