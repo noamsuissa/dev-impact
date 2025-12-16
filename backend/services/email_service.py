@@ -7,6 +7,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from typing import Dict, Any, Optional
+from functools import lru_cache
 from pathlib import Path
 import logging
 
@@ -100,10 +101,7 @@ class EmailService:
             logger.error(f"Failed to send email to {to_email}: {e}")
             return False
     
-    @staticmethod
+    @lru_cache()
     def get_instance() -> "EmailService":
-        """Get singleton instance of EmailService"""
-        if not hasattr(EmailService, "_instance"):
-            EmailService._instance = EmailService()
-        return EmailService._instance
+        return EmailService()
 
