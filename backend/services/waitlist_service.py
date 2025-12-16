@@ -3,9 +3,9 @@ Waitlist Service - Handle waitlist operations
 """
 from typing import Optional
 from fastapi import HTTPException
-from backend.utils.auth_utils import get_supabase_client
 from backend.schemas.waitlist import WaitlistEntry, WaitlistResponse
 from backend.services.email_service import EmailService
+from backend.db.client import get_service_client
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class WaitlistService:
             WaitlistResponse with success status and entry data
         """
         try:
-            supabase = get_supabase_client()
+            supabase = get_service_client()
             
             # Check if email already exists
             existing = supabase.table("waitlist")\
