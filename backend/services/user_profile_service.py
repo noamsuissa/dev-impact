@@ -3,7 +3,7 @@ User Profile Service - Handle user profile operations with Supabase
 """
 from typing import Optional, List
 from fastapi import HTTPException
-from backend.utils.auth_utils import get_supabase_client
+from backend.db.client import get_user_client
 from backend.services.profile_service import ProfileService
 from backend.services.subscription_service import SubscriptionService
 from backend.schemas.user_profile import (
@@ -37,7 +37,7 @@ class UserProfileService:
             if not name or not name.strip():
                 raise HTTPException(status_code=400, detail="Profile name is required")
             
-            supabase = get_supabase_client(access_token=token)
+            supabase = get_user_client(token)
             
             # Generate slug from name
             base_slug = ProfileService.generate_slug(name)
@@ -71,10 +71,10 @@ class UserProfileService:
                 )
             
             # Get current profile count for display_order
-            count_result = supabase.table("user_profiles")\
-                .select("id", count="exact")\
-                .eq("user_id", user_id)\
-                .execute()
+            count_result = (supabase.table("user_profiles")
+                .select("id", count="exact") # type: ignore[arg-type]
+                .eq("user_id", user_id)
+                .execute())
             
             display_order = len(count_result.data) if count_result.data else 0
             
@@ -122,7 +122,7 @@ class UserProfileService:
             List of UserProfile objects
         """
         try:
-            supabase = get_supabase_client(access_token=token)
+            supabase = get_user_client(token)
             
             result = supabase.table("user_profiles")\
                 .select("*")\
@@ -168,7 +168,7 @@ class UserProfileService:
             UserProfile object
         """
         try:
-            supabase = get_supabase_client(access_token=token)
+            supabase = get_user_client(token)
             
             result = supabase.table("user_profiles")\
                 .select("*")\
@@ -218,7 +218,7 @@ class UserProfileService:
             Updated UserProfile object
         """
         try:
-            supabase = get_supabase_client(access_token=token)
+            supabase = get_user_client(token)
             
             # Verify ownership
             existing = supabase.table("user_profiles")\
@@ -311,7 +311,7 @@ class UserProfileService:
             MessageResponse with success status
         """
         try:
-            supabase = get_supabase_client(access_token=token)
+            supabase = get_user_client(token)
             
             # Verify ownership
             existing = supabase.table("user_profiles")\
