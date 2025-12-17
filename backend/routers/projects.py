@@ -32,7 +32,7 @@ async def list_projects(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    projects = await ProjectService.list_projects(user_id, profile_id=profile_id)
+    projects = await ProjectService.list_projects(user_id, profile_id=profile_id, authorization=authorization)
     return projects
 
 
@@ -48,7 +48,7 @@ async def get_project(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    project = await ProjectService.get_project(project_id, user_id)
+    project = await ProjectService.get_project(project_id, user_id, authorization=authorization)
     return project
 
 
@@ -65,7 +65,7 @@ async def create_project(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
     project_data = request.model_dump()
-    project = await ProjectService.create_project(user_id, project_data)
+    project = await ProjectService.create_project(user_id, project_data, authorization=authorization)
     return project
 
 
@@ -83,7 +83,7 @@ async def update_project(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
     project_data = request.model_dump(exclude_none=True)
-    project = await ProjectService.update_project(project_id, user_id, project_data)
+    project = await ProjectService.update_project(project_id, user_id, project_data, authorization=authorization)
     return project
 
 
@@ -99,7 +99,7 @@ async def delete_project(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    result = await ProjectService.delete_project(project_id, user_id)
+    result = await ProjectService.delete_project(project_id, user_id, authorization=authorization)
     return result
 
 
@@ -121,7 +121,7 @@ async def list_project_evidence(
         except Exception:
             pass  # keep user_id as None for public access
     
-    evidence = await ProjectService.list_project_evidence(project_id, user_id)
+    evidence = await ProjectService.list_project_evidence(project_id, user_id, authorization=authorization)
     return evidence
 
 
@@ -149,6 +149,7 @@ async def upload_project_evidence(
         mime_type=file.content_type or "application/octet-stream",
         file_size=file_size,
         file_content=file_content,
+        authorization=authorization,
     )
 
     return evidence
@@ -165,23 +166,20 @@ async def get_evidence_stats(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    stats = await ProjectService.get_evidence_stats(user_id)
+    stats = await ProjectService.get_evidence_stats(user_id, authorization=authorization)
     return stats
 
 
 @router.delete("/{project_id}/evidence/{evidence_id}", response_model=MessageResponse)
 async def delete_evidence(
-    project_id: str,
     evidence_id: str,
     authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
-    Delete evidence record and file
-    
     Deletes evidence record and associated file from storage if owned by the authenticated user.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    result = await ProjectService.delete_evidence(evidence_id, user_id)
+    result = await ProjectService.delete_evidence(evidence_id, user_id, authorization=authorization)
     return result
 
