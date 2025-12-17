@@ -3,10 +3,10 @@ Stripe Service - Handle Stripe payment operations
 """
 import os
 import stripe
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from datetime import datetime, timezone
 from fastapi import HTTPException
-from backend.utils import auth_utils
+from backend.db.client import get_user_client, get_service_client
 
 class StripeService:
     """Service for handling Stripe operations"""
@@ -30,6 +30,12 @@ class StripeService:
             raise HTTPException(
                 status_code=500,
                 detail="Stripe secret key not configured"
+            )
+        
+        if not publishable_key:
+            raise HTTPException(
+                status_code=500,
+                detail="Stripe publishable key not configured"
             )
         
         if not price_id:
@@ -77,7 +83,7 @@ class StripeService:
             # Check for existing Stripe customer ID in database
             stripe_customer_id = None
             try:
-                supabase = auth_utils.get_supabase_client(auth_token)
+                supabase = get_user_client(auth_token)
                 profile_response = supabase.table("profiles") \
                     .select("stripe_customer_id") \
                     .eq("id", user_id) \
@@ -130,21 +136,21 @@ class StripeService:
                 "session_id": session.id
             }
             
-        except stripe.error.AuthenticationError as e:
+        except stripe.error.AuthenticationError as e: # type: ignore
             # Invalid API key
             print(f"Stripe authentication error: {e}")
             raise HTTPException(
                 status_code=500,
                 detail="Payment system configuration error. Please contact support."
             )
-        except stripe.error.InvalidRequestError as e:
+        except stripe.error.InvalidRequestError as e: # type: ignore
             # Invalid parameters (e.g., wrong price ID)
             print(f"Stripe invalid request error: {e}")
             raise HTTPException(
                 status_code=500,
                 detail="Payment configuration error. Please contact support."
             )
-        except stripe.error.StripeError as e:
+        except stripe.error.StripeError as e: # type: ignore
             # Other Stripe errors
             print(f"Stripe error: {e}")
             raise HTTPException(
@@ -186,7 +192,7 @@ class StripeService:
             except ValueError as e:
                 # Invalid payload
                 raise HTTPException(status_code=400, detail="Invalid payload")
-            except stripe.error.SignatureVerificationError as e:
+            except stripe.error.SignatureVerificationError as e: # type: ignore
                 # Invalid signature
                 raise HTTPException(status_code=400, detail="Invalid signature")
 
@@ -225,7 +231,7 @@ class StripeService:
         """
         try:
             # Get admin client (uses Service Role Key from env)
-            supabase = auth_utils.get_supabase_client()
+            supabase = get_service_client()
             
             supabase.table("profiles").update({
                 "stripe_customer_id": customer_id
@@ -244,7 +250,7 @@ class StripeService:
         """
         try:
             # Get admin client (uses Service Role Key from env)
-            supabase = auth_utils.get_supabase_client()
+            supabase = get_service_client()
             
             supabase.table("profiles").update({
                 "subscription_type": subscription_type
@@ -277,7 +283,7 @@ class StripeService:
             subscription_type = "pro" if status in ["active", "trialing"] else "free"
 
             # Find user by stripe_customer_id
-            supabase = auth_utils.get_supabase_client()
+            supabase = get_service_client()
             response = supabase.table("profiles").select("id").eq("stripe_customer_id", customer_id).execute()
             
             if response.data:
@@ -302,7 +308,7 @@ class StripeService:
             # Don't raise, just log
 
     @staticmethod
-    async def cancel_subscription(user_id: str) -> None:
+    async def cancel_subscription(user_id: str, authorization: Optional[str] = None) -> None:
         """
         Cancel a user's subscription (at period end)
         
@@ -317,7 +323,7 @@ class StripeService:
             stripe.api_key = config["secret_key"]
             
             # Get customer ID
-            supabase = auth_utils.get_supabase_client()
+            supabase = get_user_client(authorization)
             profile_response = supabase.table("profiles") \
                 .select("stripe_customer_id") \
                 .eq("id", user_id) \
@@ -364,7 +370,7 @@ class StripeService:
             
         except HTTPException:
             raise
-        except stripe.error.StripeError as e:
+        except stripe.error.StripeError as e: # type: ignore
             print(f"Stripe error canceling subscription: {e}")
             raise HTTPException(status_code=500, detail="Failed to cancel subscription")
         except Exception as e:

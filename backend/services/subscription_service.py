@@ -67,7 +67,7 @@ class SubscriptionService:
             raise HTTPException(status_code=500, detail="Failed to get subscription info")
 
     @staticmethod
-    async def cancel_subscription(user_id: str) -> MessageResponse:
+    async def cancel_subscription(user_id: str, authorization: Optional[str] = None) -> MessageResponse:
         """
         Cancel user's subscription
         
@@ -78,7 +78,7 @@ class SubscriptionService:
             MessageResponse indicating success
         """
         try:
-            await StripeService.cancel_subscription(user_id)
+            await StripeService.cancel_subscription(user_id, authorization)
             return MessageResponse(
                 success=True,
                 message="Subscription has been scheduled for cancellation at the end of the billing period"

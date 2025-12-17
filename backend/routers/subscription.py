@@ -65,5 +65,5 @@ async def cancel_subscription(
     Cancels the user's subscription at the end of the current billing period.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    result = await SubscriptionService.cancel_subscription(user_id)
+    result = await SubscriptionService.cancel_subscription(user_id, authorization)
     return result
