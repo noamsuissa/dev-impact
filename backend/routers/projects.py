@@ -121,7 +121,7 @@ async def list_project_evidence(
         except Exception:
             pass  # keep user_id as None for public access
     
-    evidence = await ProjectService.list_project_evidence(project_id, user_id, authorization=authorization)
+    evidence = await ProjectService.list_project_evidence(project_id, user_id)
     return evidence
 
 

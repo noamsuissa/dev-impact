@@ -5,7 +5,7 @@ import os
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from backend.db.client import get_user_client
+from backend.db.client import get_user_client, get_service_client
 from backend.schemas.project import (
     Project,
     ProjectMetric,
@@ -450,7 +450,7 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to calculate total evidence size")
 
     @staticmethod
-    async def list_project_evidence(project_id: str, user_id: Optional[str] = None, authorization: Optional[str] = None) -> List[ProjectEvidence]:
+    async def list_project_evidence(project_id: str, user_id: Optional[str] = None) -> List[ProjectEvidence]:
         """
         List all evidence for a project
         
@@ -462,7 +462,7 @@ class ProjectService:
             List of evidence items
         """
         try:
-            supabase = get_user_client(authorization)
+            supabase = get_service_client()
             
             # Fetch project details to determine access
             proj_query = supabase.table("impact_projects")\
@@ -577,7 +577,7 @@ class ProjectService:
                 raise HTTPException(status_code=400, detail="Only image files are allowed")
 
             # Verify project ownership
-            supabase = get_user_client(authorization)
+            supabase = get_service_client()
 
             project_result = supabase.table("impact_projects")\
                 .select("id")\
