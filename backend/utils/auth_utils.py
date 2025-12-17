@@ -1,10 +1,9 @@
 from typing import Optional
 import jwt
 from fastapi import HTTPException, Header
-import os
-from supabase import create_client, Client
 from dotenv import load_dotenv
 from backend.schemas.auth import AuthResponse, UserResponse, SessionResponse
+from backend.db.client import get_user_client
 
 load_dotenv()
 
@@ -25,25 +24,6 @@ def get_access_token(
     
     return authorization.replace("Bearer ", "")
 
-def get_supabase_client(access_token: Optional[str] = None) -> Client:
-    """Get Supabase client from environment"""
-    url = os.getenv("SUPABASE_URL")
-    # Use service role key for backend operations
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
-    
-    if not url or not key:
-        raise HTTPException(
-            status_code=500,
-            detail="Supabase configuration not found"
-        )
-    
-    client = create_client(url, key)
-    
-    if access_token and not os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
-        client.postgrest.auth(access_token)
-        
-    return client
-
 async def verify_token(access_token: str) -> Optional[str]:
     """
     Verify access token and return user ID
@@ -55,7 +35,7 @@ async def verify_token(access_token: str) -> Optional[str]:
         User ID if valid, None otherwise
     """
     try:
-        supabase = get_supabase_client()
+        supabase = get_user_client(access_token)
         user = supabase.auth.get_user(access_token)
         
         if user and user.user:
@@ -76,11 +56,7 @@ async def get_session(access_token: str) -> AuthResponse:
             AuthResponse containing user and session data
         """
         try:
-            supabase = get_supabase_client()
-            # Set the authorization header
-            supabase.postgrest.auth(access_token)
-            
-            # Get user from token
+            supabase = get_user_client(access_token)
             user = supabase.auth.get_user(access_token)
             
             if user is None:
@@ -119,10 +95,10 @@ async def refresh_session(refresh_token: str) -> AuthResponse:
             AuthResponse containing new session data
         """
         try:
-            supabase = get_supabase_client()
+            supabase = get_user_client()
             response = supabase.auth.refresh_session(refresh_token)
             
-            if response.session is None:
+            if response.session is None or response.user is None:
                 raise HTTPException(
                     status_code=401,
                     detail="Invalid or expired refresh token"
@@ -149,40 +125,49 @@ async def refresh_session(refresh_token: str) -> AuthResponse:
                 detail="Invalid or expired refresh token"
             )
 
-def get_user_id_from_token(token: str) -> Optional[str]:
+def get_user_id_from_token(token: str) -> str:
     """Extract user ID from JWT token"""
     try:
         # Decode JWT without verification (we trust Supabase tokens)
         # In production, you should verify the signature with your Supabase JWT secret
         decoded = jwt.decode(token, options={"verify_signature": False})
         user_id = decoded.get('sub')
+        if not user_id:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authentication token"
+            )
         return user_id
     except Exception as e:
         print(f"Error decoding token: {e}")
-        return None
-
-def get_user_id_from_authorization(authorization: Optional[str]) -> str:
-    """Extract and validate user ID from authorization header"""
-    if not authorization:
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required"
-        )
-    
-    # Support both "Bearer <token>" and raw token strings
-    token = authorization
-    if token.startswith("Bearer "):
-        token = token.replace("Bearer ", "")
-
-    user_id = get_user_id_from_token(token)
-
-    if not user_id:
         raise HTTPException(
             status_code=401,
             detail="Invalid authentication token"
         )
 
-    return user_id
+def get_user_id_from_authorization(authorization: Optional[str]) -> str:
+    """Extract and validate user ID from authorization header"""
+    try:
+        if not authorization:
+            raise HTTPException(
+                status_code=401,
+                detail="Authentication required"
+            )
+    
+        # Support both "Bearer <token>" and raw token strings
+        token = authorization
+        if token.startswith("Bearer "):
+            token = token.replace("Bearer ", "")
+
+        user_id = get_user_id_from_token(token)
+
+        return user_id
+    except Exception as e:
+        print(f"Error getting user ID from authorization: {e}")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid authentication token"
+        )
 
 def get_user_email_from_authorization(authorization: Optional[str]) -> str:
     """Extract and validate user email from authorization header"""

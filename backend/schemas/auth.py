@@ -42,7 +42,7 @@ class UpdatePasswordRequest(BaseModel):
 class UserResponse(BaseModel):
     """User response schema"""
     id: str
-    email: str
+    email: Optional[str] = None
     created_at: Union[str, datetime]
     
     @field_serializer('created_at')
