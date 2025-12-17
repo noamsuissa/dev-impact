@@ -112,7 +112,7 @@ class ProfileService:
             
             # Fetch latest user profile from database
             try:
-                user_profile = await UserService.get_profile(user_id)
+                user_profile = await UserService.get_profile(user_id, authorization=token)
                 user_profile_data = user_profile.model_dump()
             except Exception as e:
                 print(f"Error fetching user profile: {e}")
@@ -120,7 +120,7 @@ class ProfileService:
             
             # Fetch latest projects from database for this profile
             try:
-                projects = await ProjectService.list_projects(user_id, profile_id=profile_id, include_evidence=True)
+                projects = await ProjectService.list_projects(user_id, profile_id=profile_id, include_evidence=True, authorization=token)
                 projects_data = [project.model_dump() for project in projects]
             except Exception as e:
                 print(f"Error fetching projects: {e}")
