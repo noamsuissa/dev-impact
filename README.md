@@ -1,4 +1,8 @@
-# 💥 dev-impact
+<p align="center">
+  <img src="frontend/public/dev-impact-large.png" width="120" />
+</p>
+
+# dev-impact
 
 > A new standard in showcasing developer impact. Out with the old resumes that end up nowhere.
 
