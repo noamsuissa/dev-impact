@@ -26,14 +26,13 @@ class AuthService:
     """Service for handling authentication operations with Supabase."""    
 
     @staticmethod
-    async def sign_up(email: str, password: str, captcha_token: Optional[str] = None) -> AuthResponse:
+    async def sign_up(email: str, password: str) -> AuthResponse:
         """
         Sign up a new user
         
         Args:
             email: User's email
             password: User's password
-            captcha_token: hCaptcha response token (optional)
             
         Returns:
             AuthResponse containing user and session data
@@ -47,10 +46,6 @@ class AuthService:
             options = {
                 "email_redirect_to": redirect_url
             }
-            
-            # Add captcha token only if provided and not localhost bypass
-            if captcha_token and captcha_token != 'localhost_bypass':
-                options["captcha_token"] = captcha_token
             
             response = supabase.auth.sign_up({
                 "email": email,
