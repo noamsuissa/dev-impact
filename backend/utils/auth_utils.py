@@ -27,22 +27,29 @@ def get_access_token(
 
 def get_supabase_client(access_token: Optional[str] = None) -> Client:
     """Get Supabase client from environment"""
-    url = os.getenv("SUPABASE_URL")
-    # Use service role key for backend operations
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
-    
-    if not url or not key:
+    try:
+        url = os.getenv("SUPABASE_URL")
+        # Use service role key for backend operations
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
+        
+        if not url or not key:
+            raise HTTPException(
+                status_code=500,
+                detail="Supabase configuration not found"
+            )
+        
+        client = create_client(url, key)
+        
+        if access_token and not os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
+            client.postgrest.auth(access_token)
+
+        return client
+    except Exception as e:
+        print(f"Error getting Supabase client: {e}")
         raise HTTPException(
             status_code=500,
-            detail="Supabase configuration not found"
+            detail="Failed to get Supabase client"
         )
-    
-    client = create_client(url, key)
-    
-    if access_token and not os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
-        client.postgrest.auth(access_token)
-        
-    return client
 
 async def verify_token(access_token: str) -> Optional[str]:
     """

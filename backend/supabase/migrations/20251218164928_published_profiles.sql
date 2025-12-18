@@ -72,7 +72,8 @@ CREATE POLICY "Users can delete their own published profile"
     USING (auth.uid() = user_id);
 
 -- Create view for public profile display (without sensitive data)
-CREATE OR REPLACE VIEW public_profiles AS
+CREATE OR REPLACE VIEW public_profiles
+WITH (security_invoker=true) AS
 SELECT 
     pp.username,
     pp.profile_data,

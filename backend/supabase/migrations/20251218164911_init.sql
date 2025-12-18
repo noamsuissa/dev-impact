@@ -130,6 +130,14 @@ INSERT INTO reserved_usernames (username, reason) VALUES
     ('callback', 'System reserved')
 ON CONFLICT (username) DO NOTHING;
 
+ALTER TABLE reserved_usernames ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Anyone can read reserved usernames (read-only reference table)
+-- This is safe because it's just a list of reserved usernames, no sensitive data
+CREATE POLICY "Anyone can read reserved usernames"
+    ON reserved_usernames FOR SELECT
+    USING (true);
+
 -- ============================================
 -- 6. FUNCTIONS
 -- ============================================
@@ -420,7 +428,8 @@ CREATE POLICY "Users can update their own stats"
 -- ============================================
 
 -- View for complete published profiles with all related data
-CREATE OR REPLACE VIEW published_profiles_complete AS
+CREATE OR REPLACE VIEW published_profiles_complete
+WITH (security_invoker=true) AS
 SELECT 
     p.id,
     p.username,
@@ -472,6 +481,8 @@ GROUP BY p.id, gs.total_repos, gs.total_stars, gs.total_commits;
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+GRANT SELECT ON published_profiles_complete TO anon, authenticated;
+GRANT SELECT ON reserved_usernames TO anon, authenticated;
 
 -- ============================================
 -- MIGRATION COMPLETE
