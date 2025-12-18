@@ -356,17 +356,9 @@ See `.env.example` for all required variables:
 
 ## Database Migrations
 
-Migrations are SQL files in `migrations/` directory. Run them in order:
+Migrations are SQL files in `supabase/migrations/` directory. 
 
-1. `001_initial_schema.sql` - Creates core tables (profiles, projects, metrics)
-2. `002_published_profiles.sql` - Adds published profiles table
-3. `003_user_profiles.sql` - Adds user_profiles table for multi-profile support
-
-**To apply migrations:**
-1. Open Supabase Dashboard → SQL Editor
-2. Copy and paste migration SQL
-3. Run the query
-4. Verify tables are created
+Use the Supabase CLI with `supabase db reset` to apply the migrations or copy and paste them in the SQL Editor by increasing order of timestamp.
 
 ## Development
 
