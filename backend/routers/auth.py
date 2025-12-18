@@ -34,7 +34,7 @@ async def sign_up(request: SignUpRequest):
     Creates a new user account with email and password.
     May require email verification depending on Supabase settings.
     """
-    result = await AuthService.sign_up(request.email, request.password, request.captcha_token)
+    result = await AuthService.sign_up(request.email, request.password)
     return result
 
 

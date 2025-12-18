@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@hcaptcha/react-hcaptcha": "^1.16.0",
     "@supabase/supabase-js": "^2.86.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@vercel/analytics": "^1.6.1",
