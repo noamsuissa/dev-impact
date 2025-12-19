@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useDashboard } from './hooks/useDashboard';
@@ -50,66 +50,40 @@ const AuthRedirectHandler = () => {
 
 // Authenticated Layout Component
 // This component wraps all protected routes.
-// It is responsible for fetching the user profile once authenticated.
+// It uses the user from AuthContext which includes the merged profile data.
 const AuthenticatedLayout = () => {
-  const [userProfile, setUserProfile] = useState(null);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const { user, updateUserProfile } = useAuth();
   const navigate = useNavigate();
 
-  // Load user profile
+  // Check if user has completed onboarding (has username)
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const data = await userClient.getProfile();
-        if (data) {
-          setUserProfile({
-            name: data.full_name,
-            username: data.username,
-            github: data.github_username ? {
-              username: data.github_username,
-              avatar_url: data.github_avatar_url
-            } : null
-          });
-        } else {
-          // No profile found -> Onboarding
-          // We can't navigate here if we are already on onboarding path, avoid loops
-          if (window.location.pathname !== '/onboarding') {
-            navigate('/onboarding');
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load profile:', err);
-        // If profile load fails, we assume onboarding is needed or error state
-        if (window.location.pathname !== '/onboarding') {
-          navigate('/onboarding');
-        }
-      } finally {
-        setIsLoadingProfile(false);
+    if (user && !user.username) {
+      // No username means onboarding not complete
+      if (window.location.pathname !== '/onboarding') {
+        navigate('/onboarding');
       }
-    };
-    loadProfile();
-  }, [navigate]);
+    }
+  }, [user, navigate]);
 
   const handleOnboardingComplete = async (userData) => {
     try {
       await userClient.completeOnboarding(userData);
-      setUserProfile(userData);
+      // Refresh the user profile in AuthContext
+      await updateUserProfile();
       navigate('/dashboard');
     } catch (err) {
       console.error('Failed to save profile:', err);
-      setUserProfile(userData);
+      // Still update the context even if save fails
+      await updateUserProfile();
     }
   };
 
-  if (isLoadingProfile) {
-    return (
-      <div className="min-h-screen bg-[#2d2d2d] flex items-center justify-center">
-        <div className="fade-in">
-          <div>&gt; Loading profile data...</div>
-        </div>
-      </div>
-    );
-  }
+  // Convert auth user to userProfile format for backward compatibility
+  const userProfile = user ? {
+    name: user.name,
+    username: user.username,
+    github: user.github
+  } : null;
 
   // Wrap Outlet with DashboardProvider to provide dashboard state to all child routes
   return (
