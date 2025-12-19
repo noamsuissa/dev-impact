@@ -155,7 +155,7 @@ const DashboardRoute = () => {
 
 const ProjectBuilderRoute = () => {
   const { userProfile } = useOutletContext();
-  const { projects, userProfilesList, selectedProfileId, handleSaveProject } = useDashboard();
+  const { projects, profiles } = useDashboard();
   const navigate = useNavigate();
 
   if (!userProfile) {
@@ -164,10 +164,10 @@ const ProjectBuilderRoute = () => {
   }
 
   return <ProjectBuilder
-    onSave={handleSaveProject}
-    projects={projects || []}
-    profiles={userProfilesList}
-    selectedProfileId={selectedProfileId}
+    onSave={projects.save}
+    projects={projects.list}
+    profiles={profiles.list}
+    selectedProfileId={profiles.selectedId}
   />;
 }
 
@@ -181,7 +181,7 @@ const ProfileViewRoute = () => {
     return null;
   }
 
-  return <ProfileView user={userProfile} projects={projects} />;
+  return <ProfileView user={userProfile} projects={projects.list} />;
 }
 
 const ExportPageRoute = () => {
@@ -194,7 +194,7 @@ const ExportPageRoute = () => {
     return null;
   }
 
-  return <ExportPage user={userProfile} projects={projects} />;
+  return <ExportPage user={userProfile} projects={projects.list} />;
 }
 
 const AccountPageRoute = () => {
@@ -207,7 +207,7 @@ const AccountPageRoute = () => {
     return null;
   }
 
-  return <AccountPage user={userProfile} projects={projects} />;
+  return <AccountPage user={userProfile} projects={projects.list} />;
 }
 
 // Helper function to check if we're on a subdomain and extract username

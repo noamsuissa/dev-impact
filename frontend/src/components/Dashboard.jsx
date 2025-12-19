@@ -132,9 +132,9 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             {/* Upgrade Button - Only show if not on Pro plan */}
             {/* Feature Badge or Upgrade Button */}
-            {upgrade.subscriptionInfo === null ? (
+            {profiles.subscriptionInfo === null ? (
               <div className="h-9 w-32 bg-terminal-bg-lighter animate-pulse rounded border border-terminal-border/30"></div>
-            ) : upgrade.subscriptionInfo.subscription_type === 'pro' ? (
+            ) : profiles.subscriptionInfo.subscription_type === 'pro' ? (
               <div className="px-3 py-1.5 rounded border border-terminal-orange/50 bg-terminal-orange/10 text-terminal-orange flex items-center gap-2">
                 <Sparkles size={16} />
                 <span className="font-semibold text-sm">PRO</span>
@@ -357,7 +357,7 @@ const Dashboard = () => {
       <ProjectModal
         isOpen={projects.isModalOpen}
         onClose={() => {
-          projects.closeModal(false);
+          projects.openModal(false);
           projects.setSelected(null);
         }}
         project={projects.selected}
