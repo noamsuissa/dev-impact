@@ -38,7 +38,6 @@ export const AuthProvider = ({ children }) => {
     session,
     user,
     loading,
-    // Expose auth methods for convenience
     signIn: async (email, password) => {
       const data = await auth.signIn(email, password)
       setSession(data.session)
