@@ -173,21 +173,6 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
     initCheckoutRedirect();
   }, [user]);
 
-  if (isRedirectingToCheckout) {
-    return (
-      <div className="min-h-screen bg-[#2d2d2d] flex items-center justify-center">
-        <div className="fade-in text-center p-8 border border-terminal-orange bg-terminal-bg rounded-lg max-w-md">
-          <div className="text-3xl mb-4 animate-pulse">
-            &gt; _
-          </div>
-          <div className="text-xl text-terminal-orange mb-3">&gt; Initializing Payment Protocol...</div>
-          <div className="text-terminal-gray text-sm">Redirecting you to our secure checkout service via Stripe.</div>
-        </div>
-      </div>
-    );
-  }
-
-
   // Filter projects by selected profile (using useMemo for derived state)
   const filteredProjects = useMemo(() => {
     if (!selectedProfileId) {
@@ -251,6 +236,27 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
     checkPublishedStatus();
   }, [user, userProfilesList, selectedProfileId]);
+
+  // Save selected profile to localStorage
+  useEffect(() => {
+    if (selectedProfileId && typeof window !== 'undefined') {
+      localStorage.setItem('selectedProfileId', selectedProfileId);
+    }
+  }, [selectedProfileId]);
+
+  if (isRedirectingToCheckout) {
+    return (
+      <div className="min-h-screen bg-[#2d2d2d] flex items-center justify-center">
+        <div className="fade-in text-center p-8 border border-terminal-orange bg-terminal-bg rounded-lg max-w-md">
+          <div className="text-3xl mb-4 animate-pulse">
+            &gt; _
+          </div>
+          <div className="text-xl text-terminal-orange mb-3">&gt; Initializing Payment Protocol...</div>
+          <div className="text-terminal-gray text-sm">Redirecting you to our secure checkout service via Stripe.</div>
+        </div>
+      </div>
+    );
+  }
 
   const handleCopyLink = async () => {
     if (!publishedUrl) return;
@@ -385,7 +391,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
     // Refresh subscription info
     try {
-      const subInfo = await subscriptionClient.getSubscriptionInfo();
+      const subInfo = await subscriptions.getSubscriptionInfo();
       setSubscriptionInfo(subInfo);
     } catch (err) {
       console.error('Failed to refresh subscription info:', err);
@@ -430,7 +436,7 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
 
     // Refresh subscription info
     try {
-      const subInfo = await subscriptionClient.getSubscriptionInfo();
+      const subInfo = await subscriptions.getSubscriptionInfo();
       setSubscriptionInfo(subInfo);
     } catch (err) {
       console.error('Failed to refresh subscription info:', err);
@@ -454,13 +460,6 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
     setIsProfileModalOpen(false);
     setEditingProfile(null);
   };
-
-  // Save selected profile to localStorage
-  useEffect(() => {
-    if (selectedProfileId && typeof window !== 'undefined') {
-      localStorage.setItem('selectedProfileId', selectedProfileId);
-    }
-  }, [selectedProfileId]);
 
   return (
     <div className="p-10 max-w-[1200px] mx-auto">
