@@ -39,7 +39,6 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [subscriptionInfo, setSubscriptionInfo] = useState(null);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [isRedirectingToCheckout, setIsRedirectingToCheckout] = useState(false);
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -135,8 +134,6 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
       const pendingSub = localStorage.getItem('pendingSubscription');
 
       if ((planParam === 'pro' || pendingSub === 'pro') && user) {
-        setIsRedirectingToCheckout(true);
-
         try {
           // Create checkout session directly
           const baseUrl = window.location.origin;
@@ -243,20 +240,6 @@ const Dashboard = ({ user, projects, onDeleteProject, onGitHubConnect, onProfile
       localStorage.setItem('selectedProfileId', selectedProfileId);
     }
   }, [selectedProfileId]);
-
-  if (isRedirectingToCheckout) {
-    return (
-      <div className="min-h-screen bg-[#2d2d2d] flex items-center justify-center">
-        <div className="fade-in text-center p-8 border border-terminal-orange bg-terminal-bg rounded-lg max-w-md">
-          <div className="text-3xl mb-4 animate-pulse">
-            &gt; _
-          </div>
-          <div className="text-xl text-terminal-orange mb-3">&gt; Initializing Payment Protocol...</div>
-          <div className="text-terminal-gray text-sm">Redirecting you to our secure checkout service via Stripe.</div>
-        </div>
-      </div>
-    );
-  }
 
   const handleCopyLink = async () => {
     if (!publishedUrl) return;
