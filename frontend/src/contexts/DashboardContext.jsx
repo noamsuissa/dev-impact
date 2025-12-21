@@ -8,7 +8,7 @@ import { generateProfileUrl } from '../utils/helpers'
 const DashboardContext = createContext()
 
 export const DashboardProvider = ({ children }) => {
-  const { user } = useAuth()
+  const { user, updateUserProfile } = useAuth()
   
   // GitHub state
   const [githubState, setGithubState] = useState('initial') // initial, loading, awaiting, success, error
@@ -244,7 +244,8 @@ export const DashboardProvider = ({ children }) => {
         github_username: githubData.username,
         github_avatar_url: githubData.avatar_url
       })
-      // The AuthContext will handle refreshing the user session
+      // Refresh the AuthContext user state to reflect the GitHub connection
+      await updateUserProfile()
     } catch (err) {
       console.error('Failed to update profile with GitHub data:', err)
       throw err
