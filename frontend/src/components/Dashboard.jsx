@@ -312,7 +312,7 @@ const Dashboard = () => {
                     <ProjectCard
                       project={project}
                       onEdit={(p) => navigate(`/project/${p.id}/edit`)}
-                      onDelete={projects.delete}
+                      onDelete={projects.handleDelete}
                       onClick={(p) => {
                         projects.setSelected(p);
                         projects.openModal(true);
@@ -362,7 +362,7 @@ const Dashboard = () => {
         }}
         project={projects.selected}
         onEdit={(p) => navigate(`/project/${p.id}/edit`)}
-        onDelete={projects.delete}
+        onDelete={projects.handleDelete}
         subscriptionInfo={profiles.subscriptionInfo}
       />
 
@@ -371,7 +371,7 @@ const Dashboard = () => {
         isOpen={profiles.isManageModalOpen}
         onClose={profiles.closeManageModal}
         profiles={profiles.list}
-        onDeleteProfile={profiles.delete}
+        onDeleteProfile={profiles.handleDelete}
         onEditProfile={profiles.openProfileModal}
         publishedProfileSlugs={publish.publishedProfileSlugs}
         projects={projects.filtered}
