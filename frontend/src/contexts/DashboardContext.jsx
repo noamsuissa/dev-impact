@@ -77,12 +77,22 @@ export const DashboardProvider = ({ children }) => {
           })
         }
 
-        // Select first profile if available and none is currently selected
+        // Restore selected profile from localStorage or select first profile
         setSelectedProfileId(prev => {
-          if (profilesList.length > 0 && !prev) {
-            return profilesList[0].id
+          if (prev) return prev // Keep current selection if already set
+          
+          if (profilesList.length === 0) return null
+          
+          // Try to restore from localStorage
+          if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('selectedProfileId')
+            if (stored && profilesList.some(p => p.id === stored)) {
+              return stored
+            }
           }
-          return prev
+          
+          // Default to first profile
+          return profilesList[0].id
         })
       } catch (err) {
         console.error('Failed to load profiles:', err)
