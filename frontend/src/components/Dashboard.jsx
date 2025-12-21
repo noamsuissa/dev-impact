@@ -374,7 +374,7 @@ const Dashboard = () => {
         onDeleteProfile={profiles.handleDelete}
         onEditProfile={profiles.openProfileModal}
         publishedProfileSlugs={publish.publishedProfileSlugs}
-        projects={projects.filtered}
+        projects={projects.list}
       />
 
       {/* Upgrade Modal */}

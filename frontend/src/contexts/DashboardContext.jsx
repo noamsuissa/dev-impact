@@ -537,7 +537,7 @@ export const DashboardProvider = ({ children }) => {
       selected: selectedProject,
       setSelected: setSelectedProject,
       save: handleSaveProject,
-      delete: handleDeleteProject,
+      handleDelete: handleDeleteProject,
       openModal: setIsProjectModalOpen,
       isModalOpen: isProjectModalOpen,
     },
