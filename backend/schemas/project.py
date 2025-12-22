@@ -44,7 +44,7 @@ class Project(BaseModel):
     contributions: List[str]
     techStack: List[str]
     metrics: List[ProjectMetric]
-    profile_id: Optional[str] = None
+    portfolio_id: Optional[str] = None
     evidence: Optional[List[ProjectEvidence]] = None
 
 
@@ -60,7 +60,7 @@ class ProjectResponse(BaseModel):
     contributions: List[str]
     tech_stack: List[str]
     display_order: int
-    profile_id: Optional[str] = None
+    portfolio_id: Optional[str] = None
     created_at: Union[str, datetime]
     updated_at: Union[str, datetime]
     metrics: List[ProjectMetric]
@@ -83,7 +83,7 @@ class CreateProjectRequest(BaseModel):
     contributions: List[str]
     techStack: List[str]
     metrics: List[ProjectMetric]
-    profile_id: Optional[str] = None
+    portfolio_id: Optional[str] = None
 
 
 class UpdateProjectRequest(BaseModel):
@@ -96,7 +96,7 @@ class UpdateProjectRequest(BaseModel):
     contributions: Optional[List[str]] = None
     techStack: Optional[List[str]] = None
     metrics: Optional[List[ProjectMetric]] = None
-    profile_id: Optional[str] = None
+    portfolio_id: Optional[str] = None
 
 
 class EvidenceStatsResponse(BaseModel):

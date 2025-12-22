@@ -22,13 +22,13 @@ class ProjectService:
     """Service for handling project operations."""
 
     @staticmethod
-    async def list_projects(user_id: str, profile_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
+    async def list_projects(user_id: str, portfolio_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
         """
         List all projects for a user, optionally filtered by profile
         
         Args:
             user_id: User's ID
-            profile_id: Optional profile ID to filter projects
+            portfolio_id: Optional profile ID to filter projects
             include_evidence: Whether to include evidence data
             
         Returns:
@@ -41,9 +41,9 @@ class ProjectService:
                 .select("*, metrics:project_metrics(*)")\
                 .eq("user_id", user_id)
             
-            # Filter by profile_id if provided
-            if profile_id:
-                query = query.eq("profile_id", profile_id)
+            # Filter by portfolio_id if provided
+            if portfolio_id:
+                query = query.eq("portfolio_id", portfolio_id)
             
             result = query.order("display_order").execute()
             
@@ -109,7 +109,7 @@ class ProjectService:
                     contributions=project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
                     techStack=project["tech_stack"],
                     metrics=metrics,
-                    profile_id=project["profile_id"] if "profile_id" in project else None,
+                    portfolio_id=project["portfolio_id"] if "portfolio_id" in project else None,
                     evidence=evidence_map.get(project["id"]) if include_evidence else None
                 )
                 
@@ -175,7 +175,7 @@ class ProjectService:
                 contributions=project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
                 techStack=project["tech_stack"],
                 metrics=metrics,
-                profile_id=project["profile_id"] if "profile_id" in project else None,
+                portfolio_id=project["portfolio_id"] if "portfolio_id" in project else None,
                 evidence=evidence_list if evidence_list else None
             )
             
@@ -193,7 +193,7 @@ class ProjectService:
         
         Args:
             user_id: User's ID
-            project_data: Project data (may include profile_id)
+            project_data: Project data (may include portfolio_id)
             
         Returns:
             Created project
@@ -201,16 +201,16 @@ class ProjectService:
         try:
             supabase = get_supabase_client()
             
-            # Extract profile_id if provided
-            profile_id = project_data.pop("profile_id", None)
+            # Extract portfolio_id if provided
+            portfolio_id = project_data.pop("portfolio_id", None)
             
             # Get current project count for display_order (within profile if specified)
             count_query = supabase.table("impact_projects")\
                 .select("id", count="exact")\
                 .eq("user_id", user_id)
             
-            if profile_id:
-                count_query = count_query.eq("profile_id", profile_id)
+            if portfolio_id:
+                count_query = count_query.eq("portfolio_id", portfolio_id)
             
             count_result = count_query.execute()
             
@@ -232,9 +232,9 @@ class ProjectService:
                 "display_order": display_order
             }
             
-            # Add profile_id if provided
-            if profile_id:
-                project_insert["profile_id"] = profile_id
+            # Add portfolio_id if provided
+            if portfolio_id:
+                project_insert["portfolio_id"] = portfolio_id
             
             project_result = supabase.table("impact_projects")\
                 .insert(project_insert)\
@@ -266,7 +266,7 @@ class ProjectService:
                     .insert(metrics_insert)\
                     .execute()
             
-            # Return in frontend format - use the actual database result which includes profile_id
+            # Return in frontend format - use the actual database result which includes portfolio_id
             project_data = Project(
                 id=project_id,
                 company=project["company"],
@@ -277,7 +277,7 @@ class ProjectService:
                 contributions=project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]],
                 techStack=project["tech_stack"],
                 metrics=metrics,
-                profile_id=project["profile_id"] if "profile_id" in project else None
+                portfolio_id=project["portfolio_id"] if "portfolio_id" in project else None
             )
             
             return project_data
@@ -306,8 +306,8 @@ class ProjectService:
             # Extract metrics if provided
             metrics = project_data.pop("metrics", None)
             
-            # Extract profile_id if provided
-            profile_id = project_data.pop("profile_id", None)
+            # Extract portfolio_id if provided
+            portfolio_id = project_data.pop("portfolio_id", None)
             
             # Prepare update data (convert frontend keys to backend keys)
             update_data = {}
@@ -325,8 +325,8 @@ class ProjectService:
                 update_data["contributions"] = project_data["contributions"]
             if "techStack" in project_data:
                 update_data["tech_stack"] = project_data["techStack"]
-            if profile_id is not None:
-                update_data["profile_id"] = profile_id
+            if portfolio_id is not None:
+                update_data["portfolio_id"] = portfolio_id
             
             # Update project if there's data to update
             if update_data:
@@ -466,7 +466,7 @@ class ProjectService:
             
             # Fetch project details to determine access
             proj_query = supabase.table("impact_projects")\
-                .select("user_id, profile_id")\
+                .select("user_id, portfolio_id")\
                 .eq("id", project_id)\
                 .single()
             
@@ -477,7 +477,7 @@ class ProjectService:
             
             project_data = proj_result.data
             owner_id = project_data["user_id"]
-            profile_id = project_data.get("profile_id")
+            portfolio_id = project_data.get("portfolio_id")
             
             # Determine if user has access
             has_access = False
@@ -493,9 +493,9 @@ class ProjectService:
                     .select("id")\
                     .eq("is_published", True)
                 
-                if profile_id:
+                if portfolio_id:
                     # Specific profile check
-                    pub_query = pub_query.eq("profile_id", profile_id)
+                    pub_query = pub_query.eq("portfolio_id", portfolio_id)
                 else:
                     # Legacy/Default fallback: check if user has ANY published profile
                     pub_query = pub_query.eq("user_id", owner_id)

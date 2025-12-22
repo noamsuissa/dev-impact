@@ -384,7 +384,7 @@ class PortfolioService:
             # Delete all projects assigned to this portfolio first
             supabase.table("impact_projects")\
                 .delete()\
-                .eq("profile_id", portfolio_id)\
+                .eq("portfolio_id", portfolio_id)\
                 .eq("user_id", user_id)\
                 .execute()
             
@@ -448,7 +448,7 @@ class PortfolioService:
             
             # Check if this portfolio is already published by another user
             existing = supabase.table("published_profiles")\
-                .select("user_id, profile_id")\
+                .select("user_id, portfolio_id")\
                 .eq("username", username)\
                 .eq("profile_slug", portfolio_slug)\
                 .execute()
@@ -468,7 +468,7 @@ class PortfolioService:
             
             # Fetch latest projects from database for this portfolio
             try:
-                projects = await ProjectService.list_projects(user_id, profile_id=portfolio_id, include_evidence=True)
+                projects = await ProjectService.list_projects(user_id, portfolio_id=portfolio_id, include_evidence=True)
                 projects_data = [project.model_dump() for project in projects]
             except Exception as e:
                 print(f"Error fetching projects: {e}")
@@ -502,7 +502,7 @@ class PortfolioService:
                 # Update existing
                 result = supabase.table("published_profiles")\
                     .update({
-                        "profile_id": portfolio_id,
+                        "portfolio_id": portfolio_id,
                         "profile_data": fresh_portfolio_data,
                         "is_published": True,
                         "updated_at": datetime.utcnow().isoformat()
@@ -516,7 +516,7 @@ class PortfolioService:
                     .insert({
                         "user_id": user_id,
                         "username": username,
-                        "profile_id": portfolio_id,
+                        "portfolio_id": portfolio_id,
                         "profile_slug": portfolio_slug,
                         "profile_data": fresh_portfolio_data,
                         "is_published": True,
@@ -562,9 +562,9 @@ class PortfolioService:
         try:
             supabase = get_supabase_client()
             
-            # Verify ownership via profile_id
+            # Verify ownership via portfolio_id
             result = supabase.table("published_profiles")\
-                .select("profile_id, portfolios!inner(user_id)")\
+                .select("portfolio_id, portfolios!inner(user_id)")\
                 .eq("username", username)\
                 .eq("profile_slug", portfolio_slug)\
                 .execute()
@@ -572,12 +572,12 @@ class PortfolioService:
             if not result.data or len(result.data) == 0:
                 raise HTTPException(status_code=404, detail="Portfolio not found")
             
-            # Check ownership via profile_id relationship
-            profile_id = result.data[0].get("profile_id")
-            if profile_id:
+            # Check ownership via portfolio_id relationship
+            portfolio_id = result.data[0].get("portfolio_id")
+            if portfolio_id:
                 portfolio_check = supabase.table("portfolios")\
                     .select("user_id")\
-                    .eq("id", profile_id)\
+                    .eq("id", portfolio_id)\
                     .single()\
                     .execute()
                 
