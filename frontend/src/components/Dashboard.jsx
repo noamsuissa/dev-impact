@@ -221,7 +221,7 @@ const Dashboard = () => {
               <div className="flex-1">
                 <div className="text-terminal-green text-sm mb-2 flex items-center gap-2">
                   <CheckCircle size={16} />
-                  <span>Your profile is live!</span>
+                  <span>Your portfolio is live!</span>
                 </div>
                 <div className="text-terminal-gray text-sm flex items-center gap-2 flex-wrap">
                   <span className="text-terminal-orange">Link:</span>
@@ -251,7 +251,7 @@ const Dashboard = () => {
         {publish.state === 'success' && (
           <div className="mt-5 bg-terminal-green/10 border border-terminal-green/30 p-4 rounded">
             <div className="text-terminal-green text-sm">
-              ✓ Profile published successfully! Link copied to clipboard.
+              ✓ Portfolio published successfully! Link copied to clipboard.
             </div>
           </div>
         )}
@@ -301,7 +301,7 @@ const Dashboard = () => {
                 <div className="mb-5 text-terminal-orange text-sm border border-terminal-orange/30 bg-terminal-orange/10 p-3 rounded">
                   <div className="flex items-center gap-2">
                     <span>⚠️</span>
-                    <span>Some projects are unassigned. Edit them to assign to this profile.</span>
+                    <span>Some projects are unassigned. Edit them to assign to this Portfolio.</span>
                   </div>
                 </div>
               )}
@@ -329,10 +329,10 @@ const Dashboard = () => {
 
       {/* Profile Modal */}
       <PortfolioModal
-        isOpen={portfolios.isProfileModalOpen}
-        onClose={portfolios.closeProfileModal}
+        isOpen={portfolios.isPortfolioModalOpen}
+        onClose={portfolios.closePortfolioModal}
         onSubmit={portfolios.editing ? portfolios.handleUpdate : portfolios.handleCreate}
-        profile={portfolios.editing}
+        portfolio={portfolios.editing}
       />
 
       {/* Publish Profile Modal */}
@@ -372,7 +372,7 @@ const Dashboard = () => {
         onClose={portfolios.closeManageModal}
         portfolios={portfolios.list}
         onDeletePortfolio={portfolios.handleDelete}
-        onEditPortfolio={portfolios.openProfileModal}
+        onEditPortfolio={portfolios.openPortfolioModal}
         publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
         projects={projects.list}
       />
