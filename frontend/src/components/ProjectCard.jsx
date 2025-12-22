@@ -1,6 +1,13 @@
 import React from 'react';
 import TerminalButton from './common/TerminalButton';
 import { repeat, padLine, centerText, wrapText } from '../utils/helpers';
+import { 
+  isLegacyMetric, 
+  formatMetricValue, 
+  formatComparison,
+  getMetricTypeLabel,
+  getMetricTypeColor 
+} from '../utils/metrics';
 
 const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) => {
   const maxWidth = compact ? 45 : 80;
@@ -17,19 +24,74 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
     const lines = [];
 
     // Helper to wrap and center lines for terminal card
-    const wrappedCentered = (text) =>
-      wrapText(text, cardWidth).map(line => '│' + centerText(line, cardWidth) + '│');
+    const wrappedCentered = (text, className, shouldColorText = false) => {
+      const wrapped = wrapText(text, cardWidth);
+      return wrapped.map(line => {
+        const centeredLine = centerText(line, cardWidth);
+        return {
+          text: '│' + centeredLine + '│',
+          className,
+          // Store the centered line (with spaces) for coloring, not trimmed
+          colorContent: shouldColorText ? centeredLine : undefined
+        };
+      });
+    };
 
-    lines.push('┌' + repeat('─', cardWidth) + '┐');
-    wrappedCentered(metric.primary).forEach(l => lines.push(l));
-    wrappedCentered(metric.label).forEach(l => lines.push(l));
+    // Check if legacy or standardized metric
+    if (isLegacyMetric(metric)) {
+      // Legacy format
+      lines.push({ text: '┌' + repeat('─', cardWidth) + '┐' });
+      wrappedCentered(metric.primary).forEach(l => lines.push(l));
+      wrappedCentered(metric.label).forEach(l => lines.push(l));
 
-    if (metric.detail) {
-      lines.push('├' + repeat('─', cardWidth) + '┤');
-      wrappedCentered(metric.detail).forEach(l => lines.push(l));
+      if (metric.detail) {
+        lines.push({ text: '├' + repeat('─', cardWidth) + '┤' });
+        wrappedCentered(metric.detail).forEach(l => lines.push(l));
+      }
+
+      lines.push({ text: '└' + repeat('─', cardWidth) + '┘' });
+    } else {
+      // Standardized format
+      const typeColor = getMetricTypeColor(metric.type);
+      const typeLabel = getMetricTypeLabel(metric.type);
+      
+      lines.push({ text: '┌' + repeat('─', cardWidth) + '┐' });
+      
+      // Type badge (color only the text, not borders)
+      wrappedCentered(typeLabel, typeColor, true).forEach(l => lines.push(l));
+      
+      // Primary value
+      const primaryValue = formatMetricValue(metric.primary.value, metric.primary.unit);
+      wrappedCentered(primaryValue, 'font-bold').forEach(l => lines.push(l));
+      
+      // Label
+      wrappedCentered(metric.primary.label).forEach(l => lines.push(l));
+      
+      // Comparison if present
+      if (metric.comparison) {
+        lines.push({ text: '├' + repeat('─', cardWidth) + '┤' });
+        const comparisonStr = formatComparison(metric.comparison);
+        wrappedCentered(comparisonStr, 'text-xs').forEach(l => lines.push(l));
+      }
+      
+      // Context/Timeframe if present
+      if (metric.context?.scope || metric.context?.frequency || metric.timeframe) {
+        if (!metric.comparison) {
+          lines.push({ text: '├' + repeat('─', cardWidth) + '┤' });
+        }
+        if (metric.context?.scope) {
+          wrappedCentered(metric.context.scope, 'text-xs').forEach(l => lines.push(l));
+        }
+        if (metric.context?.frequency) {
+          wrappedCentered(metric.context.frequency, 'text-xs').forEach(l => lines.push(l));
+        }
+        if (metric.timeframe) {
+          wrappedCentered(metric.timeframe, 'text-xs').forEach(l => lines.push(l));
+        }
+      }
+      
+      lines.push({ text: '└' + repeat('─', cardWidth) + '┘' });
     }
-
-    lines.push('└' + repeat('─', cardWidth) + '┘');
 
     return lines;
   };
@@ -52,13 +114,27 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
   metricRows.forEach((row) => {
     for (let i = 0; i < maxMetricLines; i++) {
       let line = '│ ';
+      const colorSegments = []; // Track all colored segments on this line
+      
       row.forEach((card, idx) => {
-        line += (card[i] || repeat(' ', metricSpacing));
+        const lineObj = card[i] || { text: repeat(' ', metricSpacing), className: '' };
+        const currentPos = line.length; // Position where this card's text starts
+        line += lineObj.text || repeat(' ', metricSpacing);
+        
+        // Track this colored segment if it exists
+        if (lineObj.className && lineObj.colorContent) {
+          colorSegments.push({
+            className: lineObj.className,
+            content: lineObj.colorContent,
+            startPos: currentPos
+          });
+        }
+        
         if (idx < row.length - 1) line += '  ';
       });
       const currentLength = line.length - 2;
       line += repeat(' ', maxWidth - currentLength - 1) + '│';
-      combinedMetrics.push(line);
+      combinedMetrics.push({ text: line, colorSegments });
     }
   });
 
@@ -130,9 +206,46 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
       )}
       <div>{padLineLocal('')}</div>
       
-      {combinedMetrics.map((line, idx) => (
-        <div key={idx}>{line}</div>
-      ))}
+      {combinedMetrics.map((lineObj, idx) => {
+        // Apply multiple colored segments if present
+        if (lineObj.colorSegments && lineObj.colorSegments.length > 0) {
+          const text = lineObj.text;
+          const parts = [];
+          let lastIndex = 0;
+          
+          // Process each colored segment
+          lineObj.colorSegments.forEach((segment, segIdx) => {
+            const contentIndex = text.indexOf(segment.content, segment.startPos);
+            if (contentIndex !== -1) {
+              // Add text before this colored segment
+              if (contentIndex > lastIndex) {
+                parts.push(
+                  <span key={`text-${segIdx}`}>
+                    {text.substring(lastIndex, contentIndex)}
+                  </span>
+                );
+              }
+              // Add the colored segment
+              parts.push(
+                <span key={`color-${segIdx}`} className={segment.className}>
+                  {text.substring(contentIndex, contentIndex + segment.content.length)}
+                </span>
+              );
+              lastIndex = contentIndex + segment.content.length;
+            }
+          });
+          
+          // Add any remaining text after the last colored segment
+          if (lastIndex < text.length) {
+            parts.push(
+              <span key="text-end">{text.substring(lastIndex)}</span>
+            );
+          }
+          
+          return <div key={idx}>{parts}</div>;
+        }
+        return <div key={idx}>{lineObj.text}</div>;
+      })}
       
       <div>{padLineLocal('')}</div>
       {padMultiLine(project.techStack.join(' • '), maxWidth).map((line, idx) => (

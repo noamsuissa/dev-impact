@@ -2,13 +2,19 @@
 Project Service - Handle project operations with Supabase
 """
 import os
-from typing import List, Dict, Any, Optional
+import json
+from typing import List, Dict, Any, Optional, Union
 from dotenv import load_dotenv
 from fastapi import HTTPException
 from backend.utils.auth_utils import get_supabase_client
 from backend.schemas.project import (
     Project,
     ProjectMetric,
+    StandardizedProjectMetric,
+    PrimaryMetricValue,
+    ComparisonValue,
+    MetricComparison,
+    MetricContext,
     ProjectEvidence,
 )
 from backend.schemas.auth import MessageResponse
@@ -20,6 +26,48 @@ load_dotenv()
 
 class ProjectService:
     """Service for handling project operations."""
+    
+    @staticmethod
+    def _is_standardized_metric(metric: Union[Dict[str, Any], ProjectMetric, StandardizedProjectMetric]) -> bool:
+        """Check if a metric is in standardized format"""
+        if isinstance(metric, StandardizedProjectMetric):
+            return True
+        if isinstance(metric, ProjectMetric):
+            return False
+        if isinstance(metric, dict):
+            # Check for standardized fields
+            return "type" in metric and "primary" in metric and isinstance(metric.get("primary"), dict)
+        return False
+    
+    @staticmethod
+    def _serialize_standardized_metric(metric: Union[StandardizedProjectMetric, Dict[str, Any]]) -> Dict[str, Any]:
+        """Convert standardized metric to JSONB-compatible dict"""
+        if isinstance(metric, StandardizedProjectMetric):
+            return metric.model_dump(exclude_none=True)
+        return metric
+    
+    @staticmethod
+    def _deserialize_metric(db_metric: Dict[str, Any]) -> Union[ProjectMetric, StandardizedProjectMetric]:
+        """Convert database metric to Pydantic model"""
+        # Check if it's a standardized metric
+        if db_metric.get("metric_data") and db_metric.get("metric_type"):
+            # Standardized format
+            try:
+                metric_data = db_metric["metric_data"]
+                if isinstance(metric_data, str):
+                    metric_data = json.loads(metric_data)
+                return StandardizedProjectMetric(**metric_data)
+            except Exception as e:
+                print(f"Error deserializing standardized metric: {e}")
+                # Fallback to legacy if deserialization fails
+                pass
+        
+        # Legacy format
+        return ProjectMetric(
+            primary=db_metric["primary_value"],
+            label=db_metric["label"],
+            detail=db_metric.get("detail")
+        )
 
     @staticmethod
     async def list_projects(user_id: str, portfolio_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
@@ -91,11 +139,7 @@ class ProjectService:
                 if project.get("metrics"):
                     metrics = sorted(project["metrics"], key=lambda m: m.get("display_order", 0))
                     metrics = [
-                        ProjectMetric(
-                            primary=metric["primary_value"],
-                            label=metric["label"],
-                            detail=metric.get("detail")
-                        )
+                        ProjectService._deserialize_metric(metric)
                         for metric in metrics
                     ]
                 
@@ -154,11 +198,7 @@ class ProjectService:
             if project.get("metrics"):
                 metrics = sorted(project["metrics"], key=lambda m: m.get("display_order", 0))
                 metrics = [
-                    ProjectMetric(
-                        primary=metric["primary_value"],
-                        label=metric["label"],
-                        detail=metric.get("detail")
-                    )
+                    ProjectService._deserialize_metric(metric)
                     for metric in metrics
                 ]
             
@@ -249,18 +289,35 @@ class ProjectService:
             project = project_result.data[0]
             project_id = project["id"]
             
-            # Insert metrics
+            # Insert metrics (handle both legacy and standardized formats)
             if metrics:
-                metrics_insert = [
-                    {
-                        "project_id": project_id,
-                        "primary_value": metric["primary"],
-                        "label": metric["label"],
-                        "detail": metric.get("detail"),
-                        "display_order": idx
-                    }
-                    for idx, metric in enumerate(metrics)
-                ]
+                metrics_insert = []
+                for idx, metric in enumerate(metrics):
+                    if ProjectService._is_standardized_metric(metric):
+                        # Standardized format
+                        metric_data = ProjectService._serialize_standardized_metric(metric)
+                        metrics_insert.append({
+                            "project_id": project_id,
+                            "metric_type": metric_data["type"],
+                            "metric_data": metric_data,
+                            "display_order": idx,
+                            # Leave legacy fields as null
+                            "primary_value": None,
+                            "label": None,
+                            "detail": None
+                        })
+                    else:
+                        # Legacy format
+                        metrics_insert.append({
+                            "project_id": project_id,
+                            "primary_value": metric["primary"],
+                            "label": metric["label"],
+                            "detail": metric.get("detail"),
+                            "display_order": idx,
+                            # Leave new fields as null
+                            "metric_type": None,
+                            "metric_data": None
+                        })
                 
                 supabase.table("project_metrics")\
                     .insert(metrics_insert)\
@@ -350,18 +407,35 @@ class ProjectService:
                     .eq("project_id", project_id)\
                     .execute()
                 
-                # Insert new metrics
+                # Insert new metrics (handle both legacy and standardized formats)
                 if metrics:
-                    metrics_insert = [
-                        {
-                            "project_id": project_id,
-                            "primary_value": metric["primary"],
-                            "label": metric["label"],
-                            "detail": metric.get("detail"),
-                            "display_order": idx
-                        }
-                        for idx, metric in enumerate(metrics)
-                    ]
+                    metrics_insert = []
+                    for idx, metric in enumerate(metrics):
+                        if ProjectService._is_standardized_metric(metric):
+                            # Standardized format
+                            metric_data = ProjectService._serialize_standardized_metric(metric)
+                            metrics_insert.append({
+                                "project_id": project_id,
+                                "metric_type": metric_data["type"],
+                                "metric_data": metric_data,
+                                "display_order": idx,
+                                # Leave legacy fields as null
+                                "primary_value": None,
+                                "label": None,
+                                "detail": None
+                            })
+                        else:
+                            # Legacy format
+                            metrics_insert.append({
+                                "project_id": project_id,
+                                "primary_value": metric["primary"],
+                                "label": metric["label"],
+                                "detail": metric.get("detail"),
+                                "display_order": idx,
+                                # Leave new fields as null
+                                "metric_type": None,
+                                "metric_data": None
+                            })
                     
                     supabase.table("project_metrics")\
                         .insert(metrics_insert)\
