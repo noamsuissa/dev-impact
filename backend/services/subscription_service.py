@@ -39,8 +39,8 @@ class SubscriptionService:
             data = profile_result.data or {}
             subscription_type = data.get("subscription_type", "free")
             
-            # Count existing profiles
-            count_result = supabase.table("user_profiles")\
+            # Count existing portfolios
+            count_result = supabase.table("portfolios")\
                 .select("id", count="exact")\
                 .eq("user_id", user_id)\
                 .execute()
