@@ -16,7 +16,7 @@ import { useDashboard } from '../hooks/useDashboard';
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const {github, publish, profiles, projects, upgrade, error} = useDashboard();
+  const {github, publish, profiles, projects, upgrade} = useDashboard();
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -113,7 +113,7 @@ const Dashboard = () => {
                 {github.state === 'error' && (
                   <div className="space-y-3">
                     <div className="text-red-400 text-sm">
-                      ✗ Error: {error}
+                      ✗ Error: {github.error}
                     </div>
                     <div className="flex gap-3">
                       <TerminalButton onClick={github.handleConnect}>
@@ -257,10 +257,10 @@ const Dashboard = () => {
         )}
 
         {/* Publish error message */}
-        {publish.state === 'error' && error && (
+        {publish.state === 'error' && publish.error && (
           <div className="mt-5 bg-red-500/10 border border-red-500/30 p-4 rounded">
             <div className="text-red-400 text-sm">
-              ✗ Error: {error}
+              ✗ Error: {publish.error}
             </div>
           </div>
         )}

@@ -13,13 +13,14 @@ export const DashboardProvider = ({ children }) => {
   // GitHub state
   const [githubState, setGithubState] = useState('initial') // initial, loading, awaiting, success, error
   const [deviceCode, setDeviceCode] = useState(null)
-  const [error, setError] = useState(null)
+  const [githubError, setGithubError] = useState(null)
   
   // Publish state
   const [publishState, setPublishState] = useState('initial') // initial, loading, success, error
   const [publishedUrl, setPublishedUrl] = useState(null)
   const [isPublished, setIsPublished] = useState(false)
   const [showCopied, setShowCopied] = useState(false)
+  const [publishError, setPublishError] = useState(null)
   
   // Data state
   const [projects, setProjects] = useState([])
@@ -218,7 +219,7 @@ export const DashboardProvider = ({ children }) => {
   // GitHub handlers
   const handleConnectGitHub = async () => {
     setGithubState('loading')
-    setError(null)
+    setGithubError(null)
 
     try {
       const result = await completeGitHubAuth(
@@ -237,7 +238,7 @@ export const DashboardProvider = ({ children }) => {
       await handleGitHubConnect(result)
     } catch (err) {
       console.error('GitHub OAuth error:', err)
-      setError(err.message)
+      setGithubError(err.message)
       setGithubState('error')
     }
   }
@@ -245,7 +246,7 @@ export const DashboardProvider = ({ children }) => {
   const handleCancelGitHub = () => {
     setGithubState('initial')
     setDeviceCode(null)
-    setError(null)
+    setGithubError(null)
   }
 
   const handleGitHubConnect = async (githubData) => {
@@ -293,7 +294,7 @@ export const DashboardProvider = ({ children }) => {
     }
 
     setPublishState('loading')
-    setError(null)
+    setPublishError(null)
 
     try {
       const username = user.username
@@ -331,7 +332,7 @@ export const DashboardProvider = ({ children }) => {
       }
     } catch (err) {
       console.error('Error publishing profile:', err)
-      setError(err.message)
+      setPublishError(err.message)
       setPublishState('error')
       throw err // Re-throw so modal can handle it
     }
@@ -344,7 +345,7 @@ export const DashboardProvider = ({ children }) => {
     }
 
     setPublishState('loading')
-    setError(null)
+    setPublishError(null)
 
     try {
       const username = user.username
@@ -364,7 +365,7 @@ export const DashboardProvider = ({ children }) => {
       setPublishState('initial')
     } catch (err) {
       console.error('Error unpublishing profile:', err)
-      setError(err.message)
+      setPublishError(err.message)
       setPublishState('error')
       throw err // Re-throw so modal can handle it
     }
@@ -471,7 +472,7 @@ export const DashboardProvider = ({ children }) => {
 
   const handleClosePublishModal = () => {
     setIsPublishModalOpen(false)
-    setError(null)
+    setPublishError(null)
   }
 
   const handleOpenUnpublishModal = () => {
@@ -480,7 +481,7 @@ export const DashboardProvider = ({ children }) => {
 
   const handleCloseUnpublishModal = () => {
     setIsUnpublishModalOpen(false)
-    setError(null)
+    setPublishError(null)
   }
 
   const handleOpenManageProfilesModal = () => {
@@ -505,6 +506,7 @@ export const DashboardProvider = ({ children }) => {
     github: {
       state: githubState,
       deviceCode,
+      error: githubError,
       handleConnect: handleConnectGitHub,
       handleCancel: handleCancelGitHub,
       handleGitHubConnect,
@@ -514,6 +516,7 @@ export const DashboardProvider = ({ children }) => {
       url: publishedUrl,
       isPublished,
       showCopied,
+      error: publishError,
       handleCopyLink,
       handlePublish: handlePublishProfile,
       handleUnpublish: handleUnpublishProfile,
@@ -556,7 +559,6 @@ export const DashboardProvider = ({ children }) => {
       isModalOpen: isUpgradeModalOpen,
       setIsModalOpen: setIsUpgradeModalOpen,
     },
-    error,
   }
 
   return (
