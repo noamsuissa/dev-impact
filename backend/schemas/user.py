@@ -43,4 +43,11 @@ class OnboardingRequest(BaseModel):
     username: str
     name: str
     github: Optional[GitHubInfo] = None
+
+
+class CheckUsernameResponse(BaseModel):
+    """Response for checking username availability"""
+    available: bool
+    valid: bool
+    message: Optional[str] = None
     

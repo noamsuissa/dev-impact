@@ -2,7 +2,7 @@
 User Router - Handle user profile endpoints
 """
 from fastapi import APIRouter, Depends
-from backend.schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest
+from backend.schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest, CheckUsernameResponse
 from backend.schemas.auth import MessageResponse
 from backend.services.user_service import UserService
 from backend.utils import auth_utils
@@ -63,6 +63,18 @@ async def complete_onboarding(
     }
     profile = await UserService.create_or_update_profile(user_id, profile_data)
     return profile
+
+
+@router.get("/check-username/{username}", response_model=CheckUsernameResponse)
+async def check_username(username: str):
+    """
+    Check if a username is available for publishing portfolios
+    
+    Returns whether the username is available and valid.
+    This is a public endpoint that doesn't require authentication.
+    """
+    result = await UserService.check_username(username)
+    return result
 
 
 @router.delete("/account", response_model=MessageResponse)
