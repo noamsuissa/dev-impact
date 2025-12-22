@@ -22,6 +22,6 @@ class SubscriptionInfoResponse(BaseModel):
     subscription_status: Optional[str] = None
     cancel_at_period_end: bool = False
     current_period_end: Optional[datetime] = None
-    profile_count: int
-    max_profiles: int
-    can_add_profile: bool
+    portfolio_count: int
+    max_portfolios: int
+    can_add_portfolio: bool

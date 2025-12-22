@@ -120,10 +120,10 @@ class PortfolioService:
             
             # Check portfolio limit before creating
             subscription_info = await SubscriptionService.get_subscription_info(user_id, token)
-            if not subscription_info.can_add_profile:
+            if not subscription_info.can_add_portfolio:
                 raise HTTPException(
                     status_code=403,
-                    detail=f"Portfolio limit reached. Free users are limited to {subscription_info.max_profiles} portfolios. Upgrade to Pro for unlimited portfolios."
+                    detail=f"Portfolio limit reached. Free users are limited to {subscription_info.max_portfolios} portfolios. Upgrade to Pro for unlimited portfolios."
                 )
             
             # Get current portfolio count for display_order
