@@ -5,8 +5,8 @@ import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
 import PortfolioTabs from './PortfolioTabs';
 import PortfolioModal from './PortfolioModal';
-import PublishProfileModal from './PublishProfileModal';
-import UnpublishProfileModal from './UnpublishProfileModal';
+import PublishPortfolioModal from './PublishPortfolioModal';
+import UnpublishPortfolioModal from './UnpublishPortfolioModal';
 import ManagePortfoliosModal from './ManagePortfoliosModal';
 import ProjectModal from './ProjectModal';
 import UpgradeModal from './UpgradeModal';
@@ -190,7 +190,7 @@ const Dashboard = () => {
               ) : (
                 <>
                   <Share2 size={16} className="inline mr-2" />
-                  [Publish Profile]
+                  [Publish Portfolio]
                 </>
               )}
             </TerminalButton>
@@ -276,20 +276,20 @@ const Dashboard = () => {
           portfolios={portfolios.list}
           selectedPortfolioId={portfolios.selectedId}
           onSelectPortfolio={portfolios.setSelectedId}
-          onAddProfile={() => portfolios.openProfileModal()}
+          onAddPortfolio={() => portfolios.openPortfolioModal()}
           onManagePortfolios={portfolios.openManageModal}
-          publishedProfileSlugs={publish.publishedProfileSlugs}
-          canAddProfile={portfolios.subscriptionInfo?.can_add_portfolio ?? true}
+          publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
+          canAddPortfolio={portfolios.subscriptionInfo?.can_add_portfolio ?? true}
           onUpgradeClick={() => upgrade.setIsModalOpen(true)}
         />
 
         {projects.filtered.length === 0 ? (
           <div className="text-terminal-orange mb-5">
             {portfolios.selectedId
-              ? 'No projects in this profile yet. Add a project to get started!'
+              ? 'No projects in this portfolio yet. Add a project to get started!'
               : portfolios.list.length === 0
-                ? 'No profiles yet. Create a profile and add your first project!'
-                : 'No unassigned projects. Select a profile to see its projects or add a new project.'
+                ? 'No portfolios yet. Create a portfolio and add your first project!'
+                : 'No unassigned projects. Select a portfolio to see its projects or add a new project.'
             }
           </div>
         ) : (
@@ -336,21 +336,21 @@ const Dashboard = () => {
       />
 
       {/* Publish Profile Modal */}
-      <PublishProfileModal
+      <PublishPortfolioModal
         isOpen={publish.isModalOpen}
         onClose={publish.closeModal}
         portfolios={portfolios.list}
         onPublish={publish.handlePublish}
-        publishedProfileSlugs={publish.publishedProfileSlugs}
+        publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
       />
 
       {/* Unpublish Profile Modal */}
-      <UnpublishProfileModal
+      <UnpublishPortfolioModal
         isOpen={publish.isUnpublishModalOpen}
         onClose={publish.closeUnpublishModal}
         portfolios={portfolios.list}
         onUnpublish={publish.handleUnpublish}
-        publishedProfileSlugs={publish.publishedProfileSlugs}
+        publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
       />
 
       {/* Project Modal */}
@@ -373,7 +373,7 @@ const Dashboard = () => {
         portfolios={portfolios.list}
         onDeletePortfolio={portfolios.handleDelete}
         onEditPortfolio={portfolios.openProfileModal}
-        publishedProfileSlugs={publish.publishedProfileSlugs}
+        publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
         projects={projects.list}
       />
 

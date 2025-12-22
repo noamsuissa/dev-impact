@@ -1,20 +1,20 @@
 import React from 'react';
 import { Plus, Sparkles } from 'lucide-react';
 
-const PortfolioTabs = ({ portfolios, selectedPortfolioId, onSelectPortfolio, onAddPortfolio, onManagePortfolios, publishedProfileSlugs = [], canAddProfile = true, onUpgradeClick }) => {
+const PortfolioTabs = ({ portfolios, selectedPortfolioId, onSelectPortfolio, onAddPortfolio, onManagePortfolios, publishedPortfolioSlugs = [], canAddPortfolio = true, onUpgradeClick }) => {
   if (!portfolios || portfolios.length === 0) {
     return (
       <div className="mb-5">
         <div className="flex items-center gap-2">
           <button
-            onClick={canAddProfile ? onAddPortfolio : onUpgradeClick}
-            className={`px-3 py-1.5 border text-sm transition-colors flex items-center gap-2 ${canAddProfile
+            onClick={canAddPortfolio ? onAddPortfolio : onUpgradeClick}
+            className={`px-3 py-1.5 border text-sm transition-colors flex items-center gap-2 ${canAddPortfolio
                 ? 'bg-terminal-bg-lighter border-terminal-border hover:border-terminal-orange text-terminal-orange'
                 : 'bg-terminal-bg-lighter border-terminal-border text-terminal-orange cursor-pointer hover:border-terminal-orange opacity-70 hover:opacity-100'
               }`}
-            title={!canAddProfile ? 'Portfolio limit reached. Click to upgrade to Pro for unlimited portfolios.' : ''}
+            title={!canAddPortfolio ? 'Portfolio limit reached. Click to upgrade to Pro for unlimited portfolios.' : ''}
           >
-            {canAddProfile ? <Plus size={14} /> : <Sparkles size={14} className="animate-pulse" />}
+            {canAddPortfolio ? <Plus size={14} /> : <Sparkles size={14} className="animate-pulse" />}
             Add Portfolio
           </button>
           <span className="text-terminal-gray text-sm">No portfolios yet. Create one to organize your projects.</span>
@@ -32,7 +32,7 @@ const PortfolioTabs = ({ portfolios, selectedPortfolioId, onSelectPortfolio, onA
           <div className="flex items-end gap-0 relative">
             {portfolios.map((portfolio, index) => {
               const isActive = portfolio.id === selectedPortfolioId;
-              const isPublished = publishedProfileSlugs.includes(portfolio.slug);
+              const isPublished = publishedPortfolioSlugs.includes(portfolio.slug);
 
               return (
                 <div key={portfolio.id} className="relative">
@@ -78,14 +78,14 @@ const PortfolioTabs = ({ portfolios, selectedPortfolioId, onSelectPortfolio, onA
 
           {/* Add Portfolio Button */}
           <button
-            onClick={canAddProfile ? onAddPortfolio : onUpgradeClick}
-            className={`ml-2 px-3 py-2 border text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${canAddProfile
+            onClick={canAddPortfolio ? onAddPortfolio : onUpgradeClick}
+            className={`ml-2 px-3 py-2 border text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${canAddPortfolio
                 ? 'bg-terminal-bg-lighter border-terminal-border hover:border-terminal-orange text-terminal-orange'
                 : 'bg-terminal-bg-lighter border-terminal-border text-terminal-orange cursor-pointer hover:border-terminal-orange opacity-70 hover:opacity-100'
               }`}
-            title={!canAddProfile ? 'Portfolio limit reached. Click to upgrade to Pro for unlimited portfolios.' : ''}
+            title={!canAddPortfolio ? 'Portfolio limit reached. Click to upgrade to Pro for unlimited portfolios.' : ''}
           >
-            {canAddProfile ? <Plus size={14} /> : <Sparkles size={14} className="animate-pulse" />}
+            {canAddPortfolio ? <Plus size={14} /> : <Sparkles size={14} className="animate-pulse" />}
             Add
           </button>
 
