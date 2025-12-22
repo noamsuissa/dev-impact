@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Eye, Download, LogOut, Github, Share2, CheckCircle, ExternalLink, Copy, User, Sparkles } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import ProjectCard from './ProjectCard';
-import ProfileTabs from './ProfileTabs';
-import ProfileModal from './ProfileModal';
-import PublishProfileModal from './PublishProfileModal';
-import UnpublishProfileModal from './UnpublishProfileModal';
-import ManageProfilesModal from './ManageProfilesModal';
+import PortfolioTabs from './PortfolioTabs';
+import PortfolioModal from './PortfolioModal';
+import PublishPortfolioModal from './PublishPortfolioModal';
+import UnpublishPortfolioModal from './UnpublishPortfolioModal';
+import ManagePortfoliosModal from './ManagePortfoliosModal';
 import ProjectModal from './ProjectModal';
 import UpgradeModal from './UpgradeModal';
 import { useAuth } from '../hooks/useAuth';
@@ -16,7 +16,7 @@ import { useDashboard } from '../hooks/useDashboard';
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const {github, publish, profiles, projects, upgrade} = useDashboard();
+  const {github, publish, portfolios, projects, upgrade} = useDashboard();
 
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
@@ -132,9 +132,9 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             {/* Upgrade Button - Only show if not on Pro plan */}
             {/* Feature Badge or Upgrade Button */}
-            {profiles.subscriptionInfo === null ? (
+            {portfolios.subscriptionInfo === null ? (
               <div className="h-9 w-32 bg-terminal-bg-lighter animate-pulse rounded border border-terminal-border/30"></div>
-            ) : profiles.subscriptionInfo.subscription_type === 'pro' ? (
+            ) : portfolios.subscriptionInfo.subscription_type === 'pro' ? (
               <div className="px-3 py-1.5 rounded border border-terminal-orange/50 bg-terminal-orange/10 text-terminal-orange flex items-center gap-2">
                 <Sparkles size={16} />
                 <span className="font-semibold text-sm">PRO</span>
@@ -175,7 +175,7 @@ const Dashboard = () => {
           {!publish.isPublished ? (
             <TerminalButton
               onClick={publish.openModal}
-              disabled={publish.state === 'loading' || profiles.list.length === 0}
+              disabled={publish.state === 'loading' || portfolios.list.length === 0}
             >
               {publish.state === 'loading' ? (
                 <>
@@ -190,14 +190,14 @@ const Dashboard = () => {
               ) : (
                 <>
                   <Share2 size={16} className="inline mr-2" />
-                  [Publish Profile]
+                  [Publish Portfolio]
                 </>
               )}
             </TerminalButton>
           ) : (
             <TerminalButton
               onClick={publish.openUnpublishModal}
-              disabled={publish.state === 'loading' || profiles.list.length === 0}
+              disabled={publish.state === 'loading' || portfolios.list.length === 0}
             >
               <Share2 size={16} className="inline mr-2" />
               [Unpublish]
@@ -221,7 +221,7 @@ const Dashboard = () => {
               <div className="flex-1">
                 <div className="text-terminal-green text-sm mb-2 flex items-center gap-2">
                   <CheckCircle size={16} />
-                  <span>Your profile is live!</span>
+                  <span>Your portfolio is live!</span>
                 </div>
                 <div className="text-terminal-gray text-sm flex items-center gap-2 flex-wrap">
                   <span className="text-terminal-orange">Link:</span>
@@ -251,7 +251,7 @@ const Dashboard = () => {
         {publish.state === 'success' && (
           <div className="mt-5 bg-terminal-green/10 border border-terminal-green/30 p-4 rounded">
             <div className="text-terminal-green text-sm">
-              ✓ Profile published successfully! Link copied to clipboard.
+              ✓ Portfolio published successfully! Link copied to clipboard.
             </div>
           </div>
         )}
@@ -272,36 +272,36 @@ const Dashboard = () => {
         </div>
 
         {/* Profile Tabs */}
-        <ProfileTabs
-          profiles={profiles.list}
-          selectedProfileId={profiles.selectedId}
-          onSelectProfile={profiles.setSelectedId}
-          onAddProfile={() => profiles.openProfileModal()}
-          onManageProfiles={profiles.openManageModal}
-          publishedProfileSlugs={publish.publishedProfileSlugs}
-          canAddProfile={profiles.subscriptionInfo?.can_add_profile ?? true}
+        <PortfolioTabs
+          portfolios={portfolios.list}
+          selectedPortfolioId={portfolios.selectedId}
+          onSelectPortfolio={portfolios.setSelectedId}
+          onAddPortfolio={() => portfolios.openPortfolioModal()}
+          onManagePortfolios={portfolios.openManageModal}
+          publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
+          canAddPortfolio={portfolios.subscriptionInfo?.can_add_portfolio ?? true}
           onUpgradeClick={() => upgrade.setIsModalOpen(true)}
         />
 
         {projects.filtered.length === 0 ? (
           <div className="text-terminal-orange mb-5">
-            {profiles.selectedId
-              ? 'No projects in this profile yet. Add a project to get started!'
-              : profiles.list.length === 0
-                ? 'No profiles yet. Create a profile and add your first project!'
-                : 'No unassigned projects. Select a profile to see its projects or add a new project.'
+            {portfolios.selectedId
+              ? 'No projects in this portfolio yet. Add a project to get started!'
+              : portfolios.list.length === 0
+                ? 'No portfolios yet. Create a portfolio and add your first project!'
+                : 'No unassigned projects. Select a portfolio to see its projects or add a new project.'
             }
           </div>
         ) : (
           <>
             {projects.filtered.some(p => {
-              const pid = p.profile_id;
+              const pid = p.portfolio_id;
               return !pid || pid === null || pid === undefined || pid === '';
-            }) && profiles.selectedId && (
+            }) && portfolios.selectedId && (
                 <div className="mb-5 text-terminal-orange text-sm border border-terminal-orange/30 bg-terminal-orange/10 p-3 rounded">
                   <div className="flex items-center gap-2">
                     <span>⚠️</span>
-                    <span>Some projects are unassigned. Edit them to assign to this profile.</span>
+                    <span>Some projects are unassigned. Edit them to assign to this Portfolio.</span>
                   </div>
                 </div>
               )}
@@ -328,29 +328,29 @@ const Dashboard = () => {
       </div>
 
       {/* Profile Modal */}
-      <ProfileModal
-        isOpen={profiles.isProfileModalOpen}
-        onClose={profiles.closeProfileModal}
-        onSubmit={profiles.editing ? profiles.handleUpdate : profiles.handleCreate}
-        profile={profiles.editing}
+      <PortfolioModal
+        isOpen={portfolios.isPortfolioModalOpen}
+        onClose={portfolios.closePortfolioModal}
+        onSubmit={portfolios.editing ? portfolios.handleUpdate : portfolios.handleCreate}
+        portfolio={portfolios.editing}
       />
 
       {/* Publish Profile Modal */}
-      <PublishProfileModal
+      <PublishPortfolioModal
         isOpen={publish.isModalOpen}
         onClose={publish.closeModal}
-        profiles={profiles.list}
+        portfolios={portfolios.list}
         onPublish={publish.handlePublish}
-        publishedProfileSlugs={publish.publishedProfileSlugs}
+        publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
       />
 
       {/* Unpublish Profile Modal */}
-      <UnpublishProfileModal
+      <UnpublishPortfolioModal
         isOpen={publish.isUnpublishModalOpen}
         onClose={publish.closeUnpublishModal}
-        profiles={profiles.list}
+        portfolios={portfolios.list}
         onUnpublish={publish.handleUnpublish}
-        publishedProfileSlugs={publish.publishedProfileSlugs}
+        publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
       />
 
       {/* Project Modal */}
@@ -363,17 +363,17 @@ const Dashboard = () => {
         project={projects.selected}
         onEdit={(p) => navigate(`/project/${p.id}/edit`)}
         onDelete={projects.handleDelete}
-        subscriptionInfo={profiles.subscriptionInfo}
+        subscriptionInfo={portfolios.subscriptionInfo}
       />
 
       {/* Manage Profiles Modal */}
-      <ManageProfilesModal
-        isOpen={profiles.isManageModalOpen}
-        onClose={profiles.closeManageModal}
-        profiles={profiles.list}
-        onDeleteProfile={profiles.handleDelete}
-        onEditProfile={profiles.openProfileModal}
-        publishedProfileSlugs={publish.publishedProfileSlugs}
+      <ManagePortfoliosModal
+        isOpen={portfolios.isManageModalOpen}
+        onClose={portfolios.closeManageModal}
+        portfolios={portfolios.list}
+        onDeletePortfolio={portfolios.handleDelete}
+        onEditPortfolio={portfolios.openPortfolioModal}
+        publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
         projects={projects.list}
       />
 
@@ -381,7 +381,7 @@ const Dashboard = () => {
       <UpgradeModal
         isOpen={upgrade.isModalOpen}
         onClose={() => upgrade.setIsModalOpen(false)}
-        isLimitReached={!profiles.subscriptionInfo?.can_add_profile && profiles.subscriptionInfo?.subscription_type !== 'pro'}
+        isLimitReached={!portfolios.subscriptionInfo?.can_add_portfolio && portfolios.subscriptionInfo?.subscription_type !== 'pro'}
       />
 
     </div>

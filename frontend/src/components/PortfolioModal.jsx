@@ -2,31 +2,31 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 
-const ProfileModal = ({ isOpen, onClose, onSubmit, profile = null }) => {
-  const [name, setName] = useState(profile?.name || '');
-  const [description, setDescription] = useState(profile?.description || '');
+const PortfolioModal = ({ isOpen, onClose, onSubmit, portfolio = null }) => {
+  const [name, setName] = useState(portfolio?.name || '');
+  const [description, setDescription] = useState(portfolio?.description || '');
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
-      setName(profile?.name || '');
-      setDescription(profile?.description || '');
+      setName(portfolio?.name || '');
+      setDescription(portfolio?.description || '');
       setError(null);
     }
-  }, [isOpen, profile]);
+  }, [isOpen, portfolio]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
     if (!name.trim()) {
-      setError('Profile name is required');
+      setError('Portfolio name is required');
       return;
     }
 
     if (name.trim().length < 2) {
-      setError('Profile name must be at least 2 characters');
+      setError('Portfolio name must be at least 2 characters');
       return;
     }
 
@@ -38,7 +38,7 @@ const ProfileModal = ({ isOpen, onClose, onSubmit, profile = null }) => {
       });
       onClose();
     } catch (err) {
-      setError(err.message || 'Failed to save profile');
+      setError(err.message || 'Failed to save portfolio');
     } finally {
       setIsSubmitting(false);
     }
@@ -51,7 +51,7 @@ const ProfileModal = ({ isOpen, onClose, onSubmit, profile = null }) => {
       <div className="bg-terminal-bg border border-terminal-border p-6 max-w-md w-full">
         <div className="flex items-center justify-between mb-6">
           <div className="text-lg text-terminal-orange">
-            {profile ? 'Edit Profile' : 'Create New Profile'}
+            {portfolio ? 'Edit Portfolio' : 'Create New Portfolio'}
           </div>
           <button
             onClick={onClose}
@@ -64,7 +64,7 @@ const ProfileModal = ({ isOpen, onClose, onSubmit, profile = null }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm text-terminal-gray mb-2">
-              Profile Name *
+              Portfolio Name *
             </label>
             <input
               type="text"
@@ -86,7 +86,7 @@ const ProfileModal = ({ isOpen, onClose, onSubmit, profile = null }) => {
               onChange={(e) => setDescription(e.target.value)}
               className="w-full bg-terminal-bg-lighter border border-terminal-border px-3 py-2 text-terminal-text focus:outline-none focus:border-terminal-orange resize-none"
               rows={3}
-              placeholder="Brief description of this profile..."
+              placeholder="Brief description of this portfolio..."
               disabled={isSubmitting}
             />
           </div>
@@ -109,7 +109,7 @@ const ProfileModal = ({ isOpen, onClose, onSubmit, profile = null }) => {
               type="submit"
               disabled={isSubmitting}
             >
-              {isSubmitting ? '[Saving...]' : profile ? '[Update]' : '[Create]'}
+              {isSubmitting ? '[Saving...]' : portfolio ? '[Update]' : '[Create]'}
             </TerminalButton>
           </div>
         </form>
@@ -118,5 +118,5 @@ const ProfileModal = ({ isOpen, onClose, onSubmit, profile = null }) => {
   );
 };
 
-export default ProfileModal;
+export default PortfolioModal;
 

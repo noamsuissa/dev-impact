@@ -1,44 +1,44 @@
 import React from 'react';
 import { Plus, Sparkles } from 'lucide-react';
 
-const ProfileTabs = ({ profiles, selectedProfileId, onSelectProfile, onAddProfile, onManageProfiles, publishedProfileSlugs = [], canAddProfile = true, onUpgradeClick }) => {
-  if (!profiles || profiles.length === 0) {
+const PortfolioTabs = ({ portfolios, selectedPortfolioId, onSelectPortfolio, onAddPortfolio, onManagePortfolios, publishedPortfolioSlugs = [], canAddPortfolio = true, onUpgradeClick }) => {
+  if (!portfolios || portfolios.length === 0) {
     return (
       <div className="mb-5">
         <div className="flex items-center gap-2">
           <button
-            onClick={canAddProfile ? onAddProfile : onUpgradeClick}
-            className={`px-3 py-1.5 border text-sm transition-colors flex items-center gap-2 ${canAddProfile
+            onClick={canAddPortfolio ? onAddPortfolio : onUpgradeClick}
+            className={`px-3 py-1.5 border text-sm transition-colors flex items-center gap-2 ${canAddPortfolio
                 ? 'bg-terminal-bg-lighter border-terminal-border hover:border-terminal-orange text-terminal-orange'
                 : 'bg-terminal-bg-lighter border-terminal-border text-terminal-orange cursor-pointer hover:border-terminal-orange opacity-70 hover:opacity-100'
               }`}
-            title={!canAddProfile ? 'Profile limit reached. Click to upgrade to Pro for unlimited profiles.' : ''}
+            title={!canAddPortfolio ? 'Portfolio limit reached. Click to upgrade to Pro for unlimited portfolios.' : ''}
           >
-            {canAddProfile ? <Plus size={14} /> : <Sparkles size={14} className="animate-pulse" />}
-            Add Profile
+            {canAddPortfolio ? <Plus size={14} /> : <Sparkles size={14} className="animate-pulse" />}
+            Add Portfolio
           </button>
-          <span className="text-terminal-gray text-sm">No profiles yet. Create one to organize your projects.</span>
+          <span className="text-terminal-gray text-sm">No portfolios yet. Create one to organize your projects.</span>
         </div>
       </div>
     );
   }
 
-  const hasActiveTab = selectedProfileId !== null;
+  const hasActiveTab = selectedPortfolioId !== null;
 
   return (
     <div className="mb-5">
       <div className="relative">
         <div className="flex items-end gap-0 overflow-x-auto">
           <div className="flex items-end gap-0 relative">
-            {profiles.map((profile, index) => {
-              const isActive = profile.id === selectedProfileId;
-              const isPublished = publishedProfileSlugs.includes(profile.slug);
+            {portfolios.map((portfolio, index) => {
+              const isActive = portfolio.id === selectedPortfolioId;
+              const isPublished = publishedPortfolioSlugs.includes(portfolio.slug);
 
               return (
-                <div key={profile.id} className="relative">
+                <div key={portfolio.id} className="relative">
                   {/* Tab */}
                   <button
-                    onClick={() => onSelectProfile(profile.id)}
+                    onClick={() => onSelectPortfolio(portfolio.id)}
                     className={`
                       px-4 py-2 text-sm font-mono border border-terminal-border
                       transition-colors whitespace-nowrap relative
@@ -52,7 +52,7 @@ const ProfileTabs = ({ profiles, selectedProfileId, onSelectProfile, onAddProfil
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <span>{profile.name}</span>
+                      <span>{portfolio.name}</span>
                       {isPublished && (
                         <span className="relative flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -76,26 +76,26 @@ const ProfileTabs = ({ profiles, selectedProfileId, onSelectProfile, onAddProfil
             )}
           </div>
 
-          {/* Add Profile Button */}
+          {/* Add Portfolio Button */}
           <button
-            onClick={canAddProfile ? onAddProfile : onUpgradeClick}
-            className={`ml-2 px-3 py-2 border text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${canAddProfile
+            onClick={canAddPortfolio ? onAddPortfolio : onUpgradeClick}
+            className={`ml-2 px-3 py-2 border text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${canAddPortfolio
                 ? 'bg-terminal-bg-lighter border-terminal-border hover:border-terminal-orange text-terminal-orange'
                 : 'bg-terminal-bg-lighter border-terminal-border text-terminal-orange cursor-pointer hover:border-terminal-orange opacity-70 hover:opacity-100'
               }`}
-            title={!canAddProfile ? 'Profile limit reached. Click to upgrade to Pro for unlimited profiles.' : ''}
+            title={!canAddPortfolio ? 'Portfolio limit reached. Click to upgrade to Pro for unlimited portfolios.' : ''}
           >
-            {canAddProfile ? <Plus size={14} /> : <Sparkles size={14} className="animate-pulse" />}
+            {canAddPortfolio ? <Plus size={14} /> : <Sparkles size={14} className="animate-pulse" />}
             Add
           </button>
 
-          {/* Manage Profiles Button */}
-          {onManageProfiles && (
+          {/* Manage Portfolios Button */}
+          {onManagePortfolios && (
             <button
-              onClick={onManageProfiles}
+              onClick={onManagePortfolios}
               className="ml-2 px-3 py-2 bg-terminal-bg-lighter border border-terminal-border hover:border-terminal-orange text-terminal-orange text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
             >
-              Manage Profiles
+              Manage Portfolios
             </button>
           )}
         </div>
@@ -104,5 +104,5 @@ const ProfileTabs = ({ profiles, selectedProfileId, onSelectProfile, onAddProfil
   );
 };
 
-export default ProfileTabs;
+export default PortfolioTabs;
 

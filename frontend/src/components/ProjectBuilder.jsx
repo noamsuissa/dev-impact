@@ -16,7 +16,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, profiles = [], 
   const [newTech, setNewTech] = useState('');
   // Initialize profileId from initialData, selectedProfileId, or first profile
   const [profileId, setProfileId] = useState(() => {
-    if (initialData?.profile_id) return initialData.profile_id;
+    if (initialData?.portfolio_id) return initialData.portfolio_id;
     if (selectedProfileId) return selectedProfileId;
     if (profiles.length > 0) return profiles[0].id;
     return null;
@@ -72,7 +72,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, profiles = [], 
       contributions: contributions.filter(c => c.trim()),
       metrics: metrics.filter(m => m.primary && m.label),
       techStack,
-      profile_id: profileId
+      portfolio_id: profileId
     };
     onSave(project);
   };

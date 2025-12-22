@@ -1,36 +1,36 @@
 import React, { useState } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
-import DeleteProfileModal from './DeleteProfileModal';
+import DeletePortfolioModal from './DeletePortfolioModal';
 
-const ManageProfilesModal = ({ 
+const ManagePortfoliosModal = ({ 
   isOpen, 
   onClose, 
-  profiles = [], 
-  onDeleteProfile, 
-  onEditProfile,
+  portfolios = [], 
+  onDeletePortfolio, 
+  onEditPortfolio,
   publishedProfileSlugs = [],
   projects = []
 }) => {
-  const [deletingProfile, setDeletingProfile] = useState(null);
+  const [deletingPortfolio, setDeletingPortfolio] = useState(null);
 
   React.useEffect(() => {
     if (isOpen) {
-      setDeletingProfile(null);
+      setDeletingPortfolio(null);
     }
   }, [isOpen]);
 
-  const handleDeleteClick = (profile) => {
-    setDeletingProfile(profile);
+  const handleDeleteClick = (portfolio) => {
+    setDeletingPortfolio(portfolio);
   };
 
-  const handleDeleteConfirm = async (profileId) => {
-    await onDeleteProfile(profileId);
-    setDeletingProfile(null);
+  const handleDeleteConfirm = async (portfolioId) => {
+    await onDeletePortfolio(portfolioId);
+    setDeletingPortfolio(null);
   };
 
   const handleCloseDeleteModal = () => {
-    setDeletingProfile(null);
+    setDeletingPortfolio(null);
   };
 
   if (!isOpen) return null;
@@ -41,7 +41,7 @@ const ManageProfilesModal = ({
         <div className="bg-terminal-bg border border-terminal-border p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
             <div className="text-lg text-terminal-orange">
-              Manage Profiles
+              Manage Portfolios
             </div>
             <button
               onClick={onClose}
@@ -52,24 +52,24 @@ const ManageProfilesModal = ({
           </div>
 
           <div className="space-y-3">
-            {profiles.length === 0 ? (
+            {portfolios.length === 0 ? (
               <div className="text-terminal-gray text-sm text-center py-8">
-                No profiles yet. Create one to get started!
+                No portfolios yet. Create one to get started!
               </div>
             ) : (
-              profiles.map((profile) => {
-                const isPublished = publishedProfileSlugs.includes(profile.slug);
-                const projectCount = projects.filter(p => p.profile_id === profile.id).length;
+              portfolios.map((portfolio) => {
+                const isPublished = publishedProfileSlugs.includes(portfolio.slug);
+                const projectCount = projects.filter(p => p.portfolio_id === portfolio.id).length;
 
                 return (
                   <div
-                    key={profile.id}
+                    key={portfolio.id}
                     className="bg-terminal-bg-lighter border border-terminal-border p-4 rounded flex items-center justify-between hover:border-terminal-orange/50 transition-colors"
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-terminal-orange font-semibold">
-                          {profile.name}
+                          {portfolio.name}
                         </span>
                         {isPublished && (
                           <span className="relative flex h-2 w-2">
@@ -78,9 +78,9 @@ const ManageProfilesModal = ({
                           </span>
                         )}
                       </div>
-                      {profile.description && (
+                      {portfolio.description && (
                         <div className="text-terminal-gray text-sm mb-2">
-                          {profile.description}
+                          {portfolio.description}
                         </div>
                       )}
                       <div className="text-terminal-gray text-xs">
@@ -89,22 +89,22 @@ const ManageProfilesModal = ({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
-                      {onEditProfile && (
+                      {onEditPortfolio && (
                         <button
                           onClick={() => {
-                            onEditProfile(profile);
+                            onEditPortfolio(portfolio);
                             onClose();
                           }}
                           className="px-3 py-1.5 bg-terminal-bg border border-terminal-border hover:border-terminal-orange text-terminal-orange text-sm transition-colors"
-                          title="Edit profile"
+                          title="Edit portfolio"
                         >
                           Edit
                         </button>
                       )}
                       <button
-                        onClick={() => handleDeleteClick(profile)}
+                        onClick={() => handleDeleteClick(portfolio)}
                         className="px-3 py-1.5 bg-red-500/20 border border-red-500/50 hover:bg-red-500/30 text-red-400 transition-colors flex items-center gap-2"
-                        title="Delete profile"
+                        title="Delete portfolio"
                       >
                         <Trash2 size={14} />
                         Delete
@@ -125,18 +125,18 @@ const ManageProfilesModal = ({
       </div>
 
       {/* Delete Confirmation Modal */}
-      {deletingProfile && (
-        <DeleteProfileModal
-          isOpen={!!deletingProfile}
+      {deletingPortfolio && (
+        <DeletePortfolioModal
+          isOpen={!!deletingPortfolio}
           onClose={handleCloseDeleteModal}
-          profile={deletingProfile}
+          portfolio={deletingPortfolio}
           onDelete={handleDeleteConfirm}
-          projectCount={projects.filter(p => p.profile_id === deletingProfile.id).length}
+          projectCount={projects.filter(p => p.portfolio_id === deletingPortfolio.id).length}
         />
       )}
     </>
   );
 };
 
-export default ManageProfilesModal;
+export default ManagePortfoliosModal;
 

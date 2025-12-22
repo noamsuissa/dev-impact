@@ -23,16 +23,16 @@ router = APIRouter(
 @router.get("", response_model=List[Project])
 async def list_projects(
     authorization: str = Depends(auth_utils.get_access_token),
-    profile_id: Optional[str] = Query(None, description="Filter projects by profile ID")
+    portfolio_id: Optional[str] = Query(None, description="Filter projects by portfolio ID")
 ):
     """
     List all projects for current user
     
-    Returns all projects owned by the authenticated user, optionally filtered by profile.
+    Returns all projects owned by the authenticated user, optionally filtered by portfolio.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    projects = await ProjectService.list_projects(user_id, profile_id=profile_id)
+    projects = await ProjectService.list_projects(user_id, portfolio_id=portfolio_id)
     return projects
 
 

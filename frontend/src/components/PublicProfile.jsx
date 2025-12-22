@@ -4,11 +4,11 @@ import { Github, Eye } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import ProjectModal from './ProjectModal';
 import { useMetaTags } from '../hooks/useMetaTags';
-import { generateProfileUrl } from '../utils/helpers';
+import { generatePortfolioUrl } from '../utils/helpers';
 import { useAuth } from '../hooks/useAuth';
 
 const PublicProfile = () => {
-  const { username: usernameFromPath, profileSlug: profileSlugFromPath } = useParams();
+  const { username: usernameFromPath, portfolioSlug: portfolioSlugFromPath } = useParams();
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ const PublicProfile = () => {
     const hostname = window.location.hostname;
     const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
     let username = null;
-    let profileSlug = null;
+    let portfolioSlug = null;
     
     // Check if we're on a subdomain (production)
     if (hostname !== 'localhost' && 
@@ -36,19 +36,19 @@ const PublicProfile = () => {
         // Extract profile slug from pathname (e.g., /profile-slug)
         const pathParts = window.location.pathname.split('/').filter(p => p);
         if (pathParts.length > 0) {
-          profileSlug = pathParts[0];
+          portfolioSlug = pathParts[0];
         }
       }
     } else {
       // Localhost: extract from path (e.g., /username/profile-slug)
       username = usernameFromPath;
-      profileSlug = profileSlugFromPath;
+      portfolioSlug = portfolioSlugFromPath;
     }
     
-    return { username, profileSlug };
+    return { username, portfolioSlug };
   };
   
-  const { username, profileSlug } = getUsernameAndSlug();
+  const { username, portfolioSlug } = getUsernameAndSlug();
 
   // Get home URL - navigate to main domain if on subdomain
   const getHomeUrl = () => {
@@ -85,17 +85,17 @@ const PublicProfile = () => {
   };
 
   // Dynamic meta tags for SEO and OpenGraph
-  const profileUrl = username ? generateProfileUrl(username, profileSlug) : (() => {
+  const profileUrl = username ? generatePortfolioUrl(username, portfolioSlug) : (() => {
     const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
     return typeof window !== 'undefined' && window.location.hostname === 'localhost' 
       ? `http://localhost:${window.location.port || '5173'}/`
       : `https://${baseDomain}/`;
   })();
   const profileTitle = profile 
-    ? `${profile.user.name}${profile.profile ? ` - ${profile.profile.name}` : ''} - Developer Profile | dev-impact` 
+    ? `${profile.user.name}${profile.portfolio ? ` - ${profile.portfolio.name}` : ''} - Developer Profile | dev-impact` 
     : 'Developer Profile | dev-impact';
   const profileDescription = profile 
-    ? `View ${profile.user.name}'s${profile.profile ? ` ${profile.profile.name}` : ''} developer profile on dev-impact. ${profile.projects.length} projects with ${profile.projects.reduce((sum, p) => sum + (p.metrics?.length || 0), 0)} achievements.`
+    ? `View ${profile.user.name}'s${profile.portfolio ? ` ${profile.portfolio.name}` : ''} developer profile on dev-impact. ${profile.projects.length} projects with ${profile.projects.reduce((sum, p) => sum + (p.metrics?.length || 0), 0)} achievements.`
     : 'View developer profile on dev-impact';
   
   // Use static OG image for all profiles
@@ -119,9 +119,9 @@ const PublicProfile = () => {
         setError(null);
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        let url = `${apiUrl}/api/profiles/${username}`;
-        if (profileSlug) {
-          url += `/${profileSlug}`;
+        let url = `${apiUrl}/api/portfolios/${username}`;
+        if (portfolioSlug) {
+          url += `/${portfolioSlug}`;
         }
         
         const response = await fetch(url);
@@ -146,7 +146,7 @@ const PublicProfile = () => {
     if (username) {
       fetchProfile();
     }
-  }, [username, profileSlug]);
+  }, [username, portfolioSlug]);
 
   if (loading) {
     return (
@@ -200,14 +200,14 @@ const PublicProfile = () => {
                 {profile.user.name}
               </div>
               <div className="text-lg text-[#c9c5c0] mb-2">
-                {profile.profile?.name || 'Developer Profile'}
+                {profile.portfolio?.name || 'Developer Profile'}
               </div>
-              {profile.profile?.description && (
+              {profile.portfolio?.description && (
                 <div className="text-sm text-terminal-gray mb-5">
-                  {profile.profile.description}
+                  {profile.portfolio.description}
                 </div>
               )}
-              {!profile.profile?.description && <div className="mb-5"></div>}
+              {!profile.portfolio?.description && <div className="mb-5"></div>}
               {profile.user.github?.username && (
                 <div className="mb-2.5">
                   <a

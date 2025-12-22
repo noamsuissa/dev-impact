@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 
-const DeleteProfileModal = ({ isOpen, onClose, profile, onDelete, projectCount = 0 }) => {
+const DeletePortfolioModal = ({ isOpen, onClose, portfolio, onDelete, projectCount = 0 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState(null);
   const [confirmText, setConfirmText] = useState('');
@@ -25,16 +25,16 @@ const DeleteProfileModal = ({ isOpen, onClose, profile, onDelete, projectCount =
     setError(null);
 
     try {
-      await onDelete(profile.id);
+      await onDelete(portfolio.id);
       onClose();
     } catch (err) {
-      setError(err.message || 'Failed to delete profile');
+      setError(err.message || 'Failed to delete portfolio');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  if (!isOpen || !profile) return null;
+  if (!isOpen || !portfolio) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -42,7 +42,7 @@ const DeleteProfileModal = ({ isOpen, onClose, profile, onDelete, projectCount =
         <div className="flex items-center justify-between mb-6">
           <div className="text-lg text-red-400 flex items-center gap-2">
             <AlertTriangle size={20} />
-            Delete Profile
+            Delete Portfolio
           </div>
           <button
             onClick={onClose}
@@ -59,13 +59,13 @@ const DeleteProfileModal = ({ isOpen, onClose, profile, onDelete, projectCount =
               Warning: This action cannot be undone!
             </div>
             <div className="text-terminal-gray text-sm space-y-1">
-              <p>You are about to delete the profile <span className="text-terminal-orange font-semibold">"{profile.name}"</span>.</p>
+              <p>You are about to delete the portfolio <span className="text-terminal-orange font-semibold">"{portfolio.name}"</span>.</p>
               {projectCount > 0 ? (
                 <p className="text-red-400">
-                  <strong>{projectCount} project{projectCount !== 1 ? 's' : ''}</strong> assigned to this profile will also be permanently deleted.
+                  <strong>{projectCount} project{projectCount !== 1 ? 's' : ''}</strong> assigned to this portfolio will also be permanently deleted.
                 </p>
               ) : (
-                <p>This profile has no assigned projects.</p>
+                <p>This portfolio has no assigned projects.</p>
               )}
             </div>
           </div>
@@ -105,7 +105,7 @@ const DeleteProfileModal = ({ isOpen, onClose, profile, onDelete, projectCount =
               disabled={isDeleting || confirmText !== 'DELETE'}
               className="bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isDeleting ? '[Deleting...]' : '[Delete Profile]'}
+              {isDeleting ? '[Deleting...]' : '[Delete Portfolio]'}
             </TerminalButton>
           </div>
         </div>
@@ -114,5 +114,5 @@ const DeleteProfileModal = ({ isOpen, onClose, profile, onDelete, projectCount =
   );
 };
 
-export default DeleteProfileModal;
+export default DeletePortfolioModal;
 

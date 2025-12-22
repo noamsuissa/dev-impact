@@ -67,22 +67,22 @@ export const generateSlug = (name) => {
   return slug;
 };
 
-// Utility function to generate profile URL based on environment
-// On localhost: uses path-based URL (http://localhost:5173/username/profile-slug)
-// In production: uses subdomain + path URL (https://username.dev-impact.io/profile-slug)
-export const generateProfileUrl = (username, profileSlug = null) => {
+// Utility function to generate portfolio URL based on environment
+// On localhost: uses path-based URL (http://localhost:5173/username/portfolio-slug)
+// In production: uses subdomain + path URL (https://username.dev-impact.io/portfolio-slug)
+export const generatePortfolioUrl = (username, portfolioSlug = null) => {
   if (isLocalhost()) {
     // On localhost, use path-based URL
     const port = window.location.port || '5173';
-    if (profileSlug) {
-      return `http://localhost:${port}/${username}/${profileSlug}`;
+    if (portfolioSlug) {
+      return `http://localhost:${port}/${username}/${portfolioSlug}`;
     }
     return `http://localhost:${port}/${username}`;
   } else {
     // In production, use subdomain + path URL
     const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
-    if (profileSlug) {
-      return `https://${username}.${baseDomain}/${profileSlug}`;
+    if (portfolioSlug) {
+      return `https://${username}.${baseDomain}/${portfolioSlug}`;
     }
     return `https://${username}.${baseDomain}`;
   }

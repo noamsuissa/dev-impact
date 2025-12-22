@@ -2,79 +2,79 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 
-const PublishProfileModal = ({ isOpen, onClose, profiles = [], onPublish, publishedProfileSlugs = [] }) => {
-  const [selectedProfileId, setSelectedProfileId] = useState(null);
-  const [isPublishing, setIsPublishing] = useState(false);
+const UnpublishPortfolioModal = ({ isOpen, onClose, portfolios = [], onUnpublish, publishedPortfolioSlugs = [] }) => {
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState(null);
+  const [isUnpublishing, setIsUnpublishing] = useState(false);
   const [error, setError] = useState(null);
 
   React.useEffect(() => {
     if (isOpen) {
-      setSelectedProfileId(null);
+      setSelectedPortfolioId(null);
       setError(null);
-      setIsPublishing(false);
+      setIsUnpublishing(false);
     }
   }, [isOpen]);
 
-  const handlePublish = async () => {
-    if (!selectedProfileId) {
-      setError('Please select a profile to publish');
+  const handleUnpublish = async () => {
+    if (!selectedPortfolioId) {
+      setError('Please select a portfolio to unpublish');
       return;
     }
 
-    setIsPublishing(true);
+    setIsUnpublishing(true);
     setError(null);
 
     try {
-      await onPublish(selectedProfileId);
+      await onUnpublish(selectedPortfolioId);
       onClose();
     } catch (err) {
-      setError(err.message || 'Failed to publish profile');
+      setError(err.message || 'Failed to unpublish portfolio');
     } finally {
-      setIsPublishing(false);
+      setIsUnpublishing(false);
     }
   };
 
   if (!isOpen) return null;
 
-  const availableProfiles = profiles.filter(p => !publishedProfileSlugs.includes(p.slug));
+  const publishedPortfolios = portfolios.filter(p => publishedPortfolioSlugs.includes(p.slug));
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-terminal-bg border border-terminal-border p-6 max-w-md w-full">
         <div className="flex items-center justify-between mb-6">
           <div className="text-lg text-terminal-orange">
-            Publish Profile
+            Unpublish Portfolio
           </div>
           <button
             onClick={onClose}
             className="text-terminal-gray hover:text-terminal-orange transition-colors"
-            disabled={isPublishing}
+            disabled={isUnpublishing}
           >
             <X size={20} />
           </button>
         </div>
 
         <div className="space-y-4">
-          {availableProfiles.length === 0 ? (
+          {publishedPortfolios.length === 0 ? (
             <div className="text-terminal-gray text-sm">
-              All profiles are already published. Unpublish a profile first to republish it.
+              No portfolios are currently published.
             </div>
           ) : (
             <>
               <div>
                 <label className="block text-sm text-terminal-gray mb-2">
-                  Select Profile to Publish *
+                  Select Portfolio to Unpublish *
                 </label>
                 <select
-                  value={selectedProfileId || ''}
-                  onChange={(e) => setSelectedProfileId(e.target.value || null)}
+                  value={selectedPortfolioId || ''}
+                  onChange={(e) => setSelectedPortfolioId(e.target.value || null)}
                   className="w-full bg-terminal-bg-lighter border border-terminal-border px-3 py-2 text-terminal-text focus:outline-none focus:border-terminal-orange"
-                  disabled={isPublishing}
+                  disabled={isUnpublishing}
                 >
-                  <option value="">-- Select Profile --</option>
-                  {availableProfiles.map(profile => (
-                    <option key={profile.id} value={profile.id}>
-                      {profile.name} {profile.description ? `- ${profile.description}` : ''}
+                  <option value="">-- Select Portfolio --</option>
+                  {publishedPortfolios.map(portfolio => (
+                    <option key={portfolio.id} value={portfolio.id}>
+                      {portfolio.name} {portfolio.description ? `- ${portfolio.description}` : ''}
                     </option>
                   ))}
                 </select>
@@ -90,16 +90,16 @@ const PublishProfileModal = ({ isOpen, onClose, profiles = [], onPublish, publis
                 <TerminalButton
                   type="button"
                   onClick={onClose}
-                  disabled={isPublishing}
+                  disabled={isUnpublishing}
                 >
                   [Cancel]
                 </TerminalButton>
                 <TerminalButton
                   type="button"
-                  onClick={handlePublish}
-                  disabled={isPublishing || !selectedProfileId}
+                  onClick={handleUnpublish}
+                  disabled={isUnpublishing || !selectedPortfolioId}
                 >
-                  {isPublishing ? '[Publishing...]' : '[Publish]'}
+                  {isUnpublishing ? '[Unpublishing...]' : '[Unpublish]'}
                 </TerminalButton>
               </div>
             </>
@@ -110,5 +110,5 @@ const PublishProfileModal = ({ isOpen, onClose, profiles = [], onPublish, publis
   );
 };
 
-export default PublishProfileModal;
+export default UnpublishPortfolioModal;
 

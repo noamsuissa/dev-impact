@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
 import { completeGitHubAuth } from '../utils/githubAuth';
-import { profiles } from '../utils/client';
+import { user } from '../utils/client';
 
 const Onboarding = ({ onComplete }) => {
   const [step, setStep] = useState(0);
@@ -57,7 +57,7 @@ const Onboarding = ({ onComplete }) => {
       setIsCheckingUsername(true);
       setUsernameError(null);
       try {
-        const result = await profiles.checkUsername(username);
+        const result = await user.checkUsername(username);
         if (!result.available) {
           setUsernameError('Username is already taken');
           setIsCheckingUsername(false);

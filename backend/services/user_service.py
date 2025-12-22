@@ -1,10 +1,11 @@
 """
 User Service - Handle user profile operations with Supabase
 """
+import re
 from typing import Dict, Any
 from fastapi import HTTPException
 from backend.utils.auth_utils import get_supabase_client
-from backend.schemas.user import UserProfile
+from backend.schemas.user import UserProfile, CheckUsernameResponse
 from backend.schemas.auth import MessageResponse
 from backend.services.stripe_service import StripeService
 
@@ -186,3 +187,53 @@ class UserService:
         except Exception as e:
             print(f"Delete account error: {e}")
             raise HTTPException(status_code=500, detail="Failed to delete account")
+
+    @staticmethod
+    def validate_username(username: str) -> bool:
+        """Validate username format"""
+        if not username:
+            return False
+        # Lowercase alphanumeric and hyphens only, 3-50 characters
+        pattern = r'^[a-z0-9-]{3,50}$'
+        return bool(re.match(pattern, username))
+
+    @staticmethod
+    async def check_username(username: str) -> CheckUsernameResponse:
+        """
+        Check if a username is available for publishing portfolios
+        
+        Args:
+            username: The username to check
+            
+        Returns:
+            CheckUsernameResponse with availability status
+        """
+        try:
+            if not UserService.validate_username(username):
+                return CheckUsernameResponse(
+                    available=False,
+                    valid=False,
+                    message="Username must be 3-50 characters, lowercase letters, numbers, and hyphens only"
+                )
+        
+            supabase = get_supabase_client()
+            
+            # Use RPC call to check availability (checks format, reserved names, and existing profiles)
+            result = supabase.rpc("is_username_available", {"desired_username": username}).execute()
+            
+            available = result.data
+            
+            return CheckUsernameResponse(
+                available=available,
+                valid=True,
+                message="Username is available" if available else "Username is taken or reserved"
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"Error checking username: {e}")
+            return CheckUsernameResponse(
+                available=False,
+                valid=True,
+                message="Error checking username availability"
+            )
