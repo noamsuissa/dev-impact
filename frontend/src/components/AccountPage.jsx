@@ -401,7 +401,7 @@ const AccountPage = ({ user, projects }) => {
       <UpgradeModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
-        isLimitReached={!subscriptionInfo?.can_add_profile && subscriptionInfo?.subscription_type !== 'pro'}
+        isLimitReached={!subscriptionInfo?.can_add_portfolio && subscriptionInfo?.subscription_type !== 'pro'}
       />
     </div>
   );

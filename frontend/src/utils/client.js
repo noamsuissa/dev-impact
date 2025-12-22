@@ -361,6 +361,20 @@ export const user = {
 
     return response.json();
   },
+
+  /**
+   * Check if username is available
+   */
+  checkUsername: async (username) => {
+    const response = await fetch(`${API_URL}/api/user/check-username/${username}`);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to check username');
+    }
+
+    return response.json();
+  },
 };
 
 /**
@@ -519,150 +533,135 @@ export const projects = {
 /**
  * Profiles API (published profiles)
  */
-export const profiles = {
+/**
+ * Portfolios API - Complete portfolio management (CRUD + Publishing)
+ */
+export const portfolios = {
   /**
-   * Publish profile
+   * Create a new portfolio
    */
-  publish: async (profileData) => {
-    const response = await fetchWithAuth('/api/profiles', {
+  create: async (portfolioData) => {
+    const response = await fetchWithAuth('/api/portfolios', {
       method: 'POST',
-      body: JSON.stringify(profileData),
+      body: JSON.stringify(portfolioData),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || 'Failed to publish profile');
+      throw new Error(error.detail || 'Failed to create portfolio');
     }
 
     return response.json();
   },
 
   /**
-   * Get published profile
+   * List all portfolios
    */
-  get: async (username, profileSlug = null) => {
-    let url = `${API_URL}/api/profiles/${username}`;
-    if (profileSlug) {
-      url += `/${profileSlug}`;
+  list: async () => {
+    const response = await fetchWithAuth('/api/portfolios');
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to list portfolios');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get a single portfolio
+   */
+  get: async (portfolioId) => {
+    const response = await fetchWithAuth(`/api/portfolios/${portfolioId}`);
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to get portfolio');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Update a portfolio
+   */
+  update: async (portfolioId, portfolioData) => {
+    const response = await fetchWithAuth(`/api/portfolios/${portfolioId}`, {
+      method: 'PUT',
+      body: JSON.stringify(portfolioData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to update portfolio');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Delete a portfolio
+   */
+  delete: async (portfolioId) => {
+    const response = await fetchWithAuth(`/api/portfolios/${portfolioId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to delete portfolio');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Publish a portfolio
+   */
+  publish: async (portfolioData) => {
+    const { portfolio_id, username } = portfolioData;
+    const response = await fetchWithAuth(`/api/portfolios/${portfolio_id}/publish`, {
+      method: 'POST',
+      body: JSON.stringify({ username, portfolio_id }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to publish portfolio');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Unpublish a portfolio
+   */
+  unpublish: async (username, portfolioSlug) => {
+    const response = await fetchWithAuth(`/api/portfolios/${username}/${portfolioSlug}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to unpublish portfolio');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get a published portfolio (PUBLIC)
+   */
+  getPublished: async (username, portfolioSlug = null) => {
+    let url = `${API_URL}/api/portfolios/${username}`;
+    if (portfolioSlug) {
+      url += `/${portfolioSlug}`;
     }
     const response = await fetch(url);
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || 'Profile not found');
-    }
-
-    return response.json();
-  },
-
-  /**
-   * Unpublish profile
-   */
-  unpublish: async (username, profileSlug) => {
-    const response = await fetchWithAuth(`/api/profiles/${username}/${profileSlug}`, {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to unpublish profile');
-    }
-
-    return response.json();
-  },
-
-  /**
-   * Check if username is available
-   */
-  checkUsername: async (username) => {
-    const response = await fetch(`${API_URL}/api/profiles/check/${username}`);
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to check username');
-    }
-
-    return response.json();
-  },
-};
-
-/**
- * User Profiles API (user-created profiles for grouping projects)
- */
-export const userProfiles = {
-  /**
-   * Create a new user profile
-   */
-  create: async (profileData) => {
-    const response = await fetchWithAuth('/api/user-profiles', {
-      method: 'POST',
-      body: JSON.stringify(profileData),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to create profile');
-    }
-
-    return response.json();
-  },
-
-  /**
-   * List all user profiles
-   */
-  list: async () => {
-    const response = await fetchWithAuth('/api/user-profiles');
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to list profiles');
-    }
-
-    return response.json();
-  },
-
-  /**
-   * Get a single user profile
-   */
-  get: async (profileId) => {
-    const response = await fetchWithAuth(`/api/user-profiles/${profileId}`);
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to get profile');
-    }
-
-    return response.json();
-  },
-
-  /**
-   * Update a user profile
-   */
-  update: async (profileId, profileData) => {
-    const response = await fetchWithAuth(`/api/user-profiles/${profileId}`, {
-      method: 'PUT',
-      body: JSON.stringify(profileData),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to update profile');
-    }
-
-    return response.json();
-  },
-
-  /**
-   * Delete a user profile
-   */
-  delete: async (profileId) => {
-    const response = await fetchWithAuth(`/api/user-profiles/${profileId}`, {
-      method: 'DELETE',
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to delete profile');
+      throw new Error(error.detail || 'Portfolio not found');
     }
 
     return response.json();
@@ -813,7 +812,7 @@ export default {
   auth,
   user,
   projects,
-  profiles,
+  portfolios,
   github,
   waitlist,
   subscriptions,

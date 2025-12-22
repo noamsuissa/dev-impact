@@ -1,8 +1,8 @@
 import { createContext, useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { completeGitHubAuth } from '../utils/githubAuth'
-import { profiles, userProfiles as userProfilesClient, subscriptions, projects as projectsClient, user as userClient } from '../utils/client'
-import { generateProfileUrl } from '../utils/helpers'
+import { portfolios as portfoliosClient, subscriptions, projects as projectsClient, user as userClient } from '../utils/client'
+import { generatePortfolioUrl } from '../utils/helpers'
 
 // Create the context
 const DashboardContext = createContext()
@@ -24,17 +24,17 @@ export const DashboardProvider = ({ children }) => {
   
   // Data state
   const [projects, setProjects] = useState([])
-  const [userProfilesList, setUserProfilesList] = useState([])
-  const [selectedProfileId, setSelectedProfileId] = useState(null)
-  const [publishedProfileSlugs, setPublishedProfileSlugs] = useState([])
+  const [portfoliosList, setPortfoliosList] = useState([])
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState(null)
+  const [publishedPortfolioSlugs, setPublishedPortfolioSlugs] = useState([])
   const [subscriptionInfo, setSubscriptionInfo] = useState(null)
   
   // Modal state
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false)
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false)
   const [isUnpublishModalOpen, setIsUnpublishModalOpen] = useState(false)
-  const [isManageProfilesModalOpen, setIsManageProfilesModalOpen] = useState(false)
-  const [editingProfile, setEditingProfile] = useState(null)
+  const [isManagePortfoliosModalOpen, setIsManagePortfoliosModalOpen] = useState(false)
+  const [editingPortfolio, setEditingPortfolio] = useState(null)
   const [selectedProject, setSelectedProject] = useState(null)
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false)
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false)
@@ -56,12 +56,12 @@ export const DashboardProvider = ({ children }) => {
 
   // Load user profiles and subscription info on mount
   useEffect(() => {
-    const loadProfiles = async () => {
+    const loadPortfolios = async () => {
       if (!user) return
 
       try {
-        const profilesList = await userProfilesClient.list()
-        setUserProfilesList(profilesList)
+        const portfoliosList = await portfoliosClient.list()
+        setPortfoliosList(portfoliosList)
 
         // Load subscription info
         try {
@@ -72,36 +72,36 @@ export const DashboardProvider = ({ children }) => {
           // Default to free tier if fetch fails
           setSubscriptionInfo({
             subscription_type: 'free',
-            profile_count: profilesList.length,
-            max_profiles: 3,
-            can_add_profile: profilesList.length < 3
+            portfolio_count: portfoliosList.length,
+            max_portfolios: 3,
+            can_add_portfolio: portfoliosList.length < 3
           })
         }
 
         // Restore selected profile from localStorage or select first profile
-        setSelectedProfileId(prev => {
+        setSelectedPortfolioId(prev => {
           if (prev) return prev // Keep current selection if already set
           
-          if (profilesList.length === 0) return null
+          if (portfoliosList.length === 0) return null
           
           // Try to restore from localStorage
           if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('selectedProfileId')
-            if (stored && profilesList.some(p => p.id === stored)) {
+            const stored = localStorage.getItem('selectedPortfolioId')
+            if (stored && portfoliosList.some(p => p.id === stored)) {
               return stored
             }
           }
           
           // Default to first profile
-          return profilesList[0].id
+          return portfoliosList[0].id
         })
       } catch (err) {
-        console.error('Failed to load profiles:', err)
-        setUserProfilesList([])
+        console.error('Failed to load portfolios:', err)
+        setPortfoliosList([])
       }
     }
 
-    loadProfiles()
+    loadPortfolios()
   }, [user])
 
   // Check for plan=pro query parameter or pending subscription in localStorage
@@ -135,7 +135,7 @@ export const DashboardProvider = ({ children }) => {
         } catch (err) {
           console.error('Direct checkout redirect failed:', err)
           // Fallback to modal on error so user isn't stuck
-          if (!subscriptionInfo?.can_add_profile) {
+          if (!subscriptionInfo?.can_add_portfolio) {
             setIsUpgradeModalOpen(true)
           }
         }
@@ -148,33 +148,33 @@ export const DashboardProvider = ({ children }) => {
   // Check published status for all profiles
   useEffect(() => {
     const checkPublishedStatus = async () => {
-      if (!user || userProfilesList.length === 0) return
+      if (!user || portfoliosList.length === 0) return
 
       const username = user.username
       const publishedSlugs = []
 
       // Check each profile's published status
-      for (const profile of userProfilesList) {
+      for (const portfolio of portfoliosList) {
         try {
           const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-          const response = await fetch(`${apiUrl}/api/profiles/${username}/${profile.slug}`)
+          const response = await fetch(`${apiUrl}/api/portfolios/${username}/${portfolio.slug}`)
 
           if (response.ok) {
-            publishedSlugs.push(profile.slug)
+            publishedSlugs.push(portfolio.slug)
           }
         } catch {
           // Profile not published, that's okay
         }
       }
 
-      setPublishedProfileSlugs(publishedSlugs)
+      setPublishedPortfolioSlugs(publishedSlugs)
 
       // Update published state for selected profile
-      if (selectedProfileId) {
-        const selectedProfile = userProfilesList.find(p => p.id === selectedProfileId)
-        if (selectedProfile && publishedSlugs.includes(selectedProfile.slug)) {
+      if (selectedPortfolioId) {
+        const selectedPortfolio = portfoliosList.find(p => p.id === selectedPortfolioId)
+        if (selectedPortfolio && publishedSlugs.includes(selectedPortfolio.slug)) {
           setIsPublished(true)
-          const shareUrl = generateProfileUrl(username, selectedProfile.slug)
+          const shareUrl = generatePortfolioUrl(username, selectedPortfolio.slug)
           setPublishedUrl(shareUrl)
         } else {
           setIsPublished(false)
@@ -184,21 +184,21 @@ export const DashboardProvider = ({ children }) => {
     }
 
     checkPublishedStatus()
-  }, [user, userProfilesList, selectedProfileId])
+  }, [user, portfoliosList, selectedPortfolioId])
 
   // Save selected profile to localStorage
   useEffect(() => {
-    if (selectedProfileId && typeof window !== 'undefined') {
-      localStorage.setItem('selectedProfileId', selectedProfileId)
+    if (selectedPortfolioId && typeof window !== 'undefined') {
+      localStorage.setItem('selectedPortfolioId', selectedPortfolioId)
     }
-  }, [selectedProfileId])
+  }, [selectedPortfolioId])
 
   // Filter projects by selected profile (derived state)
   const filteredProjects = useMemo(() => {
-    if (!selectedProfileId) {
-      // If no profile selected, show projects without a profile_id (unassigned)
+    if (!selectedPortfolioId) {
+      // If no profile selected, show projects without a portfolio_id (unassigned)
       return projects.filter(p => {
-        const pid = p.profile_id
+        const pid = p.portfolio_id
         return !pid || pid === null || pid === undefined || pid === ''
       })
     }
@@ -206,15 +206,15 @@ export const DashboardProvider = ({ children }) => {
     // Filter projects that belong ONLY to the selected profile
     // Also include unassigned projects (null/undefined) so user can assign them
     const filtered = projects.filter(p => {
-      const pid = p.profile_id
+      const pid = p.portfolio_id
       // Show if: unassigned (null/undefined/empty) OR exactly matches selected profile
       const isUnassigned = !pid || pid === null || pid === undefined || pid === ''
-      const matchesProfile = pid === selectedProfileId
-      return isUnassigned || matchesProfile
+      const matchesPortfolio = pid === selectedPortfolioId
+      return isUnassigned || matchesPortfolio
     })
 
     return filtered
-  }, [projects, selectedProfileId])
+  }, [projects, selectedPortfolioId])
 
   // GitHub handlers
   const handleConnectGitHub = async () => {
@@ -258,7 +258,7 @@ export const DashboardProvider = ({ children }) => {
       // Refresh the AuthContext user state to reflect the GitHub connection
       await updateUserProfile()
     } catch (err) {
-      console.error('Failed to update profile with GitHub data:', err)
+      console.error('Failed to update portfolio with GitHub data:', err)
       throw err
     }
   }
@@ -277,19 +277,19 @@ export const DashboardProvider = ({ children }) => {
   }
 
   // Profile publish handlers
-  const handlePublishProfile = async (profileIdToPublish) => {
-    const profileToPublish = userProfilesList.find(p => p.id === profileIdToPublish)
-    if (!profileToPublish) {
-      throw new Error('Profile not found.')
+  const handlePublishPortfolio = async (portfolioIdToPublish) => {
+    const portfolioToPublish = portfoliosList.find(p => p.id === portfolioIdToPublish)
+    if (!portfolioToPublish) {
+      throw new Error('Portfolio not found.')
     }
 
-    // Check if profile has projects - filter by exact profile_id match (exclude null/undefined)
-    const profileProjects = projects.filter(p => {
-      const pid = p.profile_id
-      return pid && pid === profileIdToPublish
+    // Check if profile has projects - filter by exact portfolio_id match (exclude null/undefined)
+    const portfolioProjects = projects.filter(p => {
+      const pid = p.portfolio_id
+      return pid && pid === portfolioIdToPublish
     })
 
-    if (profileProjects.length === 0) {
+    if (portfolioProjects.length === 0) {
       throw new Error('Please add at least one project to this profile before publishing. Edit your projects to assign them to this profile.')
     }
 
@@ -299,22 +299,22 @@ export const DashboardProvider = ({ children }) => {
     try {
       const username = user.username
 
-      // Publish via API with profile_id
-      const response = await profiles.publish({
+      // Publish via API with portfolio_id
+      const response = await portfoliosClient.publish({
         username,
-        profile_id: profileIdToPublish
+        portfolio_id: portfolioIdToPublish
       })
 
       // Use URL from backend response
-      const shareUrl = generateProfileUrl(username, response.profile_slug)
+      const shareUrl = generatePortfolioUrl(username, response.portfolio_slug)
       setPublishedUrl(shareUrl)
 
       // Mark as published
       setIsPublished(true)
-      setPublishedProfileSlugs([...publishedProfileSlugs, profileToPublish.slug])
+      setPublishedPortfolioSlugs([...publishedPortfolioSlugs, portfolioToPublish.slug])
 
       // If this is the selected profile, update the published URL
-      if (profileIdToPublish === selectedProfileId) {
+      if (portfolioIdToPublish === selectedPortfolioId) {
         setPublishedUrl(shareUrl)
       }
 
@@ -331,17 +331,17 @@ export const DashboardProvider = ({ children }) => {
         setPublishState('success')
       }
     } catch (err) {
-      console.error('Error publishing profile:', err)
+      console.error('Error publishing portfolio:', err)
       setPublishError(err.message)
       setPublishState('error')
       throw err // Re-throw so modal can handle it
     }
   }
 
-  const handleUnpublishProfile = async (profileIdToUnpublish) => {
-    const profileToUnpublish = userProfilesList.find(p => p.id === profileIdToUnpublish)
-    if (!profileToUnpublish) {
-      throw new Error('Profile not found.')
+  const handleUnpublishPortfolio = async (portfolioIdToUnpublish) => {
+    const portfolioToUnpublish = portfoliosList.find(p => p.id === portfolioIdToUnpublish)
+    if (!portfolioToUnpublish) {
+      throw new Error('Portfolio not found.')
     }
 
     setPublishState('loading')
@@ -351,20 +351,20 @@ export const DashboardProvider = ({ children }) => {
       const username = user.username
 
       // Unpublish via API
-      await profiles.unpublish(username, profileToUnpublish.slug)
+      await portfoliosClient.unpublish(username, portfolioToUnpublish.slug)
 
       // Mark as unpublished
-      setPublishedProfileSlugs(publishedProfileSlugs.filter(s => s !== profileToUnpublish.slug))
+      setPublishedPortfolioSlugs(publishedPortfolioSlugs.filter(s => s !== portfolioToUnpublish.slug))
 
       // If this is the selected profile, update the published state
-      if (profileIdToUnpublish === selectedProfileId) {
+      if (portfolioIdToUnpublish === selectedPortfolioId) {
         setIsPublished(false)
         setPublishedUrl(null)
       }
 
       setPublishState('initial')
     } catch (err) {
-      console.error('Error unpublishing profile:', err)
+      console.error('Error unpublishing portfolio:', err)
       setPublishError(err.message)
       setPublishState('error')
       throw err // Re-throw so modal can handle it
@@ -372,12 +372,12 @@ export const DashboardProvider = ({ children }) => {
   }
 
   // Profile CRUD handlers
-  const handleCreateProfile = async (profileData) => {
-    const newProfile = await userProfilesClient.create(profileData)
-    setUserProfilesList([...userProfilesList, newProfile])
+  const handleCreatePortfolio = async (portfolioData) => {
+    const newPortfolio = await portfoliosClient.create(portfolioData)
+    setPortfoliosList([...portfoliosList, newPortfolio])
 
     // Select the newly created profile
-    setSelectedProfileId(newProfile.id)
+    setSelectedPortfolioId(newPortfolio.id)
 
     // Refresh subscription info
     try {
@@ -388,34 +388,34 @@ export const DashboardProvider = ({ children }) => {
     }
   }
 
-  const handleUpdateProfile = async (profileData) => {
-    if (!editingProfile) return
+  const handleUpdatePortfolio = async (portfolioData) => {
+    if (!editingPortfolio) return
 
-    const updatedProfile = await userProfilesClient.update(editingProfile.id, profileData)
-    setUserProfilesList(userProfilesList.map(p =>
-      p.id === updatedProfile.id ? updatedProfile : p
+    const updatedPortfolio = await portfoliosClient.update(editingPortfolio.id, portfolioData)
+    setPortfoliosList(portfoliosList.map(p =>
+      p.id === updatedPortfolio.id ? updatedPortfolio : p
     ))
-    setEditingProfile(null)
+    setEditingPortfolio(null)
   }
 
-  const handleDeleteProfile = async (profileId) => {
-    const profileToDelete = userProfilesList.find(p => p.id === profileId)
-    if (!profileToDelete) {
-      throw new Error('Profile not found.')
+  const handleDeletePortfolio = async (portfolioId) => {
+    const portfolioToDelete = portfoliosList.find(p => p.id === portfolioId)
+    if (!portfolioToDelete) {
+      throw new Error('Portfolio not found.')
     }
 
     // Delete profile (backend will delete all assigned projects)
-    await userProfilesClient.delete(profileId)
+    await portfoliosClient.delete(portfolioId)
 
     // Remove profile from list
-    setUserProfilesList(userProfilesList.filter(p => p.id !== profileId))
+    setPortfoliosList(portfoliosList.filter(p => p.id !== portfolioId))
 
     // Filter out deleted projects from state
-    setProjects(projects.filter(p => p.profile_id !== profileId))
+    setProjects(projects.filter(p => p.portfolio_id !== portfolioId))
 
-    // Select first remaining profile or null
-    const remaining = userProfilesList.filter(p => p.id !== profileId)
-    setSelectedProfileId(remaining.length > 0 ? remaining[0].id : null)
+    // Select first remaining portfolio or null
+    const remaining = portfoliosList.filter(p => p.id !== portfolioId)
+    setSelectedPortfolioId(remaining.length > 0 ? remaining[0].id : null)
 
     // Refresh subscription info
     try {
@@ -432,20 +432,20 @@ export const DashboardProvider = ({ children }) => {
       const isExisting = projects.some(p => p.id === project.id)
       if (isExisting) {
         const updated = await projectsClient.update(project.id, project)
-        // Ensure profile_id is included in the updated project
-        const updatedWithProfile = {
+        // Ensure portfolio_id is included in the updated project
+        const updatedWithPortfolio = {
           ...updated,
-          profile_id: updated.profile_id || project.profile_id || null
+          portfolio_id: updated.portfolio_id || project.portfolio_id || null
         }
-        setProjects(projects.map(p => p.id === project.id ? updatedWithProfile : p))
+        setProjects(projects.map(p => p.id === project.id ? updatedWithPortfolio : p))
       } else {
         const created = await projectsClient.create(project)
-        // Ensure profile_id is included in the created project
-        const createdWithProfile = {
+        // Ensure portfolio_id is included in the created project
+        const createdWithPortfolio = {
           ...created,
-          profile_id: created.profile_id || project.profile_id || null
+          portfolio_id: created.portfolio_id || project.portfolio_id || null
         }
-        setProjects([...projects, createdWithProfile])
+        setProjects([...projects, createdWithPortfolio])
       }
     } catch (err) {
       console.error('Failed to save project:', err)
@@ -484,22 +484,22 @@ export const DashboardProvider = ({ children }) => {
     setPublishError(null)
   }
 
-  const handleOpenManageProfilesModal = () => {
-    setIsManageProfilesModalOpen(true)
+  const handleOpenManagePortfoliosModal = () => {
+    setIsManagePortfoliosModalOpen(true)
   }
 
-  const handleCloseManageProfilesModal = () => {
-    setIsManageProfilesModalOpen(false)
+  const handleCloseManagePortfoliosModal = () => {
+    setIsManagePortfoliosModalOpen(false)
   }
 
-  const handleOpenProfileModal = (profile = null) => {
-    setEditingProfile(profile)
-    setIsProfileModalOpen(true)
+  const handleOpenPortfolioModal = (portfolio = null) => {
+    setEditingPortfolio(portfolio)
+    setIsPortfolioModalOpen(true)
   }
 
-  const handleCloseProfileModal = () => {
-    setIsProfileModalOpen(false)
-    setEditingProfile(null)
+  const handleClosePortfolioModal = () => {
+    setIsPortfolioModalOpen(false)
+    setEditingPortfolio(null)
   }
 
   const value = {
@@ -518,32 +518,32 @@ export const DashboardProvider = ({ children }) => {
       showCopied,
       error: publishError,
       handleCopyLink,
-      handlePublish: handlePublishProfile,
-      handleUnpublish: handleUnpublishProfile,
+      handlePublish: handlePublishPortfolio,
+      handleUnpublish: handleUnpublishPortfolio,
       openModal: handleOpenPublishModal,
       closeModal: handleClosePublishModal,
       isModalOpen: isPublishModalOpen,
       openUnpublishModal: handleOpenUnpublishModal,
       closeUnpublishModal: handleCloseUnpublishModal,
       isUnpublishModalOpen: isUnpublishModalOpen,
-      publishedProfileSlugs,
+      publishedPortfolioSlugs,
     },
-    profiles: {
-      list: userProfilesList,
-      selectedId: selectedProfileId,
-      editing: editingProfile,
-      canManage: subscriptionInfo?.can_add_profile ?? true,
+    portfolios: {
+      list: portfoliosList,
+      selectedId: selectedPortfolioId,
+      editing: editingPortfolio,
+      canManage: subscriptionInfo?.can_add_portfolio ?? true,
       subscriptionInfo,
-      handleCreate: handleCreateProfile,
-      handleUpdate: handleUpdateProfile,
-      handleDelete: handleDeleteProfile,
-      setSelectedId: setSelectedProfileId,
-      openManageModal: handleOpenManageProfilesModal,
-      closeManageModal: handleCloseManageProfilesModal,
-      isManageModalOpen: isManageProfilesModalOpen,
-      openProfileModal: handleOpenProfileModal,
-      closeProfileModal: handleCloseProfileModal,
-      isProfileModalOpen,
+      handleCreate: handleCreatePortfolio,
+      handleUpdate: handleUpdatePortfolio,
+      handleDelete: handleDeletePortfolio,
+      setSelectedId: setSelectedPortfolioId,
+      openManageModal: handleOpenManagePortfoliosModal,
+      closeManageModal: handleCloseManagePortfoliosModal,
+      isManageModalOpen: isManagePortfoliosModalOpen,
+      openPortfolioModal: handleOpenPortfolioModal,
+      closePortfolioModal: handleClosePortfolioModal,
+      isPortfolioModalOpen,
     },
     projects: {
       list: projects,
