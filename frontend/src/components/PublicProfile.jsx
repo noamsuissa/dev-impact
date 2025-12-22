@@ -119,10 +119,7 @@ const PublicProfile = () => {
         setError(null);
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        let url = `${apiUrl}/api/portfolios/${username}`;
-        if (portfolioSlug) {
-          url += `/${portfolioSlug}`;
-        }
+        const url = `${apiUrl}/api/portfolios/${username}/${portfolioSlug}`;
         
         const response = await fetch(url);
 
@@ -143,7 +140,7 @@ const PublicProfile = () => {
       }
     };
 
-    if (username) {
+    if (username && portfolioSlug) {
       fetchProfile();
     }
   }, [username, portfolioSlug]);

@@ -78,9 +78,9 @@ class PortfolioResponse(BaseModel):
     user: UserData
     portfolio: Optional[PortfolioData] = Field(None, alias="profile")
     projects: List[Project]
-    view_count: int = Field(..., alias="viewCount")
-    published_at: str = Field(..., alias="publishedAt")
-    updated_at: str = Field(..., alias="updatedAt")
+    view_count: int
+    published_at: str
+    updated_at: str
 
     class Config:
         populate_by_name = True

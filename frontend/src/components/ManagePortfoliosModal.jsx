@@ -9,7 +9,7 @@ const ManagePortfoliosModal = ({
   portfolios = [], 
   onDeletePortfolio, 
   onEditPortfolio,
-  publishedProfileSlugs = [],
+  publishedPortfolioSlugs = [],
   projects = []
 }) => {
   const [deletingPortfolio, setDeletingPortfolio] = useState(null);
@@ -58,7 +58,7 @@ const ManagePortfoliosModal = ({
               </div>
             ) : (
               portfolios.map((portfolio) => {
-                const isPublished = publishedProfileSlugs.includes(portfolio.slug);
+                const isPublished = publishedPortfolioSlugs.includes(portfolio.slug);
                 const projectCount = projects.filter(p => p.portfolio_id === portfolio.id).length;
 
                 return (
