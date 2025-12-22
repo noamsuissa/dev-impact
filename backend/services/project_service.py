@@ -587,17 +587,32 @@ class ProjectService:
             if not project_result.data:
                 raise HTTPException(status_code=404, detail="Project not found")
 
-            # Check user's total size limit (free plan)
-            max_size_mb = int(os.getenv("FREE_MAX_USER_EVIDENCE_SIZE_MB", "50"))
+            # Check user's total size limit based on subscription
+            # Get user's subscription type
+            profile_result = supabase.table("profiles")\
+                .select("subscription_type")\
+                .eq("id", user_id)\
+                .single()\
+                .execute()
+            
+            subscription_type = profile_result.data.get("subscription_type", "free") if profile_result.data else "free"
+            
+            # Set limit based on subscription
+            if subscription_type == "pro":
+                max_size_mb = int(os.getenv("PRO_MAX_USER_EVIDENCE_SIZE_MB", "5120"))
+            else:
+                max_size_mb = int(os.getenv("FREE_MAX_USER_EVIDENCE_SIZE_MB", "50"))
+            
             max_size_bytes = max_size_mb * 1024 * 1024
 
             current_total = await ProjectService.get_user_total_evidence_size(user_id)
             if current_total + file_size > max_size_bytes:
                 used_mb = current_total / (1024 * 1024)
                 max_mb = max_size_mb
+                plan_name = "Pro" if subscription_type == "pro" else "free"
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Upload would exceed free plan storage limit. Current: {used_mb:.2f} MB / {max_mb} MB across all projects"
+                    detail=f"Upload would exceed {plan_name} plan storage limit. Current: {used_mb:.2f} MB / {max_mb} MB across all projects"
                 )
 
             # Generate unique file path
@@ -741,8 +756,22 @@ class ProjectService:
             # Get total size across all projects
             total_size_bytes = await ProjectService.get_user_total_evidence_size(user_id)
             
-            # Get limit from environment
-            limit_mb = int(os.getenv("FREE_MAX_USER_EVIDENCE_SIZE_MB", "50"))
+            # Get user's subscription type
+            supabase = get_supabase_client()
+            profile_result = supabase.table("profiles")\
+                .select("subscription_type")\
+                .eq("id", user_id)\
+                .single()\
+                .execute()
+            
+            subscription_type = profile_result.data.get("subscription_type", "free") if profile_result.data else "free"
+            
+            # Set limit based on subscription
+            if subscription_type == "pro":
+                limit_mb = int(os.getenv("PRO_MAX_USER_EVIDENCE_SIZE_MB", "5120"))
+            else:
+                limit_mb = int(os.getenv("FREE_MAX_USER_EVIDENCE_SIZE_MB", "50"))
+            
             limit_bytes = limit_mb * 1024 * 1024
             
             # Calculate percentage

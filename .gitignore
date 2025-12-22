@@ -95,3 +95,5 @@ bun.lockb
 bun.lock
 bun.lockb
 .vercel
+
+.agent/

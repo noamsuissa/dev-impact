@@ -144,12 +144,18 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
       {(onEdit || onDelete) && (
         <div className="mt-2.5 ml-[4px] flex gap-2.5">
           {onEdit && (
-            <TerminalButton onClick={() => onEdit(project)}>
+            <TerminalButton onClick={(e) => {
+              e.stopPropagation(); // Prevent modal from opening
+              onEdit(project);
+            }}>
               [Edit]
             </TerminalButton>
           )}
           {onDelete && (
-            <TerminalButton onClick={() => onDelete(project.id)}>
+            <TerminalButton onClick={(e) => {
+              e.stopPropagation(); // Prevent modal from opening
+              onDelete(project.id);
+            }}>
               [Delete]
             </TerminalButton>
           )}

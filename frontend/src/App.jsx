@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
-import { user as userClient, projects as projectsClient, userProfiles } from './utils/client';
+import { useDashboard } from './hooks/useDashboard';
+import { user as userClient } from './utils/client';
+import { DashboardProvider } from './contexts/DashboardContext';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
@@ -48,212 +50,49 @@ const AuthRedirectHandler = () => {
 
 // Authenticated Layout Component
 // This component wraps all protected routes.
-// It is responsible for fetching the user profile and projects once authenticated.
+// It uses the user from AuthContext which includes the merged profile data.
 const AuthenticatedLayout = () => {
-  const [userProfile, setUserProfile] = useState(null);
-  const [projects, setProjects] = useState([]);
-  const [profiles, setProfiles] = useState([]);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const { user, updateUserProfile } = useAuth();
   const navigate = useNavigate();
 
-  // Load user profile
+  // Check if user has completed onboarding (has username)
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const data = await userClient.getProfile();
-        if (data) {
-          setUserProfile({
-            name: data.full_name,
-            username: data.username,
-            github: data.github_username ? {
-              username: data.github_username,
-              avatar_url: data.github_avatar_url
-            } : null
-          });
-        } else {
-          // No profile found -> Onboarding
-          // We can't navigate here if we are already on onboarding path, avoid loops
-          if (window.location.pathname !== '/onboarding') {
-            navigate('/onboarding');
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load profile:', err);
-        // If profile load fails, we assume onboarding is needed or error state
-        if (window.location.pathname !== '/onboarding') {
-          navigate('/onboarding');
-        }
-      } finally {
-        setIsLoadingProfile(false);
+    if (user && !user.username) {
+      // No username means onboarding not complete
+      if (window.location.pathname !== '/onboarding') {
+        navigate('/onboarding');
       }
-    };
-    loadProfile();
-  }, [navigate]);
-
-  // Load projects
-  useEffect(() => {
-    const loadProjects = async () => {
-      if (!userProfile) return;
-      try {
-        const data = await projectsClient.list();
-        setProjects(data || []);
-      } catch (err) {
-        console.error('Failed to load projects:', err);
-        setProjects([]);
-      }
-    };
-    loadProjects();
-  }, [userProfile]);
-
-  // Load profiles
-  useEffect(() => {
-    const loadProfiles = async () => {
-      if (!userProfile) return;
-      try {
-        const data = await userProfiles.list();
-        setProfiles(data || []);
-      } catch (err) {
-        console.error('Failed to load profiles:', err);
-        setProfiles([]);
-      }
-    };
-    loadProfiles();
-  }, [userProfile]);
+    }
+  }, [user, navigate]);
 
   const handleOnboardingComplete = async (userData) => {
     try {
       await userClient.completeOnboarding(userData);
-      setUserProfile(userData);
+      // Refresh the user profile in AuthContext
+      await updateUserProfile();
       navigate('/dashboard');
     } catch (err) {
       console.error('Failed to save profile:', err);
-      setUserProfile(userData);
+      // Still update the context even if save fails
+      await updateUserProfile();
     }
   };
 
-  const handleSaveProject = async (project) => {
-    try {
-      const isExisting = projects.some(p => p.id === project.id);
-      if (isExisting) {
-        const updated = await projectsClient.update(project.id, project);
-        // Ensure profile_id is included in the updated project
-        const updatedWithProfile = {
-          ...updated,
-          profile_id: updated.profile_id || project.profile_id || null
-        };
-        setProjects(projects.map(p => p.id === project.id ? updatedWithProfile : p));
-      } else {
-        const created = await projectsClient.create(project);
-        // Ensure profile_id is included in the created project
-        const createdWithProfile = {
-          ...created,
-          profile_id: created.profile_id || project.profile_id || null
-        };
-        setProjects([...projects, createdWithProfile]);
-      }
-    } catch (err) {
-      console.error('Failed to save project:', err);
-      alert('Failed to save project: ' + err.message);
-      throw err;
-    }
-  };
+  // Convert auth user to userProfile format for backward compatibility
+  const userProfile = user ? {
+    name: user.name,
+    username: user.username,
+    github: user.github
+  } : null;
 
-  const handleSaveProfile = async (profileData) => {
-    try {
-      const created = await userProfiles.create(profileData);
-      setProfiles([...profiles, created]);
-      return created;
-    } catch (err) {
-      console.error('Failed to save profile:', err);
-      throw err;
-    }
-  };
-
-  const handleUpdateProfile = async (profileId, profileData) => {
-    try {
-      const updated = await userProfiles.update(profileId, profileData);
-      setProfiles(profiles.map(p => p.id === profileId ? updated : p));
-      return updated;
-    } catch (err) {
-      console.error('Failed to update profile:', err);
-      throw err;
-    }
-  };
-
-  const handleDeleteProfile = async (profileId) => {
-    try {
-      await userProfiles.delete(profileId);
-      setProfiles(profiles.filter(p => p.id !== profileId));
-      // Also remove projects that belonged to this profile (backend already deleted them)
-      setProjects(projects.filter(p => p.profile_id !== profileId));
-    } catch (err) {
-      console.error('Failed to delete profile:', err);
-      throw err;
-    }
-  };
-
-  const handleProfileDeleted = (profileId) => {
-    // Called after profile is deleted to update projects state
-    // Projects are already deleted by backend, just filter them from state
-    setProjects(projects.filter(p => p.profile_id !== profileId));
-  };
-
-  const handleDeleteProject = async (id) => {
-    if (!confirm('Delete this project?')) return;
-    try {
-      await projectsClient.delete(id);
-      setProjects(projects.filter(p => p.id !== id));
-    } catch (err) {
-      console.error('Failed to delete project:', err);
-      alert('Failed to delete project: ' + err.message);
-    }
-  };
-
-  const handleGitHubConnect = async (githubData) => {
-    try {
-      await userClient.updateProfile({
-        github_username: githubData.username,
-        github_avatar_url: githubData.avatar_url
-      });
-      setUserProfile({
-        ...userProfile,
-        github: {
-          username: githubData.username,
-          avatar_url: githubData.avatar_url
-        }
-      });
-    } catch (err) {
-      console.error('Failed to save GitHub connection:', err);
-      alert('GitHub connected but failed to save. Please try again.');
-    }
-  };
-
-  if (isLoadingProfile) {
-    return (
-      <div className="min-h-screen bg-[#2d2d2d] flex items-center justify-center">
-        <div className="fade-in">
-          <div>&gt; Loading profile data...</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Pass props to children via Outlet context or cloneElement?
-  // React Router v6 Outlet context is cleaner.
+  // Wrap Outlet with DashboardProvider to provide dashboard state to all child routes
   return (
-    <Outlet context={{
-      userProfile,
-      projects,
-      profiles,
-      handleOnboardingComplete,
-      handleSaveProject,
-      handleDeleteProject,
-      handleSaveProfile,
-      handleUpdateProfile,
-      handleDeleteProfile,
-      handleProfileDeleted,
-      handleGitHubConnect
-    }} />
+    <DashboardProvider>
+      <Outlet context={{
+        userProfile,
+        handleOnboardingComplete
+      }} />
+    </DashboardProvider>
   );
 };
 
@@ -275,7 +114,7 @@ const OnboardingRoute = () => {
 }
 
 const DashboardRoute = () => {
-  const { userProfile, projects, handleDeleteProject, handleGitHubConnect, handleSaveProject, handleProfileDeleted } = useOutletContext();
+  const { userProfile } = useOutletContext();
   const navigate = useNavigate();
 
   // If no profile, redirect to onboarding (double check, though layout handles it too)
@@ -285,18 +124,12 @@ const DashboardRoute = () => {
 
   if (!userProfile) return null;
 
-  return <Dashboard
-    user={userProfile}
-    projects={projects}
-    onDeleteProject={handleDeleteProject}
-    onSaveProject={handleSaveProject}
-    onGitHubConnect={handleGitHubConnect}
-    onProfileDeleted={handleProfileDeleted}
-  />;
+  return <Dashboard />;
 }
 
 const ProjectBuilderRoute = () => {
-  const { userProfile, projects, profiles, handleSaveProject } = useOutletContext();
+  const { userProfile } = useOutletContext();
+  const { projects, profiles } = useDashboard();
   const navigate = useNavigate();
 
   if (!userProfile) {
@@ -304,30 +137,17 @@ const ProjectBuilderRoute = () => {
     return null;
   }
 
-  // Ensure profiles is an array
-  const profilesList = Array.isArray(profiles) ? profiles : [];
-
-  // Get selected profile ID from localStorage or use first profile
-  const getSelectedProfileId = () => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('selectedProfileId');
-      if (stored && profilesList.some(p => p.id === stored)) {
-        return stored;
-      }
-    }
-    return profilesList.length > 0 ? profilesList[0].id : null;
-  };
-
   return <ProjectBuilder
-    onSave={handleSaveProject}
-    projects={projects || []}
-    profiles={profilesList}
-    selectedProfileId={getSelectedProfileId()}
+    onSave={projects.save}
+    projects={projects.list}
+    profiles={profiles.list}
+    selectedProfileId={profiles.selectedId}
   />;
 }
 
 const ProfileViewRoute = () => {
-  const { userProfile, projects } = useOutletContext();
+  const { userProfile } = useOutletContext();
+  const { projects } = useDashboard();
   const navigate = useNavigate();
 
   if (!userProfile) {
@@ -335,11 +155,12 @@ const ProfileViewRoute = () => {
     return null;
   }
 
-  return <ProfileView user={userProfile} projects={projects} />;
+  return <ProfileView user={userProfile} projects={projects.list} />;
 }
 
 const ExportPageRoute = () => {
-  const { userProfile, projects } = useOutletContext();
+  const { userProfile } = useOutletContext();
+  const { projects } = useDashboard();
   const navigate = useNavigate();
 
   if (!userProfile) {
@@ -347,11 +168,12 @@ const ExportPageRoute = () => {
     return null;
   }
 
-  return <ExportPage user={userProfile} projects={projects} />;
+  return <ExportPage user={userProfile} projects={projects.list} />;
 }
 
 const AccountPageRoute = () => {
-  const { userProfile, projects } = useOutletContext();
+  const { userProfile } = useOutletContext();
+  const { projects } = useDashboard();
   const navigate = useNavigate();
 
   if (!userProfile) {
@@ -359,7 +181,7 @@ const AccountPageRoute = () => {
     return null;
   }
 
-  return <AccountPage user={userProfile} projects={projects} />;
+  return <AccountPage user={userProfile} projects={projects.list} />;
 }
 
 // Helper function to check if we're on a subdomain and extract username
