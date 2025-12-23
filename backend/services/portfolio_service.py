@@ -20,6 +20,7 @@ from backend.schemas.portfolio import (
     PortfolioData,
 )
 from backend.schemas.auth import MessageResponse
+from backend.schemas.subscription import SubscriptionInfoResponse
 
 # Load environment variables
 load_dotenv()
@@ -71,7 +72,7 @@ class PortfolioService:
     @staticmethod
     async def create_portfolio(
         client,
-        subscription_info: SubscriptionInfo,
+        subscription_info: SubscriptionInfoResponse,
         user_id: str,
         name: str,
         description: Optional[str] = None
