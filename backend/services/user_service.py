@@ -4,7 +4,6 @@ User Service - Handle user profile operations with Supabase
 import re
 from typing import Dict, Any
 from fastapi import HTTPException
-from backend.utils.auth_utils import get_supabase_client
 from backend.schemas.user import UserProfile, CheckUsernameResponse
 from backend.schemas.auth import MessageResponse
 from backend.services.stripe_service import StripeService
@@ -13,20 +12,19 @@ class UserService:
     """Service for handling user profile operations."""
 
     @staticmethod
-    async def get_profile(user_id: str) -> UserProfile:
+    async def get_profile(client, user_id: str) -> UserProfile:
         """
         Get user profile by ID
         
         Args:
+            client: Supabase client (injected from router)
             user_id: User's ID
             
         Returns:
             UserProfile containing user profile data
         """
         try:
-            supabase = get_supabase_client()
-            
-            result = supabase.table("profiles")\
+            result = client.table("profiles")\
                 .select("*")\
                 .eq("id", user_id)\
                 .single()\
@@ -52,11 +50,12 @@ class UserService:
             raise HTTPException(status_code=500, detail="Failed to fetch profile")
 
     @staticmethod
-    async def update_profile(user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
+    async def update_profile(client, user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
         """
         Update user profile
         
         Args:
+            client: Supabase client (injected from router)
             user_id: User's ID
             profile_data: Profile data to update
             
@@ -64,16 +63,15 @@ class UserService:
             UserProfile containing updated profile data
         """
         try:
-            supabase = get_supabase_client()
             
             # Prepare update data (only include non-None values)
             update_data = {k: v for k, v in profile_data.items() if v is not None}
             
             if not update_data:
                 # If no data to update, just return current profile
-                return await UserService.get_profile(user_id)
+                return await UserService.get_profile(client, user_id)
             
-            result = supabase.table("profiles")\
+            result = client.table("profiles")\
                 .update(update_data)\
                 .eq("id", user_id)\
                 .execute()
@@ -98,11 +96,12 @@ class UserService:
             raise HTTPException(status_code=500, detail="Failed to update profile")
 
     @staticmethod
-    async def create_or_update_profile(user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
+    async def create_or_update_profile(client, user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
         """
         Create or update user profile (for onboarding)
         
         Args:
+            client: Supabase client (injected from router)
             user_id: User's ID
             profile_data: Profile data
             
@@ -110,7 +109,6 @@ class UserService:
             UserProfile containing profile data
         """
         try:
-            supabase = get_supabase_client()
             
             # Prepare upsert data
             upsert_data = {
@@ -125,7 +123,7 @@ class UserService:
                 username = "".join(c for c in username if c.isalnum() or c == "-")
                 upsert_data["username"] = username
             
-            result = supabase.table("profiles")\
+            result = client.table("profiles")\
                 .upsert(upsert_data)\
                 .execute()
             
@@ -149,11 +147,12 @@ class UserService:
             raise HTTPException(status_code=500, detail="Failed to create/update profile")
 
     @staticmethod
-    async def delete_account(user_id: str) -> MessageResponse:
+    async def delete_account(client, user_id: str) -> MessageResponse:
         """
         Delete user account (profile and auth user)
         
         Args:
+            client: Supabase client (injected from router)
             user_id: User's ID
             
         Returns:
@@ -166,17 +165,15 @@ class UserService:
             except Exception as e:
                 # Log but continue - user might not have a subscription
                 print(f"Subscription cancellation check during account delete: {e}")
-
-            supabase = get_supabase_client()
             
             # 2. Delete profile (this will cascade delete related data if FK constraints are set)
-            supabase.table("profiles")\
+            client.table("profiles")\
                 .delete()\
                 .eq("id", user_id)\
                 .execute()
             
             # 3. Delete auth user using Admin API
-            supabase.auth.admin.delete_user(user_id)
+            client.auth.admin.delete_user(user_id)
             
             return MessageResponse(
                 success=True,
@@ -198,11 +195,12 @@ class UserService:
         return bool(re.match(pattern, username))
 
     @staticmethod
-    async def check_username(username: str) -> CheckUsernameResponse:
+    async def check_username(client, username: str) -> CheckUsernameResponse:
         """
         Check if a username is available for publishing portfolios
         
         Args:
+            client: Supabase client (injected from router)
             username: The username to check
             
         Returns:
@@ -215,11 +213,9 @@ class UserService:
                     valid=False,
                     message="Username must be 3-50 characters, lowercase letters, numbers, and hyphens only"
                 )
-        
-            supabase = get_supabase_client()
             
             # Use RPC call to check availability (checks format, reserved names, and existing profiles)
-            result = supabase.rpc("is_username_available", {"desired_username": username}).execute()
+            result = client.rpc("is_username_available", {"desired_username": username}).execute()
             
             available = result.data
             
