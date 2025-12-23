@@ -6,7 +6,6 @@ import stripe
 from typing import Dict, Any
 from datetime import datetime, timezone
 from fastapi import HTTPException
-from backend.utils import auth_utils
 
 class StripeService:
     """Service for handling Stripe operations"""
@@ -46,25 +45,23 @@ class StripeService:
     
     @staticmethod
     async def create_checkout_session(
+        client,
         user_id: str,
         user_email: str,
         success_url: str,
-        cancel_url: str,
-        auth_token: str
+        cancel_url: str
     ) -> Dict[str, Any]:
         """
         Create a Stripe Checkout session for Pro plan subscription
         
         Args:
+            client: Supabase client (injected from router)
             user_id: The authenticated user's ID
             user_email: User's email address
             success_url: URL to redirect to after successful payment
             cancel_url: URL to redirect to if user cancels
-            auth_token: Authorization token for Supabase client
             
         Returns:
-
-
             Dictionary with checkout_url and session_id
             
         Raises:
@@ -77,8 +74,7 @@ class StripeService:
             # Check for existing Stripe customer ID in database
             stripe_customer_id = None
             try:
-                supabase = auth_utils.get_supabase_client(auth_token)
-                profile_response = supabase.table("profiles") \
+                profile_response = client.table("profiles") \
                     .select("stripe_customer_id") \
                     .eq("id", user_id) \
                     .single() \
@@ -162,11 +158,12 @@ class StripeService:
             )
 
     @staticmethod
-    async def handle_webhook_event(payload: bytes, sig_header: str) -> None:
+    async def handle_webhook_event(client, payload: bytes, sig_header: str) -> None:
         """
         Handle Stripe webhook events
         
         Args:
+            client: Supabase client (injected from router)
             payload: Raw request body
             sig_header: Stripe signature header
             
@@ -193,10 +190,10 @@ class StripeService:
             # Handle the event
             if event["type"] == "checkout.session.completed":
                 session = event["data"]["object"]
-                await StripeService._handle_checkout_completed(session)
+                await StripeService._handle_checkout_completed(client, session)
             elif event["type"] in ["customer.subscription.updated", "customer.subscription.deleted", "customer.subscription.created"]:
                 subscription = event["data"]["object"]
-                await StripeService._handle_subscription_updated(subscription)
+                await StripeService._handle_subscription_updated(client, subscription)
         except HTTPException:
             # Re-raise our own HTTPExceptions (from config validation)
             raise
@@ -205,29 +202,35 @@ class StripeService:
             raise HTTPException(status_code=500, detail="Internal server error")
 
     @staticmethod
-    async def _handle_checkout_completed(session: Dict[str, Any]) -> None:
+    async def _handle_checkout_completed(client, session: Dict[str, Any]) -> None:
         """
         Handle successful checkout session
         
         Extracts user ID and customer ID to update the profile.
+        
+        Args:
+            client: Supabase client (injected from caller)
+            session: Stripe checkout session data
         """
         user_id = session.get("client_reference_id")
         customer_id = session.get("customer")
         
         if user_id and customer_id:
-            await StripeService._update_customer_id(user_id, customer_id)
-            await StripeService._update_subscription_type(user_id, "pro")
+            await StripeService._update_customer_id(client, user_id, customer_id)
+            await StripeService._update_subscription_type(client, user_id, "pro")
 
     @staticmethod
-    async def _update_customer_id(user_id: str, customer_id: str) -> None:
+    async def _update_customer_id(client, user_id: str, customer_id: str) -> None:
         """
         Update user profile with Stripe Customer ID
+        
+        Args:
+            client: Supabase client (injected from caller)
+            user_id: User's ID
+            customer_id: Stripe customer ID
         """
         try:
-            # Get admin client (uses Service Role Key from env)
-            supabase = auth_utils.get_supabase_client()
-            
-            supabase.table("profiles").update({
+            client.table("profiles").update({
                 "stripe_customer_id": customer_id
             }).eq("id", user_id).execute()
             
@@ -238,15 +241,17 @@ class StripeService:
             # Don't raise here to avoid failing the webhook response to Stripe
 
     @staticmethod
-    async def _update_subscription_type(user_id: str, subscription_type: str) -> None:
+    async def _update_subscription_type(client, user_id: str, subscription_type: str) -> None:
         """
         Update user profile with subscription type
+        
+        Args:
+            client: Supabase client (injected from caller)
+            user_id: User's ID
+            subscription_type: Subscription type
         """
         try:
-            # Get admin client (uses Service Role Key from env)
-            supabase = auth_utils.get_supabase_client()
-            
-            supabase.table("profiles").update({
+            client.table("profiles").update({
                 "subscription_type": subscription_type
             }).eq("id", user_id).execute()
             
@@ -258,9 +263,13 @@ class StripeService:
 
 
     @staticmethod
-    async def _handle_subscription_updated(subscription: Dict[str, Any]) -> None:
+    async def _handle_subscription_updated(client, subscription: Dict[str, Any]) -> None:
         """
         Handle subscription updates (created, updated, deleted)
+        
+        Args:
+            client: Supabase client (injected from caller)
+            subscription: Stripe subscription data
         """
         try:
             customer_id = subscription.get("customer")
@@ -277,8 +286,7 @@ class StripeService:
             subscription_type = "pro" if status in ["active", "trialing"] else "free"
 
             # Find user by stripe_customer_id
-            supabase = auth_utils.get_supabase_client()
-            response = supabase.table("profiles").select("id").eq("stripe_customer_id", customer_id).execute()
+            response = client.table("profiles").select("id").eq("stripe_customer_id", customer_id).execute()
             
             if response.data:
                 for user in response.data:
@@ -292,7 +300,7 @@ class StripeService:
                     if current_period_end:
                          update_data["current_period_end"] = current_period_end.isoformat()
                     
-                    supabase.table("profiles").update(update_data).eq("id", user_id).execute()
+                    client.table("profiles").update(update_data).eq("id", user_id).execute()
                     print(f"Updated subscription status for user {user_id}: {status}")
             else:
                 print(f"No user found for Stripe customer {customer_id}")
@@ -302,11 +310,12 @@ class StripeService:
             # Don't raise, just log
 
     @staticmethod
-    async def cancel_subscription(user_id: str) -> None:
+    async def cancel_subscription(client, user_id: str) -> None:
         """
         Cancel a user's subscription (at period end)
         
         Args:
+            client: Supabase client (injected from router)
             user_id: The user's ID
             
         Raises:
@@ -317,8 +326,7 @@ class StripeService:
             stripe.api_key = config["secret_key"]
             
             # Get customer ID
-            supabase = auth_utils.get_supabase_client()
-            profile_response = supabase.table("profiles") \
+            profile_response = client.table("profiles") \
                 .select("stripe_customer_id") \
                 .eq("id", user_id) \
                 .single() \
@@ -354,7 +362,7 @@ class StripeService:
             current_period_end_ts = updated_subscription.get("current_period_end")
             current_period_end = datetime.fromtimestamp(current_period_end_ts, timezone.utc) if current_period_end_ts else None
             
-            supabase.table("profiles").update({
+            client.table("profiles").update({
                 "cancel_at_period_end": True,
                 "current_period_end": current_period_end.isoformat() if current_period_end else None,
                 "subscription_status": updated_subscription.get("status")
