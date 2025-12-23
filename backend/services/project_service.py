@@ -6,7 +6,6 @@ import json
 from typing import List, Dict, Any, Optional, Union
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from backend.utils.auth_utils import get_supabase_client
 from backend.schemas.project import (
     Project,
     ProjectMetric,
@@ -70,11 +69,12 @@ class ProjectService:
         )
 
     @staticmethod
-    async def list_projects(user_id: str, portfolio_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
+    async def list_projects(client, user_id: str, portfolio_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
         """
         List all projects for a user, optionally filtered by profile
         
         Args:
+            client: Supabase client (injected from router)
             user_id: User's ID
             portfolio_id: Optional profile ID to filter projects
             include_evidence: Whether to include evidence data
@@ -83,9 +83,7 @@ class ProjectService:
             List of projects with metrics and optional evidence
         """
         try:
-            supabase = get_supabase_client()
-            
-            query = supabase.table("impact_projects")\
+            query = client.table("impact_projects")\
                 .select("*, metrics:project_metrics(*)")\
                 .eq("user_id", user_id)
             
@@ -99,7 +97,7 @@ class ProjectService:
             evidence_map = {}
             if include_evidence and result.data:
                 project_ids = [p["id"] for p in result.data]
-                evidence_result = supabase.table("project_evidence")\
+                evidence_result = client.table("project_evidence")\
                     .select("*")\
                     .in_("project_id", project_ids)\
                     .order("display_order")\
@@ -167,11 +165,12 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to fetch projects")
 
     @staticmethod
-    async def get_project(project_id: str, user_id: str) -> Project:
+    async def get_project(client, project_id: str, user_id: str) -> Project:
         """
         Get a single project
         
         Args:
+            client: Supabase client (injected from router)
             project_id: Project ID
             user_id: User's ID (for authorization)
             
@@ -179,9 +178,7 @@ class ProjectService:
             Project data with metrics
         """
         try:
-            supabase = get_supabase_client()
-            
-            result = supabase.table("impact_projects")\
+            result = client.table("impact_projects")\
                 .select("*, metrics:project_metrics(*)")\
                 .eq("id", project_id)\
                 .eq("user_id", user_id)\
@@ -203,7 +200,7 @@ class ProjectService:
                 ]
             
             # Get evidence for this project
-            evidence_list = await ProjectService.list_project_evidence(project_id, user_id)
+            evidence_list = await ProjectService.list_project_evidence(client, project_id, user_id)
             
             project_data = Project(
                 id=project["id"],
@@ -227,11 +224,12 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to fetch project")
 
     @staticmethod
-    async def create_project(user_id: str, project_data: Dict[str, Any]) -> Project:
+    async def create_project(client, user_id: str, project_data: Dict[str, Any]) -> Project:
         """
         Create a new project
         
         Args:
+            client: Supabase client (injected from router)
             user_id: User's ID
             project_data: Project data (may include portfolio_id)
             
@@ -239,13 +237,11 @@ class ProjectService:
             Created project
         """
         try:
-            supabase = get_supabase_client()
-            
             # Extract portfolio_id if provided
             portfolio_id = project_data.pop("portfolio_id", None)
             
             # Get current project count for display_order (within profile if specified)
-            count_query = supabase.table("impact_projects")\
+            count_query = client.table("impact_projects")\
                 .select("id", count="exact")\
                 .eq("user_id", user_id)
             
@@ -276,7 +272,7 @@ class ProjectService:
             if portfolio_id:
                 project_insert["portfolio_id"] = portfolio_id
             
-            project_result = supabase.table("impact_projects")\
+            project_result = client.table("impact_projects")\
                 .insert(project_insert)\
                 .execute()
             
@@ -319,7 +315,7 @@ class ProjectService:
                             "metric_data": None
                         })
                 
-                supabase.table("project_metrics")\
+                client.table("project_metrics")\
                     .insert(metrics_insert)\
                     .execute()
             
@@ -345,11 +341,12 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to create project")
 
     @staticmethod
-    async def update_project(project_id: str, user_id: str, project_data: Dict[str, Any]) -> Project:
+    async def update_project(client, project_id: str, user_id: str, project_data: Dict[str, Any]) -> Project:
         """
         Update a project
         
         Args:
+            client: Supabase client (injected from router)
             project_id: Project ID
             user_id: User's ID (for authorization)
             project_data: Project data to update
@@ -358,7 +355,6 @@ class ProjectService:
             Updated project
         """
         try:
-            supabase = get_supabase_client()
             
             # Extract metrics if provided
             metrics = project_data.pop("metrics", None)
@@ -387,7 +383,7 @@ class ProjectService:
             
             # Update project if there's data to update
             if update_data:
-                project_result = supabase.table("impact_projects")\
+                project_result = client.table("impact_projects")\
                     .update(update_data)\
                     .eq("id", project_id)\
                     .eq("user_id", user_id)\
@@ -402,7 +398,7 @@ class ProjectService:
             # Update metrics if provided
             if metrics is not None:
                 # Delete old metrics
-                supabase.table("project_metrics")\
+                client.table("project_metrics")\
                     .delete()\
                     .eq("project_id", project_id)\
                     .execute()
@@ -437,12 +433,12 @@ class ProjectService:
                                 "metric_data": None
                             })
                     
-                    supabase.table("project_metrics")\
+                    client.table("project_metrics")\
                         .insert(metrics_insert)\
                         .execute()
             
             # Fetch and return updated project
-            return await ProjectService.get_project(project_id, user_id)
+            return await ProjectService.get_project(client, project_id, user_id)
         except HTTPException:
             raise
         except Exception as e:
@@ -450,11 +446,12 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to update project")
 
     @staticmethod
-    async def delete_project(project_id: str, user_id: str) -> MessageResponse:
+    async def delete_project(client, project_id: str, user_id: str) -> MessageResponse:
         """
         Delete a project
         
         Args:
+            client: Supabase client (injected from router)
             project_id: Project ID
             user_id: User's ID (for authorization)
             
@@ -462,10 +459,8 @@ class ProjectService:
             MessageResponse with success status
         """
         try:
-            supabase = get_supabase_client()
-            
             # Delete project (metrics will be cascade deleted if FK is set up correctly)
-            result = supabase.table("impact_projects")\
+            result = client.table("impact_projects")\
                 .delete()\
                 .eq("id", project_id)\
                 .eq("user_id", user_id)\
@@ -485,21 +480,20 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to delete project")
 
     @staticmethod
-    async def get_user_total_evidence_size(user_id: str) -> int:
+    async def get_user_total_evidence_size(client, user_id: str) -> int:
         """
         Get total size of all evidence for a user across all projects
         
         Args:
+            client: Supabase client (injected from router)
             user_id: User's ID
             
         Returns:
             Total size in bytes
         """
         try:
-            supabase = get_supabase_client()
-            
             # Get all projects for user
-            projects_result = supabase.table("impact_projects")\
+            projects_result = client.table("impact_projects")\
                 .select("id")\
                 .eq("user_id", user_id)\
                 .execute()
@@ -510,7 +504,7 @@ class ProjectService:
             project_ids = [p["id"] for p in projects_result.data]
             
             # Get sum of file sizes for all evidence
-            evidence_result = supabase.table("project_evidence")\
+            evidence_result = client.table("project_evidence")\
                 .select("file_size")\
                 .in_("project_id", project_ids)\
                 .execute()
@@ -524,11 +518,12 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to calculate total evidence size")
 
     @staticmethod
-    async def list_project_evidence(project_id: str, user_id: Optional[str] = None) -> List[ProjectEvidence]:
+    async def list_project_evidence(client, project_id: str, user_id: Optional[str] = None) -> List[ProjectEvidence]:
         """
         List all evidence for a project
         
         Args:
+            client: Supabase client (injected from router)
             project_id: Project ID
             user_id: User's ID (for authorization) or None for public access check
             
@@ -536,10 +531,8 @@ class ProjectService:
             List of evidence items
         """
         try:
-            supabase = get_supabase_client()
-            
             # Fetch project details to determine access
-            proj_query = supabase.table("impact_projects")\
+            proj_query = client.table("impact_projects")\
                 .select("user_id, portfolio_id")\
                 .eq("id", project_id)\
                 .single()
@@ -563,7 +556,7 @@ class ProjectService:
             # 2. Access granted if project is published (skip if already granted)
             if not has_access:
                 # Check published_profiles
-                pub_query = supabase.table("published_profiles")\
+                pub_query = client.table("published_profiles")\
                     .select("id")\
                     .eq("is_published", True)
                 
@@ -581,7 +574,7 @@ class ProjectService:
             if not has_access:
                 raise HTTPException(status_code=404, detail="Project not found or access denied")
             
-            return await ProjectService._fetch_evidence_list(supabase, project_id)
+            return await ProjectService._fetch_evidence_list(client, project_id)
         except HTTPException:
             raise
         except Exception as e:
@@ -589,13 +582,20 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to fetch evidence")
 
     @staticmethod
-    async def _fetch_evidence_list(supabase, project_id: str) -> List[ProjectEvidence]:
+    async def _fetch_evidence_list(client, project_id: str) -> List[ProjectEvidence]:
         """
         Fetch evidence list for a project
+        
+        Args:
+            client: Supabase client (injected from router)
+            project_id: Project ID
+            
+        Returns:
+            List of evidence items
         """
         try:
             # Get evidence
-            evidence_result = supabase.table("project_evidence")\
+            evidence_result = client.table("project_evidence")\
                 .select("*")\
                 .eq("project_id", project_id)\
                 .order("display_order")\
@@ -634,6 +634,7 @@ class ProjectService:
 
     @staticmethod
     async def upload_evidence_file(
+        client,
         project_id: str,
         user_id: str,
         file_name: str,
@@ -643,6 +644,18 @@ class ProjectService:
     ) -> ProjectEvidence:
         """
         Upload evidence file to Supabase storage and create evidence record.
+        
+        Args:
+            client: Supabase client (injected from router)
+            project_id: Project ID
+            user_id: User's ID (for authorization)
+            file_name: Name of the file
+            mime_type: MIME type of the file
+            file_size: Size of the file in bytes
+            file_content: Binary content of the file
+            
+        Returns:
+            ProjectEvidence with the uploaded file details
         """
         try:
             # Validate mime type is image
@@ -650,8 +663,7 @@ class ProjectService:
                 raise HTTPException(status_code=400, detail="Only image files are allowed")
 
             # Verify project ownership
-            supabase = get_supabase_client()
-            project_result = supabase.table("impact_projects")\
+            project_result = client.table("impact_projects")\
                 .select("id")\
                 .eq("id", project_id)\
                 .eq("user_id", user_id)\
@@ -663,7 +675,7 @@ class ProjectService:
 
             # Check user's total size limit based on subscription
             # Get user's subscription type
-            profile_result = supabase.table("profiles")\
+            profile_result = client.table("profiles")\
                 .select("subscription_type")\
                 .eq("id", user_id)\
                 .single()\
@@ -679,7 +691,7 @@ class ProjectService:
             
             max_size_bytes = max_size_mb * 1024 * 1024
 
-            current_total = await ProjectService.get_user_total_evidence_size(user_id)
+            current_total = await ProjectService.get_user_total_evidence_size(client, user_id)
             if current_total + file_size > max_size_bytes:
                 used_mb = current_total / (1024 * 1024)
                 max_mb = max_size_mb
@@ -696,7 +708,7 @@ class ProjectService:
 
             # Upload file to Supabase storage
             try:
-                supabase.storage.from_("project-evidence").upload(
+                client.storage.from_("project-evidence").upload(
                     file_path,
                     file_content,
                     file_options={
@@ -709,7 +721,7 @@ class ProjectService:
                 raise HTTPException(status_code=500, detail="Failed to upload file to storage")
 
             # Get current max display_order for this project
-            existing_evidence = supabase.table("project_evidence")\
+            existing_evidence = client.table("project_evidence")\
                 .select("display_order")\
                 .eq("project_id", project_id)\
                 .order("display_order", desc=True)\
@@ -731,7 +743,7 @@ class ProjectService:
                 "display_order": display_order
             }
 
-            evidence_result = supabase.table("project_evidence")\
+            evidence_result = client.table("project_evidence")\
                 .insert(evidence_insert)\
                 .execute()
 
@@ -765,11 +777,12 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to upload evidence file")
 
     @staticmethod
-    async def delete_evidence(evidence_id: str, user_id: str) -> MessageResponse:
+    async def delete_evidence(client, evidence_id: str, user_id: str) -> MessageResponse:
         """
         Delete evidence record and file from storage
         
         Args:
+            client: Supabase client (injected from router)
             evidence_id: Evidence ID
             user_id: User's ID (for authorization)
             
@@ -777,10 +790,8 @@ class ProjectService:
             MessageResponse with success status
         """
         try:
-            supabase = get_supabase_client()
-            
             # Get evidence with project info to verify ownership
-            evidence_result = supabase.table("project_evidence")\
+            evidence_result = client.table("project_evidence")\
                 .select("*, impact_projects!inner(user_id)")\
                 .eq("id", evidence_id)\
                 .eq("impact_projects.user_id", user_id)\
@@ -795,12 +806,12 @@ class ProjectService:
             
             # Delete file from storage
             try:
-                supabase.storage.from_("project-evidence").remove([file_path])
+                client.storage.from_("project-evidence").remove([file_path])
             except Exception as storage_error:
                 print(f"Storage delete error (continuing with DB delete): {storage_error}")
             
             # Delete evidence record
-            delete_result = supabase.table("project_evidence")\
+            delete_result = client.table("project_evidence")\
                 .delete()\
                 .eq("id", evidence_id)\
                 .execute()
@@ -816,11 +827,12 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to delete evidence")
 
     @staticmethod
-    async def get_evidence_stats(user_id: str) -> dict:
+    async def get_evidence_stats(client, user_id: str) -> dict:
         """
         Get evidence storage statistics for a user
         
         Args:
+            client: Supabase client (injected from router)
             user_id: User's ID
             
         Returns:
@@ -828,11 +840,10 @@ class ProjectService:
         """
         try:
             # Get total size across all projects
-            total_size_bytes = await ProjectService.get_user_total_evidence_size(user_id)
+            total_size_bytes = await ProjectService.get_user_total_evidence_size(client, user_id)
             
             # Get user's subscription type
-            supabase = get_supabase_client()
-            profile_result = supabase.table("profiles")\
+            profile_result = client.table("profiles")\
                 .select("subscription_type")\
                 .eq("id", user_id)\
                 .single()\

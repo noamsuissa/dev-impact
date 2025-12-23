@@ -9,7 +9,6 @@ from supabase import create_client
 import jwt
 import httpx
 import traceback
-from backend.utils import auth_utils
 from backend.schemas.auth import (
     AuthResponse,
     UserResponse,
@@ -26,11 +25,12 @@ class AuthService:
     """Service for handling authentication operations with Supabase."""    
 
     @staticmethod
-    async def sign_up(email: str, password: str) -> AuthResponse:
+    async def sign_up(client, email: str, password: str) -> AuthResponse:
         """
         Sign up a new user
         
         Args:
+            client: Supabase client (injected from router)
             email: User's email
             password: User's password
             
@@ -38,8 +38,6 @@ class AuthService:
             AuthResponse containing user and session data
         """
         try:
-            supabase = auth_utils.get_supabase_client()
-            
             # Get redirect URL from environment (fallback to localhost for dev)
             redirect_url = os.getenv("AUTH_REDIRECT_URL", "http://localhost:5173")
             
@@ -47,7 +45,7 @@ class AuthService:
                 "email_redirect_to": redirect_url
             }
             
-            response = supabase.auth.sign_up({
+            response = client.auth.sign_up({
                 "email": email,
                 "password": password,
                 "options": options
@@ -76,11 +74,12 @@ class AuthService:
             raise HTTPException(status_code=400, detail=f"Sign up error: {e}")
 
     @staticmethod
-    async def sign_in(email: str, password: str, mfa_challenge_id: Optional[str] = None, mfa_code: Optional[str] = None, mfa_factor_id: Optional[str] = None) -> AuthResponse:
+    async def sign_in(client, email: str, password: str, mfa_challenge_id: Optional[str] = None, mfa_code: Optional[str] = None, mfa_factor_id: Optional[str] = None) -> AuthResponse:
         """
         Sign in an existing user
         
         Args:
+            client: Supabase client (injected from router)
             email: User's email
             password: User's password
             mfa_challenge_id: MFA challenge ID if verifying MFA code
@@ -91,15 +90,13 @@ class AuthService:
             AuthResponse containing user and session data, or MFA challenge info
         """
         try:
-            supabase = auth_utils.get_supabase_client()
-            
             # If MFA challenge ID and code provided, verify MFA
             if mfa_challenge_id and mfa_code:
                 if not mfa_factor_id:
                     raise HTTPException(status_code=400, detail="Factor ID is required for MFA verification")
                 
                 # First sign in with password to get a session token
-                password_response = supabase.auth.sign_in_with_password({
+                password_response = client.auth.sign_in_with_password({
                     "email": email,
                     "password": password
                 })
@@ -136,7 +133,7 @@ class AuthService:
                             raise HTTPException(status_code=401, detail="Invalid MFA code")
                         
                         # After successful verification, refresh the session to get AAL2 tokens
-                        session_response = supabase.auth.refresh_session(password_response.session.refresh_token)
+                        session_response = client.auth.refresh_session(password_response.session.refresh_token)
                         
                         if session_response.user is None or session_response.session is None:
                             raise HTTPException(status_code=401, detail="Failed to complete MFA verification")
@@ -162,7 +159,7 @@ class AuthService:
                     raise HTTPException(status_code=401, detail="Invalid MFA code")
             
             # Initial sign in with password
-            response = supabase.auth.sign_in_with_password({
+            response = client.auth.sign_in_with_password({
                 "email": email,
                 "password": password
             })
@@ -350,21 +347,21 @@ class AuthService:
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
     @staticmethod
-    async def sign_out(access_token: str) -> MessageResponse:
+    async def sign_out(client, access_token: str) -> MessageResponse:
         """
         Sign out a user
         
         Args:
+            client: Supabase client (injected from router)
             access_token: User's access token
             
         Returns:
             MessageResponse with success status
         """
         try:
-            supabase = auth_utils.get_supabase_client()
             # Set the user's session
-            supabase.postgrest.auth(access_token)
-            supabase.auth.sign_out()
+            client.postgrest.auth(access_token)
+            client.auth.sign_out()
             
             return MessageResponse(success=True, message="Signed out successfully")
         except Exception as e:
@@ -373,23 +370,22 @@ class AuthService:
             return MessageResponse(success=True, message="Signed out")
 
     @staticmethod
-    async def reset_password_email(email: str) -> MessageResponse:
+    async def reset_password_email(client, email: str) -> MessageResponse:
         """
         Send password reset email
         
         Args:
+            client: Supabase client (injected from router)
             email: User's email
             
         Returns:
             MessageResponse with success status
         """
         try:
-            supabase = auth_utils.get_supabase_client()
-            
             # Get redirect URL from environment (fallback to localhost for dev)
             redirect_url = os.getenv("AUTH_REDIRECT_URL", "http://localhost:5173")
             
-            supabase.auth.reset_password_email(
+            client.auth.reset_password_email(
                 email,
                 options={
                     "redirect_to": redirect_url

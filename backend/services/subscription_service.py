@@ -4,7 +4,6 @@ Subscription Service - Handle subscription operations
 from typing import Optional
 from fastapi import HTTPException
 from backend.schemas.subscription import SubscriptionInfoResponse
-from backend.utils.auth_utils import get_supabase_client
 from backend.schemas.auth import MessageResponse
 from backend.services.stripe_service import StripeService
 
@@ -13,24 +12,22 @@ class SubscriptionService:
     
     @staticmethod
     async def get_subscription_info(
-        user_id: str,
-        token: Optional[str] = None
+        client,
+        user_id: str
     ) -> SubscriptionInfoResponse:
         """
         Get user's subscription information and portfolio limits
         
         Args:
+            client: Supabase client (injected from router)
             user_id: The user's ID
-            token: Optional user token for auth
             
         Returns:
             SubscriptionInfoResponse with subscription_type, portfolio_count, max_portfolios, can_add_portfolio
         """
         try:
-            supabase = get_supabase_client(access_token=token)
-            
             # Get user's subscription type from profiles table
-            profile_result = supabase.table("profiles")\
+            profile_result = client.table("profiles")\
                 .select("subscription_type, subscription_status, cancel_at_period_end, current_period_end")\
                 .eq("id", user_id)\
                 .single()\
@@ -40,7 +37,7 @@ class SubscriptionService:
             subscription_type = data.get("subscription_type", "free")
             
             # Count existing portfolios
-            count_result = supabase.table("portfolios")\
+            count_result = client.table("portfolios")\
                 .select("id", count="exact")\
                 .eq("user_id", user_id)\
                 .execute()
@@ -67,18 +64,19 @@ class SubscriptionService:
             raise HTTPException(status_code=500, detail="Failed to get subscription info")
 
     @staticmethod
-    async def cancel_subscription(user_id: str) -> MessageResponse:
+    async def cancel_subscription(client, user_id: str) -> MessageResponse:
         """
         Cancel user's subscription
         
         Args:
+            client: Supabase client (injected from router)
             user_id: The user's ID
             
         Returns:
             MessageResponse indicating success
         """
         try:
-            await StripeService.cancel_subscription(user_id)
+            await StripeService.cancel_subscription(client, user_id)
             return MessageResponse(
                 success=True,
                 message="Subscription has been scheduled for cancellation at the end of the billing period"

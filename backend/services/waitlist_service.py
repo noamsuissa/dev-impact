@@ -3,7 +3,6 @@ Waitlist Service - Handle waitlist operations
 """
 from typing import Optional
 from fastapi import HTTPException
-from backend.utils.auth_utils import get_supabase_client
 from backend.schemas.waitlist import WaitlistEntry, WaitlistResponse
 from backend.services.email_service import EmailService
 import logging
@@ -15,11 +14,12 @@ class WaitlistService:
     """Service for handling waitlist operations"""
     
     @staticmethod
-    async def signup(email: str, name: Optional[str] = None) -> WaitlistResponse:
+    async def signup(client, email: str, name: Optional[str] = None) -> WaitlistResponse:
         """
         Add a user to the waitlist and send confirmation email
         
         Args:
+            client: Supabase client (injected from router)
             email: User's email address
             name: Optional user's name
             
@@ -27,10 +27,8 @@ class WaitlistService:
             WaitlistResponse with success status and entry data
         """
         try:
-            supabase = get_supabase_client()
-            
             # Check if email already exists
-            existing = supabase.table("waitlist")\
+            existing = client.table("waitlist")\
                 .select("*")\
                 .eq("email", email.lower().strip())\
                 .execute()
@@ -50,7 +48,7 @@ class WaitlistService:
                 "name": name.strip() if name and name.strip() else None
             }
             
-            result = supabase.table("waitlist")\
+            result = client.table("waitlist")\
                 .insert(entry_data)\
                 .execute()
             

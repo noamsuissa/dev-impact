@@ -13,6 +13,7 @@ from backend.schemas.project import (
 from backend.services.project_service import ProjectService
 from backend.utils import auth_utils
 from backend.schemas.auth import MessageResponse
+from backend.utils.dependencies import ServiceDBClient
 
 router = APIRouter(
     prefix="/api/projects",
@@ -22,6 +23,7 @@ router = APIRouter(
 
 @router.get("", response_model=List[Project])
 async def list_projects(
+    client: ServiceDBClient,
     authorization: str = Depends(auth_utils.get_access_token),
     portfolio_id: Optional[str] = Query(None, description="Filter projects by portfolio ID")
 ):
@@ -32,13 +34,14 @@ async def list_projects(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    projects = await ProjectService.list_projects(user_id, portfolio_id=portfolio_id)
+    projects = await ProjectService.list_projects(client, user_id, portfolio_id=portfolio_id)
     return projects
 
 
 @router.get("/{project_id}", response_model=Project)
 async def get_project(
     project_id: str,
+    client: ServiceDBClient,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
@@ -48,13 +51,14 @@ async def get_project(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    project = await ProjectService.get_project(project_id, user_id)
+    project = await ProjectService.get_project(client, project_id, user_id)
     return project
 
 
 @router.post("", response_model=Project)
 async def create_project(
     request: CreateProjectRequest,
+    client: ServiceDBClient,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
@@ -65,7 +69,7 @@ async def create_project(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
     project_data = request.model_dump()
-    project = await ProjectService.create_project(user_id, project_data)
+    project = await ProjectService.create_project(client, user_id, project_data)
     return project
 
 
@@ -73,6 +77,7 @@ async def create_project(
 async def update_project(
     project_id: str,
     request: UpdateProjectRequest,
+    client: ServiceDBClient,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
@@ -83,13 +88,14 @@ async def update_project(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
     project_data = request.model_dump(exclude_none=True)
-    project = await ProjectService.update_project(project_id, user_id, project_data)
+    project = await ProjectService.update_project(client, project_id, user_id, project_data)
     return project
 
 
 @router.delete("/{project_id}", response_model=MessageResponse)
 async def delete_project(
     project_id: str,
+    client: ServiceDBClient,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
@@ -99,13 +105,14 @@ async def delete_project(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    result = await ProjectService.delete_project(project_id, user_id)
+    result = await ProjectService.delete_project(client, project_id, user_id)
     return result
 
 
 @router.get("/{project_id}/evidence", response_model=List[ProjectEvidence])
 async def list_project_evidence(
     project_id: str,
+    client: ServiceDBClient,
     authorization: Optional[str] = Header(None)  # optional for public access
 ):
     """
@@ -121,13 +128,14 @@ async def list_project_evidence(
         except Exception:
             pass  # keep user_id as None for public access
     
-    evidence = await ProjectService.list_project_evidence(project_id, user_id)
+    evidence = await ProjectService.list_project_evidence(client, project_id, user_id)
     return evidence
 
 
 @router.post("/{project_id}/evidence", response_model=ProjectEvidence)
 async def upload_project_evidence(
     project_id: str,
+    client: ServiceDBClient,
     file: UploadFile = File(...),
     authorization: str = Depends(auth_utils.get_access_token),
 ):
@@ -143,6 +151,7 @@ async def upload_project_evidence(
     file_size = len(file_content)
 
     evidence = await ProjectService.upload_evidence_file(
+        client,
         project_id=project_id,
         user_id=user_id,
         file_name=file.filename or "screenshot",
@@ -156,6 +165,7 @@ async def upload_project_evidence(
 
 @router.get("/evidence/stats", response_model=EvidenceStatsResponse)
 async def get_evidence_stats(
+    client: ServiceDBClient,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
@@ -165,7 +175,7 @@ async def get_evidence_stats(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    stats = await ProjectService.get_evidence_stats(user_id)
+    stats = await ProjectService.get_evidence_stats(client, user_id)
     return stats
 
 
@@ -173,6 +183,7 @@ async def get_evidence_stats(
 async def delete_evidence(
     project_id: str,
     evidence_id: str,
+    client: ServiceDBClient,
     authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
@@ -182,6 +193,6 @@ async def delete_evidence(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    result = await ProjectService.delete_evidence(evidence_id, user_id)
+    result = await ProjectService.delete_evidence(client, evidence_id, user_id)
     return result
 

@@ -1,10 +1,9 @@
 from typing import Optional
 import jwt
 from fastapi import HTTPException, Header
-import os
-from supabase import create_client, Client
 from dotenv import load_dotenv
 from backend.schemas.auth import AuthResponse, UserResponse, SessionResponse
+from backend.utils.dependencies import ServiceDBClient
 
 load_dotenv()
 
@@ -25,33 +24,7 @@ def get_access_token(
     
     return authorization.replace("Bearer ", "")
 
-def get_supabase_client(access_token: Optional[str] = None) -> Client:
-    """Get Supabase client from environment"""
-    try:
-        url = os.getenv("SUPABASE_URL")
-        # Use service role key for backend operations
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
-        
-        if not url or not key:
-            raise HTTPException(
-                status_code=500,
-                detail="Supabase configuration not found"
-            )
-        
-        client = create_client(url, key)
-        
-        if access_token and not os.getenv("SUPABASE_SERVICE_ROLE_KEY"):
-            client.postgrest.auth(access_token)
-
-        return client
-    except Exception as e:
-        print(f"Error getting Supabase client: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to get Supabase client"
-        )
-
-async def verify_token(access_token: str) -> Optional[str]:
+async def verify_token(client: ServiceDBClient, access_token: str) -> Optional[str]:
     """
     Verify access token and return user ID
     
@@ -62,8 +35,7 @@ async def verify_token(access_token: str) -> Optional[str]:
         User ID if valid, None otherwise
     """
     try:
-        supabase = get_supabase_client()
-        user = supabase.auth.get_user(access_token)
+        user = client.auth.get_user(access_token)
         
         if user and user.user:
             return user.user.id
@@ -72,7 +44,7 @@ async def verify_token(access_token: str) -> Optional[str]:
         print(f"Verify token error: {e}")
         return None
 
-async def get_session(access_token: str) -> AuthResponse:
+async def get_session(client: ServiceDBClient, access_token: str) -> AuthResponse:
         """
         Get current session
         
@@ -83,12 +55,11 @@ async def get_session(access_token: str) -> AuthResponse:
             AuthResponse containing user and session data
         """
         try:
-            supabase = get_supabase_client()
             # Set the authorization header
-            supabase.postgrest.auth(access_token)
+            client.postgrest.auth(access_token)
             
             # Get user from token
-            user = supabase.auth.get_user(access_token)
+            user = client.auth.get_user(access_token)
             
             if user is None:
                 raise HTTPException(
@@ -115,7 +86,7 @@ async def get_session(access_token: str) -> AuthResponse:
                 detail="Invalid or expired token"
             )
 
-async def refresh_session(refresh_token: str) -> AuthResponse:
+async def refresh_session(client: ServiceDBClient, refresh_token: str) -> AuthResponse:
         """
         Refresh user session
         
@@ -126,8 +97,7 @@ async def refresh_session(refresh_token: str) -> AuthResponse:
             AuthResponse containing new session data
         """
         try:
-            supabase = get_supabase_client()
-            response = supabase.auth.refresh_session(refresh_token)
+            response = client.auth.refresh_session(refresh_token)
             
             if response.session is None:
                 raise HTTPException(

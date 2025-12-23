@@ -169,19 +169,19 @@ class MFAService:
             raise HTTPException(status_code=400, detail=f"Invalid verification code")
 
     @staticmethod
-    async def mfa_list_factors(access_token: str) -> MFAListResponse:
+    async def mfa_list_factors(user_id: str) -> MFAListResponse:
         """
         List all MFA factors for a user
         
         Args:
-            access_token: User's access token
+            user_id: User's ID
             
         Returns:
             MFAListResponse containing list of factors
         """
         try:
             # Get user ID from token first
-            user_id = await auth_utils.verify_token(access_token)
+            
             if not user_id:
                 raise HTTPException(status_code=401, detail="Invalid or expired token")
             
@@ -233,20 +233,18 @@ class MFAService:
             raise HTTPException(status_code=400, detail=f"Failed to list MFA factors: {e}")
 
     @staticmethod
-    async def mfa_unenroll(access_token: str, factor_id: str) -> MessageResponse:
+    async def mfa_unenroll(user_id: str, factor_id: str) -> MessageResponse:
         """
         Unenroll (remove) an MFA factor
         
         Args:
-            access_token: User's access token
+            user_id: User's ID
             factor_id: Factor ID to remove
             
         Returns:
             MessageResponse with success status
         """
         try:
-            # Get user ID from token
-            user_id = await auth_utils.verify_token(access_token)
             if not user_id:
                 raise HTTPException(status_code=401, detail="Invalid or expired token")
             
