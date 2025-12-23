@@ -1,16 +1,58 @@
 """
 Project Schemas - Pydantic models for project operations
 """
-from pydantic import BaseModel, field_serializer
-from typing import Optional, List, Union
+from pydantic import BaseModel, field_serializer, Field
+from typing import Optional, List, Union, Literal
 from datetime import datetime
 
 
+# ============================================
+# LEGACY METRIC SCHEMA (Backward Compatibility)
+# ============================================
+
 class ProjectMetric(BaseModel):
-    """Project metric schema"""
+    """Legacy project metric schema - simple format"""
     primary: str
     label: str
     detail: Optional[str] = None
+
+
+# ============================================
+# STANDARDIZED METRIC SCHEMAS
+# ============================================
+
+class PrimaryMetricValue(BaseModel):
+    """Primary metric value with unit and label"""
+    value: Union[int, float]
+    unit: Literal["%", "x", "$", "users", "hrs", "ms", "s", "min", "requests", "MB", "GB", "items", "calls"]
+    label: str = Field(..., description="e.g., 'faster', 'cost_savings', 'users_served', 'uptime', 'time_saved'")
+
+
+class ComparisonValue(BaseModel):
+    """Comparison value (before or after)"""
+    value: Union[int, float]
+    unit: Literal["%", "x", "$", "users", "hrs", "ms", "s", "min", "requests", "MB", "GB", "items", "calls"]
+
+
+class MetricComparison(BaseModel):
+    """Before/after comparison for metrics"""
+    before: ComparisonValue
+    after: ComparisonValue
+
+
+class MetricContext(BaseModel):
+    """Context for a metric (frequency and scope)"""
+    frequency: Optional[Literal["daily", "weekly", "monthly", "annually", "one_time"]] = None
+    scope: Optional[str] = Field(None, description="e.g., '200 daily users', 'entire platform', 'team of 5'")
+
+
+class StandardizedProjectMetric(BaseModel):
+    """Standardized project metric with structured data"""
+    type: Literal["performance", "scale", "business", "quality", "time"]
+    primary: PrimaryMetricValue
+    comparison: Optional[MetricComparison] = None
+    context: Optional[MetricContext] = None
+    timeframe: Optional[str] = Field(None, description="e.g., '3 months', '6 months', '1 year', 'ongoing'")
 
 
 class ProjectEvidence(BaseModel):
@@ -34,7 +76,7 @@ class ProjectEvidence(BaseModel):
 
 
 class Project(BaseModel):
-    """Project schema"""
+    """Project schema - supports both legacy and standardized metrics"""
     id: Optional[str] = None
     company: str
     projectName: str
@@ -43,13 +85,13 @@ class Project(BaseModel):
     problem: str
     contributions: List[str]
     techStack: List[str]
-    metrics: List[ProjectMetric]
+    metrics: List[Union[ProjectMetric, StandardizedProjectMetric]]
     portfolio_id: Optional[str] = None
     evidence: Optional[List[ProjectEvidence]] = None
 
 
 class ProjectResponse(BaseModel):
-    """Project response with database fields"""
+    """Project response with database fields - supports both legacy and standardized metrics"""
     id: str
     user_id: str
     company: str
@@ -63,7 +105,7 @@ class ProjectResponse(BaseModel):
     portfolio_id: Optional[str] = None
     created_at: Union[str, datetime]
     updated_at: Union[str, datetime]
-    metrics: List[ProjectMetric]
+    metrics: List[Union[ProjectMetric, StandardizedProjectMetric]]
     
     @field_serializer('created_at', 'updated_at')
     def serialize_datetime(self, value: Union[str, datetime]) -> str:
@@ -74,7 +116,7 @@ class ProjectResponse(BaseModel):
 
 
 class CreateProjectRequest(BaseModel):
-    """Create project request"""
+    """Create project request - supports both legacy and standardized metrics"""
     company: str
     projectName: str
     role: str
@@ -82,12 +124,12 @@ class CreateProjectRequest(BaseModel):
     problem: str
     contributions: List[str]
     techStack: List[str]
-    metrics: List[ProjectMetric]
+    metrics: List[Union[ProjectMetric, StandardizedProjectMetric]]
     portfolio_id: Optional[str] = None
 
 
 class UpdateProjectRequest(BaseModel):
-    """Update project request"""
+    """Update project request - supports both legacy and standardized metrics"""
     company: Optional[str] = None
     projectName: Optional[str] = None
     role: Optional[str] = None
@@ -95,7 +137,7 @@ class UpdateProjectRequest(BaseModel):
     problem: Optional[str] = None
     contributions: Optional[List[str]] = None
     techStack: Optional[List[str]] = None
-    metrics: Optional[List[ProjectMetric]] = None
+    metrics: Optional[List[Union[ProjectMetric, StandardizedProjectMetric]]] = None
     portfolio_id: Optional[str] = None
 
 

@@ -129,7 +129,7 @@ const DashboardRoute = () => {
 
 const ProjectBuilderRoute = () => {
   const { userProfile } = useOutletContext();
-  const { projects, profiles } = useDashboard();
+  const { projects, portfolios } = useDashboard();
   const navigate = useNavigate();
 
   if (!userProfile) {
@@ -140,8 +140,8 @@ const ProjectBuilderRoute = () => {
   return <ProjectBuilder
     onSave={projects.save}
     projects={projects.list}
-    profiles={profiles.list}
-    selectedProfileId={profiles.selectedId}
+    portfolios={portfolios.list}
+    selectedPortfolioId={portfolios.selectedId}
   />;
 }
 

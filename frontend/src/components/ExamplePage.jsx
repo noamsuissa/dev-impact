@@ -40,19 +40,50 @@ const ExamplePage = () => {
         ],
         metrics: [
           {
-            primary: '60%',
-            label: 'Faster API',
-            detail: '2.5s → 1.0s'
+            type: 'performance',
+            primary: {
+              value: 60,
+              unit: '%',
+              label: 'faster API'
+            },
+            comparison: {
+              before: { value: 2.5, unit: 's' },
+              after: { value: 1.0, unit: 's' }
+            },
+            context: {
+              frequency: 'daily',
+              scope: '3M daily requests'
+            },
+            timeframe: '6 months'
           },
           {
-            primary: '40%',
-            label: 'Less Abandonment',
-            detail: '15% → 9%'
+            type: 'business',
+            primary: {
+              value: 40,
+              unit: '%',
+              label: 'less abandonment'
+            },
+            comparison: {
+              before: { value: 15, unit: '%' },
+              after: { value: 9, unit: '%' }
+            },
+            context: {
+              frequency: 'monthly'
+            },
+            timeframe: '4 months'
           },
           {
-            primary: '3M',
-            label: 'Daily Requests',
-            detail: 'Handled'
+            type: 'scale',
+            primary: {
+              value: 3000000,
+              unit: 'requests',
+              label: 'handled daily'
+            },
+            context: {
+              frequency: 'daily',
+              scope: 'entire platform'
+            },
+            timeframe: 'ongoing'
           }
         ],
         techStack: ['Python', 'PostgreSQL', 'Redis', 'FastAPI', 'Docker', 'Kubernetes']
@@ -72,19 +103,55 @@ const ExamplePage = () => {
         ],
         metrics: [
           {
-            primary: '10x',
-            label: 'Faster Insights',
-            detail: 'Daily → Real-time'
+            type: 'performance',
+            primary: {
+              value: 96,
+              unit: '%',
+              label: 'faster reports'
+            },
+            comparison: {
+              before: { value: 24, unit: 'hrs' },
+              after: { value: 1, unit: 'min' }
+            },
+            context: {
+              frequency: 'daily',
+              scope: 'entire platform'
+            },
+            timeframe: '3 months'
           },
           {
-            primary: '85%',
-            label: 'Time Saved',
-            detail: 'Per week'
+            type: 'scale',
+            primary: {
+              value: 50000,
+              unit: 'users',
+              label: 'active users'
+            },
+            comparison: {
+              before: { value: 200, unit: 'users' },
+              after: { value: 50000, unit: 'users' }
+            },
+            context: {
+              frequency: 'daily',
+              scope: 'platform growth'
+            },
+            timeframe: '6 months'
           },
           {
-            primary: '50K',
-            label: 'Daily Users',
-            detail: 'Active'
+            type: 'time',
+            primary: {
+              value: 85,
+              unit: '%',
+              label: 'time saved'
+            },
+            comparison: {
+              before: { value: 20, unit: 'hrs' },
+              after: { value: 3, unit: 'hrs' }
+            },
+            context: {
+              frequency: 'weekly',
+              scope: 'business team'
+            },
+            timeframe: 'ongoing'
           }
         ],
         techStack: ['React', 'Node.js', 'Kafka', 'PostgreSQL', 'WebSocket', 'D3.js']
@@ -104,19 +171,51 @@ const ExamplePage = () => {
         ],
         metrics: [
           {
-            primary: '95%',
-            label: 'Faster Deploy',
-            detail: '4h → 12min'
+            type: 'time',
+            primary: {
+              value: 95,
+              unit: '%',
+              label: 'faster deployment'
+            },
+            comparison: {
+              before: { value: 4, unit: 'hrs' },
+              after: { value: 12, unit: 'min' }
+            },
+            context: {
+              frequency: 'weekly',
+              scope: '12 microservices'
+            },
+            timeframe: '9 months'
           },
           {
-            primary: '99.9%',
-            label: 'Uptime',
-            detail: 'Achieved'
+            type: 'quality',
+            primary: {
+              value: 99.9,
+              unit: '%',
+              label: 'uptime achieved'
+            },
+            comparison: {
+              before: { value: 95, unit: '%' },
+              after: { value: 99.9, unit: '%' }
+            },
+            context: {
+              frequency: 'monthly',
+              scope: 'entire platform'
+            },
+            timeframe: '1 year'
           },
           {
-            primary: '5x',
-            label: 'Scale Capacity',
-            detail: 'Increased'
+            type: 'scale',
+            primary: {
+              value: 5,
+              unit: 'x',
+              label: 'capacity increase'
+            },
+            context: {
+              frequency: 'one_time',
+              scope: 'production infrastructure'
+            },
+            timeframe: '8 months'
           }
         ],
         techStack: ['Kubernetes', 'Docker', 'Jenkins', 'Prometheus', 'Grafana', 'Go']
