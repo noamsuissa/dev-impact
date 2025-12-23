@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
+import TerminalSelect from './common/TerminalSelect';
 
 const PublishPortfolioModal = ({ isOpen, onClose, portfolios = [], onPublish, publishedPortfolioSlugs = [] }) => {
   const [selectedPortfolioId, setSelectedPortfolioId] = useState(null);
@@ -37,6 +38,12 @@ const PublishPortfolioModal = ({ isOpen, onClose, portfolios = [], onPublish, pu
   if (!isOpen) return null;
 
   const availablePortfolios = portfolios.filter(p => !publishedPortfolioSlugs.includes(p.slug));
+  
+  // Convert portfolios to options format for TerminalSelect
+  const portfolioOptions = availablePortfolios.map(p => ({
+    value: p.id,
+    label: `${p.name}${p.description ? ` - ${p.description}` : ''}`
+  }));
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -65,19 +72,16 @@ const PublishPortfolioModal = ({ isOpen, onClose, portfolios = [], onPublish, pu
                 <label className="block text-sm text-terminal-gray mb-2">
                   Select Portfolio to Publish *
                 </label>
-                <select
-                  value={selectedPortfolioId || ''}
-                  onChange={(e) => setSelectedPortfolioId(e.target.value || null)}
-                  className="w-full bg-terminal-bg-lighter border border-terminal-border px-3 py-2 text-terminal-text focus:outline-none focus:border-terminal-orange"
+                <TerminalSelect
+                  value={selectedPortfolioId}
+                  onChange={(value) => {
+                    setSelectedPortfolioId(value);
+                    setError(null);
+                  }}
+                  options={portfolioOptions}
+                  placeholder="-- Select Portfolio --"
                   disabled={isPublishing}
-                >
-                  <option value="">-- Select Portfolio --</option>
-                  {availablePortfolios.map(portfolio => (
-                    <option key={portfolio.id} value={portfolio.id}>
-                      {portfolio.name} {portfolio.description ? `- ${portfolio.description}` : ''}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               {error && (

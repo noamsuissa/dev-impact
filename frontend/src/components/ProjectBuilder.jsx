@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
+import TerminalSelect from './common/TerminalSelect';
 import { 
   isLegacyMetric, 
   calculateImprovement
@@ -231,18 +232,12 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
           &gt; Portfolio: {!profileId && portfolios.length > 0 && <span className="text-red-400 text-xs">(Required)</span>}
         </div>
         {portfolios.length > 0 ? (
-          <select
-            value={profileId || ''}
-            onChange={(e) => setProfileId(e.target.value || null)}
-            className="w-full bg-terminal-bg-lighter border border-terminal-border px-3 py-2 text-terminal-text focus:outline-none focus:border-terminal-orange"
-          >
-            <option value="">-- Select Profile --</option>
-            {portfolios.map(portfolio => (
-              <option key={portfolio.id} value={portfolio.id}>
-                {portfolio.name}
-              </option>
-            ))}
-          </select>
+          <TerminalSelect
+            value={profileId}
+            onChange={(value) => setProfileId(value || null)}
+            options={portfolios.map(p => ({ value: p.id, label: p.name }))}
+            placeholder="-- Select Portfolio --"
+          />
         ) : (
           <div className="text-terminal-gray text-sm border border-terminal-border px-3 py-2 bg-terminal-bg-lighter">
             No profiles available. Create a profile first from the Dashboard.
@@ -339,17 +334,17 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                   {/* Type Selector */}
                   <div className="mb-2.5">
                     <div className="mb-1 text-xs">Type:</div>
-                    <select
+                    <TerminalSelect
                       value={metric.type || 'performance'}
-                      onChange={(e) => updateMetric(i, 'type', e.target.value)}
-                      className="w-full bg-terminal-bg-lighter border border-terminal-border px-3 py-2 text-terminal-text focus:outline-none focus:border-terminal-orange"
-                    >
-                      <option value="performance">Performance</option>
-                      <option value="scale">Scale</option>
-                      <option value="business">Business</option>
-                      <option value="quality">Quality</option>
-                      <option value="time">Time</option>
-                    </select>
+                      onChange={(val) => updateMetric(i, 'type', val)}
+                      options={[
+                        { value: 'performance', label: 'Performance' },
+                        { value: 'scale', label: 'Scale' },
+                        { value: 'business', label: 'Business' },
+                        { value: 'quality', label: 'Quality' },
+                        { value: 'time', label: 'Time' }
+                      ]}
+                    />
                   </div>
                   
                   {/* Primary Value */}
@@ -376,25 +371,25 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                       </div>
                       <div>
                         <div className="mb-1 text-xs">Unit:</div>
-                        <select
+                        <TerminalSelect
                           value={metric.primary?.unit || '%'}
-                          onChange={(e) => updateMetric(i, 'primary.unit', e.target.value)}
-                          className="w-full bg-terminal-bg-lighter border border-terminal-border px-3 py-2 text-terminal-text focus:outline-none focus:border-terminal-orange text-sm"
-                        >
-                          <option value="%">%</option>
-                          <option value="x">x</option>
-                          <option value="$">$</option>
-                          <option value="users">users</option>
-                          <option value="hrs">hrs</option>
-                          <option value="ms">ms</option>
-                          <option value="s">s</option>
-                          <option value="min">min</option>
-                          <option value="requests">requests</option>
-                          <option value="MB">MB</option>
-                          <option value="GB">GB</option>
-                          <option value="items">items</option>
-                          <option value="calls">calls</option>
-                        </select>
+                          onChange={(val) => updateMetric(i, 'primary.unit', val)}
+                          options={[
+                            { value: '%', label: '%' },
+                            { value: 'x', label: 'x' },
+                            { value: '$', label: '$' },
+                            { value: 'users', label: 'users' },
+                            { value: 'hrs', label: 'hrs' },
+                            { value: 'ms', label: 'ms' },
+                            { value: 's', label: 's' },
+                            { value: 'min', label: 'min' },
+                            { value: 'requests', label: 'requests' },
+                            { value: 'MB', label: 'MB' },
+                            { value: 'GB', label: 'GB' },
+                            { value: 'items', label: 'items' },
+                            { value: 'calls', label: 'calls' }
+                          ]}
+                        />
                       </div>
                       <div>
                         <div className="mb-1 text-xs">Label:</div>
@@ -423,7 +418,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                         <div className="grid grid-cols-2 gap-2.5">
                           <div>
                             <div className="mb-1 text-xs">Before:</div>
-                            <div className="flex gap-2">
+                            <div className="grid grid-cols-2 gap-2">
                               <TerminalInput
                                 type="number"
                                 value={metric.comparison?.before?.value === undefined ? '' : metric.comparison.before.value}
@@ -438,37 +433,35 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                                   }
                                 }}
                                 placeholder="5"
-                                className="flex-1"
                               />
-                              <select
+                              <TerminalSelect
                                 value={metric.comparison?.before?.unit || 'min'}
-                                onChange={(e) => {
-                                  const newUnit = e.target.value;
-                                  updateMetric(i, 'comparison.before.unit', newUnit);
+                                onChange={(val) => {
+                                  updateMetric(i, 'comparison.before.unit', val);
                                   // Sync the after unit to match
-                                  updateMetric(i, 'comparison.after.unit', newUnit);
+                                  updateMetric(i, 'comparison.after.unit', val);
                                 }}
-                                className="w-24 bg-terminal-bg-lighter border border-terminal-border px-2 py-2 text-terminal-text focus:outline-none focus:border-terminal-orange text-sm"
-                              >
-                                <option value="%">%</option>
-                                <option value="x">x</option>
-                                <option value="$">$</option>
-                                <option value="ms">ms</option>
-                                <option value="s">s</option>
-                                <option value="min">min</option>
-                                <option value="hrs">hrs</option>
-                                <option value="users">users</option>
-                                <option value="requests">req</option>
-                                <option value="items">items</option>
-                                <option value="calls">calls</option>
-                                <option value="MB">MB</option>
-                                <option value="GB">GB</option>
-                              </select>
+                                options={[
+                                  { value: '%', label: '%' },
+                                  { value: 'x', label: 'x' },
+                                  { value: '$', label: '$' },
+                                  { value: 'ms', label: 'ms' },
+                                  { value: 's', label: 's' },
+                                  { value: 'min', label: 'min' },
+                                  { value: 'hrs', label: 'hrs' },
+                                  { value: 'users', label: 'users' },
+                                  { value: 'requests', label: 'req' },
+                                  { value: 'items', label: 'items' },
+                                  { value: 'calls', label: 'calls' },
+                                  { value: 'MB', label: 'MB' },
+                                  { value: 'GB', label: 'GB' }
+                                ]}
+                              />
                             </div>
                           </div>
                           <div>
                             <div className="mb-1 text-xs">After:</div>
-                            <div className="flex gap-2">
+                            <div className="grid grid-cols-2 gap-2">
                               <TerminalInput
                                 type="number"
                                 value={metric.comparison?.after?.value === undefined ? '' : metric.comparison.after.value}
@@ -483,32 +476,30 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                                   }
                                 }}
                                 placeholder="2"
-                                className="flex-1"
                               />
-                              <select
+                              <TerminalSelect
                                 value={metric.comparison?.after?.unit || 's'}
-                                onChange={(e) => {
-                                  const newUnit = e.target.value;
-                                  updateMetric(i, 'comparison.after.unit', newUnit);
+                                onChange={(val) => {
+                                  updateMetric(i, 'comparison.after.unit', val);
                                   // Sync the before unit to match
-                                  updateMetric(i, 'comparison.before.unit', newUnit);
+                                  updateMetric(i, 'comparison.before.unit', val);
                                 }}
-                                className="w-24 bg-terminal-bg-lighter border border-terminal-border px-2 py-2 text-terminal-text focus:outline-none focus:border-terminal-orange text-sm"
-                              >
-                                <option value="%">%</option>
-                                <option value="x">x</option>
-                                <option value="$">$</option>
-                                <option value="ms">ms</option>
-                                <option value="s">s</option>
-                                <option value="min">min</option>
-                                <option value="hrs">hrs</option>
-                                <option value="users">users</option>
-                                <option value="requests">req</option>
-                                <option value="items">items</option>
-                                <option value="calls">calls</option>
-                                <option value="MB">MB</option>
-                                <option value="GB">GB</option>
-                              </select>
+                                options={[
+                                  { value: '%', label: '%' },
+                                  { value: 'x', label: 'x' },
+                                  { value: '$', label: '$' },
+                                  { value: 'ms', label: 'ms' },
+                                  { value: 's', label: 's' },
+                                  { value: 'min', label: 'min' },
+                                  { value: 'hrs', label: 'hrs' },
+                                  { value: 'users', label: 'users' },
+                                  { value: 'requests', label: 'req' },
+                                  { value: 'items', label: 'items' },
+                                  { value: 'calls', label: 'calls' },
+                                  { value: 'MB', label: 'MB' },
+                                  { value: 'GB', label: 'GB' }
+                                ]}
+                              />
                             </div>
                           </div>
                         </div>
@@ -536,18 +527,18 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                       <div className="border border-terminal-border p-3 bg-terminal-bg">
                         <div className="mb-2.5">
                           <div className="mb-1 text-xs">Frequency:</div>
-                          <select
+                          <TerminalSelect
                             value={metric.context?.frequency || ''}
-                            onChange={(e) => updateMetric(i, 'context.frequency', e.target.value || null)}
-                            className="w-full bg-terminal-bg-lighter border border-terminal-border px-3 py-2 text-terminal-text focus:outline-none focus:border-terminal-orange"
-                          >
-                            <option value="">-- Select --</option>
-                            <option value="daily">Daily</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
-                            <option value="annually">Annually</option>
-                            <option value="one_time">One Time</option>
-                          </select>
+                            onChange={(val) => updateMetric(i, 'context.frequency', val || null)}
+                            options={[
+                              { value: '', label: '-- Select --' },
+                              { value: 'daily', label: 'Daily' },
+                              { value: 'weekly', label: 'Weekly' },
+                              { value: 'monthly', label: 'Monthly' },
+                              { value: 'annually', label: 'Annually' },
+                              { value: 'one_time', label: 'One Time' }
+                            ]}
+                          />
                         </div>
                         <div className="mb-2.5">
                           <div className="mb-1 text-xs">Scope:</div>
