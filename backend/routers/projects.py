@@ -113,7 +113,7 @@ async def delete_project(
 async def list_project_evidence(
     project_id: str,
     client: ServiceDBClient,
-    authorization: Optional[str] = Header(None)  # optional for public access
+    authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     List all evidence for a project.
@@ -181,7 +181,6 @@ async def get_evidence_stats(
 
 @router.delete("/{project_id}/evidence/{evidence_id}", response_model=MessageResponse)
 async def delete_evidence(
-    project_id: str,
     evidence_id: str,
     client: ServiceDBClient,
     authorization: str = Depends(auth_utils.get_access_token),

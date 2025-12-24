@@ -1,14 +1,17 @@
 from typing import Optional
 import jwt
-from fastapi import HTTPException, Header
+from fastapi import HTTPException, Depends
+from fastapi.security import HTTPBearer
 from dotenv import load_dotenv
 from backend.schemas.auth import AuthResponse, UserResponse, SessionResponse
 from backend.utils.dependencies import ServiceDBClient
 
 load_dotenv()
 
+bearer_scheme = HTTPBearer()
+
 def get_access_token(
-    authorization: Optional[str] = Header(None)
+    authorization: str = Depends(bearer_scheme)
 ) -> str:
     """
     Dependency to extract and validate Bearer token from Authorization header.
@@ -16,13 +19,7 @@ def get_access_token(
     Raises HTTPException if token is missing or invalid.
     Returns the access token string.
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=401,
-            detail="Authentication required"
-        )
-    
-    return authorization.replace("Bearer ", "")
+    return authorization.credentials
 
 async def verify_token(client: ServiceDBClient, access_token: str) -> Optional[str]:
     """
