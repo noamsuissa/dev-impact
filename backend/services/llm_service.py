@@ -51,7 +51,7 @@ class LLMService:
             model_name = model or OPENROUTER_MODEL
 
             return {
-                "model": f"{model_name}"
+                "model": f"openrouter/{model_name}"
             }
 
         elif provider == "groq":
@@ -61,7 +61,7 @@ class LLMService:
             model_name = model or GROQ_MODEL
 
             return {
-                "model": f"{model_name}"
+                "model": f"groq/{model_name}"
             }
 
         else:
