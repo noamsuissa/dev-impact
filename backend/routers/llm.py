@@ -1,21 +1,24 @@
 """
 LLM Router - API endpoints for LLM operations
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from backend.schemas.llm import CompletionRequest, CompletionResponse
 from backend.services.llm_service import LLMService
+from backend.utils import auth_utils
 
 router = APIRouter(prefix="/llm", tags=["llm"])
 
 
 @router.post("/completion", response_model=CompletionResponse)
-async def generate_completion(request: CompletionRequest):
+async def generate_completion(request: CompletionRequest, authorization: str = Depends(auth_utils.get_access_token)):
     """
     Generate a completion using the specified LLM provider
 
     This endpoint uses LiteLLM with Helicone observability to generate
     completions from OpenRouter or Groq providers.
     """
+    user_id = auth_utils.get_user_id_from_authorization(authorization)
+    
     if request.provider not in ["openrouter", "groq"]:
         raise HTTPException(
             status_code=400,
@@ -27,7 +30,8 @@ async def generate_completion(request: CompletionRequest):
         messages=request.messages,
         model=request.model,
         temperature=request.temperature,
-        max_tokens=request.max_tokens
+        max_tokens=request.max_tokens,
+        user_id=user_id
     )
 
     return CompletionResponse(**response)

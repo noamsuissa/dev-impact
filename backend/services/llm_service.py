@@ -74,6 +74,7 @@ class LLMService:
         model: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        user_id: Optional[str] = None,
         **kwargs
     ) -> Dict[str, Any]:
         """
@@ -85,6 +86,7 @@ class LLMService:
             model: Optional model name, uses default if not provided
             temperature: Sampling temperature (0.0 to 1.0)
             max_tokens: Maximum tokens to generate
+            user_id: User ID for observability
             **kwargs: Additional parameters to pass to the model
 
         Returns:
@@ -100,6 +102,7 @@ class LLMService:
                 **params,
                 "messages": messages,
                 "temperature": temperature,
+                "user": user_id,
             }
 
             if max_tokens:

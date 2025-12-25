@@ -1,8 +1,7 @@
 """
 Auth Router - Handle authentication endpoints
 """
-from fastapi import APIRouter, Header, Depends
-from typing import Optional
+from fastapi import APIRouter, Depends
 from backend.schemas.auth import (
     SignUpRequest,
     SignInRequest,
@@ -60,18 +59,13 @@ async def sign_in(request: SignInRequest, client: ServiceDBClient):
 
 
 @router.post("/signout", response_model=MessageResponse)
-async def sign_out(client: ServiceDBClient, authorization: Optional[str] = Header(None)):
+async def sign_out(client: ServiceDBClient, authorization: str = Depends(auth_utils.get_access_token)):
     """
     Sign out current user
     
     Invalidates the user's session.
     """
-    if not authorization or not authorization.startswith("Bearer "):
-        return {"success": True, "message": "Signed out"}
-    
-    access_token = authorization.replace("Bearer ", "")
-    
-    result = await AuthService.sign_out(client, access_token)
+    result = await AuthService.sign_out(client, authorization)
     return result
 
 @router.get("/session", response_model=AuthResponse)

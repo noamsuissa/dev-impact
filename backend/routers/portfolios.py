@@ -186,7 +186,7 @@ async def unpublish_portfolio(
     username: str,
     portfolio_slug: str,
     client: ServiceDBClient,
-    authorization: Optional[str] = Header(None)
+    authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Unpublish a portfolio
