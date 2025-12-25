@@ -271,7 +271,7 @@ export default function App() {
 
           {/* Public Profile Route - supports both subdomain and path-based access */}
           <Route path="/404" element={<NotFound />} />
-          <Route path="/:username/:profileSlug" element={<PublicProfile />} />
+          <Route path="/:username/:portfolioSlug" element={<PublicProfile />} />
           <Route path="/:username" element={<PublicProfile />} />
 
           {/* 404 Route */}
