@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class EmailService:
     """Service for sending emails with Jinja templates"""
+    _instance: Optional["EmailService"] = None
     
     def __init__(self):
         """Initialize email service with configuration from environment variables"""
@@ -103,7 +104,7 @@ class EmailService:
     @staticmethod
     def get_instance() -> "EmailService":
         """Get singleton instance of EmailService"""
-        if not hasattr(EmailService, "_instance"):
+        if EmailService._instance is None:
             EmailService._instance = EmailService()
         return EmailService._instance
 
