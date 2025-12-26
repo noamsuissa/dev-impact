@@ -74,9 +74,9 @@ class PortfolioData(BaseModel):
 class PortfolioResponse(BaseModel):
     """Public portfolio response (for viewing published portfolios)"""
     username: str
-    portfolio_slug: Optional[str] = Field(None, alias="profile_slug")
+    portfolio_slug: Optional[str] = Field(None, alias="portfolio_slug")
     user: UserData
-    portfolio: Optional[PortfolioData] = Field(None, alias="profile")
+    portfolio: Optional[PortfolioData] = Field(None, alias="portfolio")
     projects: List[Project]
     view_count: int
     published_at: str

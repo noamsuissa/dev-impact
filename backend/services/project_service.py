@@ -69,7 +69,7 @@ class ProjectService:
         )
 
     @staticmethod
-    async def list_projects(client, user_id: str, portfolio_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
+    async def list_projects(client, user_id: str | None = None, portfolio_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
         """
         List all projects for a user, optionally filtered by profile
         
@@ -82,6 +82,9 @@ class ProjectService:
         Returns:
             List of projects with metrics and optional evidence
         """
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID is required")
+        
         try:
             query = client.table("impact_projects")\
                 .select("*, metrics:project_metrics(*)")\
@@ -320,7 +323,7 @@ class ProjectService:
                     .execute()
             
             # Return in frontend format - use the actual database result which includes portfolio_id
-            project_data = Project(
+            project_data_result = Project(
                 id=project_id,
                 company=project["company"],
                 projectName=project["project_name"],
@@ -333,7 +336,7 @@ class ProjectService:
                 portfolio_id=project["portfolio_id"] if "portfolio_id" in project else None
             )
             
-            return project_data
+            return project_data_result
         except HTTPException:
             raise
         except Exception as e:

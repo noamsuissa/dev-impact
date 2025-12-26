@@ -169,7 +169,7 @@ class MFAService:
             raise HTTPException(status_code=400, detail=f"Invalid verification code")
 
     @staticmethod
-    async def mfa_list_factors(user_id: str) -> MFAListResponse:
+    async def mfa_list_factors(user_id: str | None = None) -> MFAListResponse:
         """
         List all MFA factors for a user
         
@@ -233,7 +233,7 @@ class MFAService:
             raise HTTPException(status_code=400, detail=f"Failed to list MFA factors: {e}")
 
     @staticmethod
-    async def mfa_unenroll(user_id: str, factor_id: str) -> MessageResponse:
+    async def mfa_unenroll(user_id: str | None = None, factor_id: str | None = None) -> MessageResponse:
         """
         Unenroll (remove) an MFA factor
         
