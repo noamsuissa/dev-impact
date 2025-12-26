@@ -161,7 +161,7 @@ class UserService:
         try:
             # 1. Try to cancel subscription if exists
             try:
-                await StripeService.cancel_subscription(user_id)
+                await StripeService.cancel_subscription(client, user_id)
             except Exception as e:
                 # Log but continue - user might not have a subscription
                 print(f"Subscription cancellation check during account delete: {e}")
