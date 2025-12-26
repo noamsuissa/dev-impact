@@ -54,17 +54,21 @@ class AuthService:
             if response.user is None:
                 raise HTTPException(status_code=400, detail="Failed to create account. Email may already be registered.")
             
+            session = None
+            if response.session:
+                session = SessionResponse(
+                    access_token=response.session.access_token,
+                    refresh_token=response.session.refresh_token,
+                    expires_at=response.session.expires_at,
+                )
+            
             return AuthResponse(
                 user=UserResponse(
                     id=response.user.id,
                     email=response.user.email,
                     created_at=response.user.created_at
                 ),
-                session=SessionResponse(
-                    access_token=response.session.access_token if response.session else None,
-                    refresh_token=response.session.refresh_token if response.session else None,
-                    expires_at=response.session.expires_at if response.session else None,
-                ) if response.session else None,
+                session=session,
                 requires_email_verification=response.session is None
             )
         except HTTPException:
@@ -273,7 +277,7 @@ class AuthService:
                         mfa_client.postgrest.auth(response.access_token)
                     
                     factors_response = mfa_client.auth.mfa.list_factors()
-                    factors = factors_response.factors if hasattr(factors_response, 'factors') else []
+                    factors = factors_response.all if hasattr(factors_response, 'all') else []
                     
                     if factors and len(factors) > 0:
                         # Create challenge for first TOTP factor
