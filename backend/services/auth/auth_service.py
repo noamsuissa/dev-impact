@@ -113,8 +113,8 @@ class AuthService:
                 
                 try:
                     # Verify using the user API endpoint with factor_id
-                    async with httpx.AsyncClient() as client:
-                        verify_response = await client.post(
+                    async with httpx.AsyncClient() as http_client:
+                        verify_response = await http_client.post(
                             f"{url}/auth/v1/factors/{mfa_factor_id}/verify",
                             headers={
                                 "apikey": anon_key,
@@ -131,26 +131,27 @@ class AuthService:
                             error_text = verify_response.text
                             print(f"MFA verify API error: {verify_response.status_code} - {error_text}")
                             raise HTTPException(status_code=401, detail="Invalid MFA code")
-                        
-                        # After successful verification, refresh the session to get AAL2 tokens
-                        session_response = client.auth.refresh_session(password_response.session.refresh_token)
-                        
-                        if session_response.user is None or session_response.session is None:
-                            raise HTTPException(status_code=401, detail="Failed to complete MFA verification")
-                        
-                        return AuthResponse(
-                            user=UserResponse(
-                                id=session_response.user.id,
-                                email=session_response.user.email,
-                                created_at=session_response.user.created_at
-                            ),
-                            session=SessionResponse(
-                                access_token=session_response.session.access_token,
-                                refresh_token=session_response.session.refresh_token,
-                                expires_at=session_response.session.expires_at,
-                            ),
-                            requires_mfa=False
-                        )
+                    
+                    # After successful verification, refresh the session to get AAL2 tokens
+                    # Use the original Supabase client (not the httpx client)
+                    session_response = client.auth.refresh_session(password_response.session.refresh_token)
+                    
+                    if session_response.user is None or session_response.session is None:
+                        raise HTTPException(status_code=401, detail="Failed to complete MFA verification")
+                    
+                    return AuthResponse(
+                        user=UserResponse(
+                            id=session_response.user.id,
+                            email=session_response.user.email,
+                            created_at=session_response.user.created_at
+                        ),
+                        session=SessionResponse(
+                            access_token=session_response.session.access_token,
+                            refresh_token=session_response.session.refresh_token,
+                            expires_at=session_response.session.expires_at,
+                        ),
+                        requires_mfa=False
+                    )
                 except HTTPException:
                     raise
                 except Exception as verify_err:
