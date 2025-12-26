@@ -31,6 +31,12 @@ class StripeService:
                 detail="Stripe secret key not configured"
             )
         
+        if not publishable_key:
+            raise HTTPException(
+                status_code=500,
+                detail="Stripe publishable key not configured"
+            )
+        
         if not price_id:
             raise HTTPException(
                 status_code=500,
@@ -126,21 +132,21 @@ class StripeService:
                 "session_id": session.id
             }
             
-        except stripe.error.AuthenticationError as e:
+        except stripe.AuthenticationError as e:
             # Invalid API key
             print(f"Stripe authentication error: {e}")
             raise HTTPException(
                 status_code=500,
                 detail="Payment system configuration error. Please contact support."
             )
-        except stripe.error.InvalidRequestError as e:
+        except stripe.InvalidRequestError as e:
             # Invalid parameters (e.g., wrong price ID)
             print(f"Stripe invalid request error: {e}")
             raise HTTPException(
                 status_code=500,
                 detail="Payment configuration error. Please contact support."
             )
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             # Other Stripe errors
             print(f"Stripe error: {e}")
             raise HTTPException(
@@ -183,7 +189,7 @@ class StripeService:
             except ValueError as e:
                 # Invalid payload
                 raise HTTPException(status_code=400, detail="Invalid payload")
-            except stripe.error.SignatureVerificationError as e:
+            except stripe.SignatureVerificationError as e:
                 # Invalid signature
                 raise HTTPException(status_code=400, detail="Invalid signature")
 
@@ -372,7 +378,7 @@ class StripeService:
             
         except HTTPException:
             raise
-        except stripe.error.StripeError as e:
+        except stripe.StripeError as e:
             print(f"Stripe error canceling subscription: {e}")
             raise HTTPException(status_code=500, detail="Failed to cancel subscription")
         except Exception as e:
