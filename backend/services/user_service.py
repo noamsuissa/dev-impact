@@ -12,7 +12,7 @@ class UserService:
     """Service for handling user profile operations."""
 
     @staticmethod
-    async def get_profile(client, user_id: str) -> UserProfile:
+    async def get_profile(client, user_id: str | None = None) -> UserProfile:
         """
         Get user profile by ID
         
@@ -23,6 +23,9 @@ class UserService:
         Returns:
             UserProfile containing user profile data
         """
+
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID is required")
         try:
             result = client.table("profiles")\
                 .select("*")\

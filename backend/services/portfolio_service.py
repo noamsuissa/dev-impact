@@ -398,7 +398,7 @@ class PortfolioService:
     # ============================================
 
     @staticmethod
-    async def publish_portfolio(client, username: str, portfolio_id: str, user_id: str, user_profile, projects: List) -> PublishPortfolioResponse:
+    async def publish_portfolio(client, username: str, portfolio_id: str, user_profile, projects: List, user_id: str | None = None) -> PublishPortfolioResponse:
         """
         Publish a portfolio with a username
         
@@ -413,6 +413,9 @@ class PortfolioService:
         Returns:
             PublishPortfolioResponse with success status, username, slug, and URL
         """
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID is required")
+        
         try:
             if not PortfolioService.validate_username(username):
                 raise HTTPException(status_code=400, detail="Username must be 3-50 characters, lowercase letters, numbers, and hyphens only")
