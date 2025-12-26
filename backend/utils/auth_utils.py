@@ -1,7 +1,7 @@
 from typing import Optional
 import jwt
 from fastapi import HTTPException, Depends
-from fastapi.security import HTTPBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from backend.schemas.auth import AuthResponse, UserResponse, SessionResponse
 from backend.utils.dependencies import ServiceDBClient
@@ -11,7 +11,7 @@ load_dotenv()
 bearer_scheme = HTTPBearer()
 
 def get_access_token(
-    authorization: str = Depends(bearer_scheme)
+    authorization: HTTPAuthorizationCredentials = Depends(bearer_scheme)
 ) -> str:
     """
     Dependency to extract and validate Bearer token from Authorization header.
