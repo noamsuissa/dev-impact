@@ -113,7 +113,7 @@ class LLMService:
                 if key not in completion_params:
                     completion_params[key] = value
 
-            response = await acompletion(**completion_params)
+            response: Any = await acompletion(**completion_params)
 
             logger.info(f"LLM completion successful for provider: {provider}")
 
@@ -182,7 +182,7 @@ class LLMService:
                 if key not in completion_params:
                     completion_params[key] = value
 
-            response = completion(**completion_params)
+            response: Any = completion(**completion_params)
 
             logger.info(f"LLM completion successful for provider: {provider}")
             return {
