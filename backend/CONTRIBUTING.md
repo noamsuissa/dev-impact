@@ -72,14 +72,15 @@ class ExampleService:
 ```python
 class ExampleService:
     @staticmethod
-    async def create_example(user_id: str, data: dict):
+    async def create_example(client, user_id: str, data: dict):
         # Implementation
         pass
     
     @staticmethod
-    async def get_example(example_id: str):
+    async def get_example(client, example_id: str):
         # Implementation
-        pass
+        response = client.table("examples").select("*").eq("id", example_id).execute()
+        return ExampleResponse(field1=response.data[0]["field1"], field2=response.data[0]["field2"])
 ```
 
 #### ❌ DON'T:
@@ -97,6 +98,14 @@ class ExampleService:
     @classmethod
     async def create_example(cls, user_id: str):  # ❌ Class method
         pass
+
+# Don't use unpack operator in response model
+class ExampleService:
+    @staticmethod
+    async def create_example(client, user_id: str, data: dict):
+        # Implementation
+        response = client.table("examples").insert(data).execute()
+        return ExampleResponse(**response.data[0])
 ```
 
 **Why**: Services are stateless. Static methods make this explicit and simplify testing.
@@ -530,7 +539,7 @@ class DomainService:
             result = supabase.table("resources").insert(data).execute()
             if not result.data:
                 raise HTTPException(status_code=500, detail="Failed to create resource")
-            return ResponseModel(**result.data[0])
+            return ResponseModel(field1=result.data[0]["field1"], field2=result.data[0]["field2"])
         except HTTPException:
             raise
         except Exception as e:
