@@ -26,7 +26,7 @@ setup_traceloop()
 limiter = setup_rate_limiter()
 
 # Import routers AFTER middleware initialization
-from .routers import github_auth, auth, user, projects, portfolios, waitlist, subscription, webhook, llm
+from .routers import github_auth, auth, user, projects, portfolios, waitlist, subscription, webhook
 
 # Check if we're in production (disable API docs)
 is_production = os.getenv("ENVIRONMENT", "").lower() in ["production", "prod"]
@@ -83,8 +83,6 @@ app.include_router(portfolios.router)
 app.include_router(waitlist.router)
 app.include_router(subscription.router)
 app.include_router(webhook.router)
-app.include_router(llm.router)
-
 
 
 @app.get("/")
