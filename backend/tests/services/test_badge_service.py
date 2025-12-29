@@ -13,7 +13,7 @@ from fastapi import HTTPException
 from datetime import datetime
 
 # Import the service
-from backend.services.badge_service import BadgeService
+from backend.services.badges.badge_service import BadgeService
 
 from backend.schemas.badge import (
     BadgeDefinition,
@@ -346,49 +346,49 @@ class TestCalculateBadges:
     ):
         """Test successfully calculating badges for all user's projects."""
         # Arrange
-        mock_response = MagicMock()
-        mock_response.data = [sample_user_badge_with_details]
-        mock_supabase_client.rpc.return_value.execute.return_value = mock_response
+        with patch('backend.services.badges.badge_calculator.BadgeCalculator.calculate_badges_for_user') as mock_calc:
+            mock_calc.return_value = [sample_user_badge_with_details]
+            
+            # Act
+            result = BadgeService.calculate_badges(mock_supabase_client, "user_123")
 
-        # Act
-        result = BadgeService.calculate_badges(mock_supabase_client, "user_123")
-
-        # Assert
-        assert len(result.badges) == 1
-        assert result.total == 1
-        mock_supabase_client.rpc.assert_called_once()
+            # Assert
+            assert len(result.badges) == 1
+            assert result.total == 1
+            mock_calc.assert_called_with(mock_supabase_client, "user_123", None)
 
     def test_calculate_badges_success_specific_projects(
         self, mock_supabase_client, sample_user_badge_with_details
     ):
         """Test successfully calculating badges for specific projects."""
         # Arrange
-        mock_response = MagicMock()
-        mock_response.data = [sample_user_badge_with_details]
-        mock_supabase_client.rpc.return_value.execute.return_value = mock_response
+        with patch('backend.services.badges.badge_calculator.BadgeCalculator.calculate_badges_for_user') as mock_calc:
+            mock_calc.return_value = [sample_user_badge_with_details]
 
-        # Act
-        result = BadgeService.calculate_badges(
-            mock_supabase_client, "user_123", project_ids=["project_1", "project_2"]
-        )
+            # Act
+            result = BadgeService.calculate_badges(
+                mock_supabase_client, "user_123", project_ids=["project_1", "project_2"]
+            )
 
-        # Assert
-        assert len(result.badges) == 1
-        assert result.total == 1
+            # Assert
+            assert len(result.badges) == 1
+            assert result.total == 1
+            mock_calc.assert_called_with(
+                mock_supabase_client, "user_123", ["project_1", "project_2"]
+            )
 
     def test_calculate_badges_no_new_badges(self, mock_supabase_client):
         """Test calculating badges when no new badges are earned."""
         # Arrange
-        mock_response = MagicMock()
-        mock_response.data = []
-        mock_supabase_client.rpc.return_value.execute.return_value = mock_response
+        with patch('backend.services.badges.badge_calculator.BadgeCalculator.calculate_badges_for_user') as mock_calc:
+            mock_calc.return_value = []
 
-        # Act
-        result = BadgeService.calculate_badges(mock_supabase_client, "user_123")
+            # Act
+            result = BadgeService.calculate_badges(mock_supabase_client, "user_123")
 
-        # Assert
-        assert len(result.badges) == 0
-        assert result.total == 0
+            # Assert
+            assert len(result.badges) == 0
+            assert result.total == 0
 
     def test_calculate_badges_invalid_user_id(self, mock_supabase_client):
         """Test calculating badges with invalid user_id."""
@@ -398,14 +398,15 @@ class TestCalculateBadges:
         assert exc_info.value.status_code == 400
 
     def test_calculate_badges_database_error(self, mock_supabase_client):
-        """Test handling database error during badge calculation."""
+        """Test handling error during badge calculation."""
         # Arrange
-        mock_supabase_client.rpc.return_value.execute.side_effect = Exception("RPC execution error")
+        with patch('backend.services.badges.badge_calculator.BadgeCalculator.calculate_badges_for_user') as mock_calc:
+            mock_calc.side_effect = Exception("Calculation error")
 
-        # Act & Assert
-        with pytest.raises(HTTPException) as exc_info:
-            BadgeService.calculate_badges(mock_supabase_client, "user_123")
-        assert exc_info.value.status_code == 500
+            # Act & Assert
+            with pytest.raises(HTTPException) as exc_info:
+                BadgeService.calculate_badges(mock_supabase_client, "user_123")
+            assert exc_info.value.status_code == 500
 
 
 # ============================================
