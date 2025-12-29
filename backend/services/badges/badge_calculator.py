@@ -180,6 +180,8 @@ class BadgeCalculator:
 You are an expert badge awarder system. 
 Analyze the Project Context and Project Metrics against the list of Available Badges.
 Identify ALL badges that have been earned based on the thresholds.
+If a badge is not earned, do not include it in the response.
+Look for the before and after values of the metric in the metric data to determine the multiplier or improvement.
 
 PROJECT CONTEXT:
 {json.dumps(project_context, indent=2)}
@@ -193,25 +195,37 @@ AVAILABLE BADGES & THRESHOLDS:
 INSTRUCTIONS:
 1. For EACH badge, check if the metrics meet the criteria for Bronze, Silver, or Gold.
 2. Determine the HIGHEST tier fully met.
-3. Return a JSON OBJECT with a list of "earned_badges".
-4. Format:
+3. BE STRICT. Do not award badges if thresholds are not met.
+4. METRIC CALCULATION RULES:
+   - Calculate improvement = (Value Before / Value After) or (Value After / Value Before) depending on direction.
+   - 10 minutes to 2 minutes is a 5x improvement (10/2 = 5).
+   - "5x" IS LESS THAN "10x". It does NOT meet a 10x threshold.
+   - "1x" primary value means NO CHANGE.
+   - Do NOT argue that a project "achieved exponential improvement" if the numbers don't show it.
+   - If Bronze threshold is 10x and actual is 5x, the badge is NOT earned.
+5. PRIORITIZE METRIC BEFORE AND AFTER VALUES OVER PRIMARY VALUE. Primary values can be rounded up or down, therefore you should only look at the before and after values when making a decision. Primary values are only there for context.
+6. If a badge is NOT earned, DO NOT include it in the response.
+7. Format:
 {{
   "earned_badges": [
     {{
       "key": "badge_key",
       "tier": "bronze" | "silver" | "gold",
-      "reason": "short explanation"
+      "reason": "Detailed explanation for why the badge was earned."
     }}
   ]
 }}
 If no badges are earned, return {{"earned_badges": []}}.
+8. Return JSON object.
+9. Provide a detailed explanation for each badge earned.
+
 """
 
         try:
             response = llm_provider.generate_completion_sync(
                 provider="groq",
                 messages=[{"role": "user", "content": prompt}],
-                model="llama-3.1-8b-instant",
+                model="openai/gpt-oss-120b",
                 temperature=0.1,
                 response_format={"type": "json_object"}
             )
@@ -267,7 +281,6 @@ If no badges are earned, return {{"earned_badges": []}}.
     ) -> Optional[UserBadgeWithDetails]:
         """
         Evaluate badges that aggregate data across all projects.
-        Currently done iteratively, but could be batched similarly if needed.
         """
         # Collect relevant metrics
         relevant_metrics = []
@@ -280,37 +293,51 @@ If no badges are earned, return {{"earned_badges": []}}.
         if not relevant_metrics:
             return None
 
-        # Build prompt for ONE aggregate badge
-        # (Simplified re-use of similar prompt logic or simple iterative call)
-        # For consistency with previous PR plan, let's just adapt the single-badge evaluation logic here
-        
         thresholds = {
             "bronze": badge.bronze_threshold,
             "silver": badge.silver_threshold,
             "gold": badge.gold_threshold
         }
         
-        # Summary of ALL relevant metrics
-        metrics_summary = [m.get("metric_data") or {"val": m.get("primary_value")} for m in relevant_metrics]
+        # Prepare metrics with context for aggregation
+        metrics_with_context = []
+        for m in relevant_metrics:
+            raw_project = m.get("project", {})
+            metrics_with_context.append({
+                "project_name": raw_project.get("project_name"),
+                "project_context": {
+                    "company": raw_project.get("company"),
+                    "description": raw_project.get("problem"),
+                    "tech_stack": raw_project.get("tech_stack"),
+                },
+                "metric_data": m.get("metric_data") or {"val": m.get("primary_value")},
+                "legacy_value": m.get("primary_value")
+            })
         
         prompt = f"""
+You are an expert badge awarder system.
 Determine if the user has earned the AGGREGATE badge '{badge.name}'.
-You must aggregate the values from the provided metric entries (e.g. sum, avg, count, min, max) as implied by the description.
+You must aggregate the values from the provided metric entries across projects as implied by the badge description and thresholds.
+Pay close attention to requirements like "across X projects" or "total value".
+BE STRICT. Do not award if criteria are not clearly met.
 
 BADGE: {badge.name}
 DESC: {badge.description}
 THRESHOLDS: {json.dumps(thresholds, indent=2)}
 
-ALL CONTRIBUTING METRICS:
-{json.dumps(metrics_summary, indent=2)}
+CONTRIBUTING METRICS (Grouped by Project):
+{json.dumps(metrics_with_context, indent=2)}
 
-Return JSON: {{ "earned": bool, "tier": "tier", "reason": "..." }}
+INSTRUCTIONS:
+1. Verify if the metrics meet the criteria (e.g. count distinct projects if required, or sum values).
+2. If earned, determine the HIGHEST tier fully met.
+3. Return JSON: {{ "earned": bool, "tier": "bronze"|"silver"|"gold", "reason": "detailed explanation" }}
 """
         try:
              response = llm_provider.generate_completion_sync(
                 provider="groq",
                 messages=[{"role": "user", "content": prompt}],
-                model="llama-3.1-8b-instant",
+                model="llama-3.3-70b-versatile",
                 temperature=0.1,
                 response_format={"type": "json_object"}
             )
