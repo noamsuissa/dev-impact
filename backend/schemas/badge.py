@@ -78,7 +78,7 @@ class UserBadge(BaseModel):
     user_id: str
     badge_id: str
     portfolio_id: Optional[str] = None
-    tier: Literal["bronze", "silver", "gold", "platinum"]
+    tier: Literal["bronze", "silver", "gold"]
     earned_at: Union[str, datetime]
     achievement_value: Optional[float] = None
     achievement_data: Optional[Dict[str, Any]] = None
@@ -125,7 +125,7 @@ class BadgeProgress(BaseModel):
     badge_id: str
     current_value: float
     target_value: float
-    target_tier: Literal["bronze", "silver", "gold", "platinum"]
+    target_tier: Literal["bronze", "silver", "gold"]
     progress_percentage: float
     contributing_projects: Optional[List[str]] = None
     last_contribution_at: Optional[Union[str, datetime]] = None
@@ -218,7 +218,6 @@ class BadgeStatsResponse(BaseModel):
 
 class CalculateBadgesRequest(BaseModel):
     """Request to trigger badge calculation"""
-    user_id: Optional[str] = None  # If None, uses authenticated user
     project_ids: Optional[List[str]] = None  # If None, calculates for all projects
     force_recalculate: bool = False  # Recalculate even if already earned
 
@@ -226,7 +225,7 @@ class CalculateBadgesRequest(BaseModel):
 class AwardBadgeRequest(BaseModel):
     """Request to manually award a badge"""
     badge_id: str
-    tier: Literal["bronze", "silver", "gold", "platinum"]
+    tier: Literal["bronze", "silver", "gold"]
     achievement_value: Optional[float] = None
     achievement_data: Optional[Dict[str, Any]] = None
     source_project_ids: Optional[List[str]] = None
@@ -238,7 +237,7 @@ class UpdateBadgeProgressRequest(BaseModel):
     """Request to update badge progress"""
     badge_id: str
     current_value: float
-    target_tier: Literal["bronze", "silver", "gold", "platinum"]
+    target_tier: Literal["bronze", "silver", "gold"]
     contributing_projects: Optional[List[str]] = None
     progress_data: Optional[Dict[str, Any]] = None
 
