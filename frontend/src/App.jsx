@@ -59,8 +59,9 @@ const AuthenticatedLayout = () => {
   useEffect(() => {
     if (user && !user.username) {
       // No username means onboarding not complete
-      if (window.location.pathname !== '/onboarding') {
-        navigate('/onboarding');
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/onboarding' && currentPath !== '/signin' && currentPath !== '/signup') {
+        navigate('/onboarding', { replace: true });
       }
     }
   }, [user, navigate]);
@@ -79,9 +80,12 @@ const AuthenticatedLayout = () => {
   };
 
   // Convert auth user to userProfile format for backward compatibility
-  const userProfile = user ? {
+  // Only create userProfile if user has completed onboarding (has username)
+  const userProfile = user && user.username ? {
     name: user.name,
     username: user.username,
+    city: user.city,
+    country: user.country,
     github: user.github
   } : null;
 
@@ -106,10 +110,12 @@ const OnboardingRoute = () => {
 
   // If profile exists, redirect to dashboard
   useEffect(() => {
-    if (userProfile) navigate('/dashboard');
+    if (userProfile && userProfile.username) {
+      navigate('/dashboard', { replace: true });
+    }
   }, [userProfile, navigate]);
 
-  if (userProfile) return null;
+  if (userProfile && userProfile.username) return null;
   return <Onboarding onComplete={handleOnboardingComplete} />;
 }
 
