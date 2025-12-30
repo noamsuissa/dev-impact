@@ -21,6 +21,8 @@ export const AuthProvider = ({ children }) => {
           ...authUser,
           username: profileData.username,
           name: profileData.full_name,
+          city: profileData.city,
+          country: profileData.country,
           github: profileData.github_username ? {
             username: profileData.github_username,
             avatar_url: profileData.github_avatar_url
@@ -28,8 +30,14 @@ export const AuthProvider = ({ children }) => {
         }
       }
     } catch (err) {
+      // 404 means profile doesn't exist yet (needs onboarding) - this is expected for new users
+      // Don't log this as an error, just return auth user without profile data
+      if (err.status === 404 || (err.message && (err.message.includes('404') || err.message.includes('not found')))) {
+        // Profile doesn't exist - return auth user without username (triggers onboarding)
+        return authUser
+      }
+      // For other errors, log but still return auth user
       console.error('Failed to load user profile:', err)
-      // Return auth user without profile data if profile fetch fails
       return authUser
     }
     

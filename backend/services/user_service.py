@@ -30,7 +30,7 @@ class UserService:
             result = client.table("profiles")\
                 .select("*")\
                 .eq("id", user_id)\
-                .single()\
+                .maybe_single()\
                 .execute()
             
             if not result.data:
@@ -42,6 +42,8 @@ class UserService:
                 full_name=result.data["full_name"],
                 github_username=result.data["github_username"],
                 github_avatar_url=result.data["github_avatar_url"],
+                city=result.data.get("city"),
+                country=result.data.get("country"),
                 is_published=result.data["is_published"],
                 created_at=result.data["created_at"],
                 updated_at=result.data["updated_at"]
@@ -49,6 +51,10 @@ class UserService:
         except HTTPException:
             raise
         except Exception as e:
+            # Check if it's a "not found" type error from Supabase
+            error_str = str(e).lower()
+            if "not found" in error_str or "no rows" in error_str or "pgrst" in error_str:
+                raise HTTPException(status_code=404, detail="Profile not found")
             print(f"Get profile error: {e}")
             raise HTTPException(status_code=500, detail="Failed to fetch profile")
 
@@ -88,6 +94,8 @@ class UserService:
                 full_name=result.data["full_name"],
                 github_username=result.data["github_username"],
                 github_avatar_url=result.data["github_avatar_url"],
+                city=result.data.get("city"),
+                country=result.data.get("country"),
                 is_published=result.data["is_published"],
                 created_at=result.data["created_at"],
                 updated_at=result.data["updated_at"]
@@ -139,6 +147,8 @@ class UserService:
                 full_name=result.data["full_name"],
                 github_username=result.data["github_username"],
                 github_avatar_url=result.data["github_avatar_url"],
+                city=result.data.get("city"),
+                country=result.data.get("country"),
                 is_published=result.data["is_published"],
                 created_at=result.data["created_at"],
                 updated_at=result.data["updated_at"]

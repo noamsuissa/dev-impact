@@ -20,11 +20,12 @@ const PricingPage = () => {
       period: 'forever',
       description: 'Perfect for getting started',
       features: [
-        'Unlimited impact projects',
-        '3 public skillset-specific profiles',
-        'Public profiles available at <your-username>.dev-impact.com',
+        '10 impact projects',
+        '1 public portfolio',
+        'Public portfolio available at <your-username>.dev-impact.io',
         '50MB total storage',
-        'Github integration',
+        'Bronze-centered badge awards system [coming soon]',
+        'Basic Github integration',
         'Basic metrics tracking',
         'Export to various formats',
         'Includes "Powered by dev-impact" badge'
@@ -41,10 +42,12 @@ const PricingPage = () => {
       description: 'For serious developers',
       features: [
         'Everything in Free, plus:',
-        'Unlimited public profiles',
-        'Custom domain for your public profiles',
+        'Integrated LLM in your public portfolios',
+        'Unlimited public portfolios',
+        'Custom domain for your public portfolios',
         '5GB total storage',
-        'Advanced analytics and metrics',
+        'Multi-tier badge awards system',
+        'Advanced analytics and metrics tracking',
         'Priority support',
         'Early access to new features'
       ],

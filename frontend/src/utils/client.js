@@ -306,7 +306,10 @@ export const user = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || 'Failed to fetch profile');
+      const errorMessage = new Error(error.detail || 'Failed to fetch profile');
+      // Add status code to error for better handling
+      errorMessage.status = response.status;
+      throw errorMessage;
     }
 
     return response.json();
