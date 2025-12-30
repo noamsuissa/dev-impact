@@ -48,7 +48,7 @@ class SubscriptionService:
             if subscription_type == "pro":
                 max_portfolios = 1000  # Unlimited for pro
             else:
-                max_portfolios = 3  # Free users limited to 3
+                max_portfolios = 1  # Free users limited to 1
             
             return SubscriptionInfoResponse(
                 subscription_type=subscription_type,

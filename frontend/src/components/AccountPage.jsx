@@ -228,7 +228,7 @@ const AccountPage = ({ user, projects }) => {
                     ? (subscriptionInfo.cancel_at_period_end
                       ? `Access until ${subscriptionInfo.current_period_end ? new Date(subscriptionInfo.current_period_end).toLocaleDateString() : 'period end'}`
                       : 'Unlimited portfolios and more features')
-                    : 'Limited to 3 portfolios and basic features'}
+                    : 'Limited to 1 portfolio and basic features'}
                 </div>
               </div>
 
