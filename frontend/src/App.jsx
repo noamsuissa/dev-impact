@@ -143,8 +143,13 @@ const ProjectBuilderRoute = () => {
     return null;
   }
 
+  const handleSave = async (projectData) => {
+    await projects.save(projectData)
+    navigate('/dashboard')
+  }
+
   return <ProjectBuilder
-    onSave={projects.save}
+    onSave={handleSave}
     projects={projects.list}
     portfolios={portfolios.list}
     selectedPortfolioId={portfolios.selectedId}

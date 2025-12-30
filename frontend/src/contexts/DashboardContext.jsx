@@ -73,8 +73,11 @@ export const DashboardProvider = ({ children }) => {
           setSubscriptionInfo({
             subscription_type: 'free',
             portfolio_count: portfoliosList.length,
-            max_portfolios: 3,
-            can_add_portfolio: portfoliosList.length < 3
+            max_portfolios: 1,
+            can_add_portfolio: portfoliosList.length < 1,
+            project_count: 0,
+            max_projects: 10,
+            can_add_project: true
           })
         }
 
@@ -457,6 +460,10 @@ export const DashboardProvider = ({ children }) => {
         }
         setProjects(projects.map(p => p.id === project.id ? updatedWithPortfolio : p))
       } else {
+        // Check project count before creating
+        const projectCountBefore = subscriptionInfo?.project_count || 0
+        const maxProjects = subscriptionInfo?.max_projects || 10
+        
         const created = await projectsClient.create(project)
         // Ensure portfolio_id is included in the created project
         const createdWithPortfolio = {
@@ -464,6 +471,26 @@ export const DashboardProvider = ({ children }) => {
           portfolio_id: created.portfolio_id || project.portfolio_id || null
         }
         setProjects([...projects, createdWithPortfolio])
+        
+        // Refresh subscription info after creating a project
+        try {
+          const subInfo = await subscriptions.getSubscriptionInfo()
+          setSubscriptionInfo(subInfo)
+          
+          // If user just hit the limit (was at max-1, now at max), trigger upgrade modal
+          const justHitLimit = projectCountBefore === maxProjects - 1 && 
+                               subInfo.project_count >= maxProjects && 
+                               subInfo.subscription_type !== 'pro'
+          
+          if (justHitLimit) {
+            // Trigger upgrade modal after a short delay to allow navigation
+            setTimeout(() => {
+              setIsUpgradeModalOpen(true)
+            }, 500)
+          }
+        } catch (err) {
+          console.error('Failed to refresh subscription info:', err)
+        }
       }
     } catch (err) {
       console.error('Failed to save project:', err)
@@ -477,6 +504,14 @@ export const DashboardProvider = ({ children }) => {
     try {
       await projectsClient.delete(id)
       setProjects(projects.filter(p => p.id !== id))
+      
+      // Refresh subscription info after deleting a project
+      try {
+        const subInfo = await subscriptions.getSubscriptionInfo()
+        setSubscriptionInfo(subInfo)
+      } catch (err) {
+        console.error('Failed to refresh subscription info:', err)
+      }
     } catch (err) {
       console.error('Failed to delete project:', err)
       alert('Failed to delete project: ' + err.message)
