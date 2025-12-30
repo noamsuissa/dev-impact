@@ -17,6 +17,7 @@ from backend.schemas.project import (
     ProjectEvidence,
 )
 from backend.schemas.auth import MessageResponse
+from backend.schemas.subscription import SubscriptionInfoResponse
 import uuid
 
 # Load environment variables
@@ -227,18 +228,29 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to fetch project")
 
     @staticmethod
-    async def create_project(client, user_id: str, project_data: Dict[str, Any]) -> Project:
+    async def create_project(
+        client,
+        subscription_info: SubscriptionInfoResponse,
+        user_id: str,
+        project_data: Dict[str, Any]
+    ) -> Project:
         """
         Create a new project
         
         Args:
             client: Supabase client (injected from router)
+            subscription_info: Subscription information
             user_id: User's ID
             project_data: Project data (may include portfolio_id)
             
         Returns:
             Created project
         """
+        if not subscription_info.can_add_project:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Project limit reached. Free users are limited to {subscription_info.max_projects} projects. Upgrade to Pro for unlimited projects."
+            )
         try:
             # Extract portfolio_id if provided
             portfolio_id = project_data.pop("portfolio_id", None)

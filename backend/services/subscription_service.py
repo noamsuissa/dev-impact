@@ -37,18 +37,32 @@ class SubscriptionService:
             subscription_type = data.get("subscription_type", "free")
             
             # Count existing portfolios
-            count_result = client.table("portfolios")\
+            portfolio_count_result = client.table("portfolios")\
                 .select("id", count="exact")\
                 .eq("user_id", user_id)\
                 .execute()
             
-            portfolio_count = len(count_result.data) if count_result.data else 0
+            portfolio_count = len(portfolio_count_result.data) if portfolio_count_result.data else 0
+            
+            # Count existing projects
+            project_count_result = client.table("impact_projects")\
+                .select("id", count="exact")\
+                .eq("user_id", user_id)\
+                .execute()
+            
+            project_count = len(project_count_result.data) if project_count_result.data else 0
             
             # Set max portfolios based on subscription
             if subscription_type == "pro":
                 max_portfolios = 1000  # Unlimited for pro
             else:
                 max_portfolios = 1  # Free users limited to 1
+            
+            # Set max projects based on subscription
+            if subscription_type == "pro":
+                max_projects = 1000  # Unlimited for pro
+            else:
+                max_projects = 10  # Free/hobby users limited to 10
             
             return SubscriptionInfoResponse(
                 subscription_type=subscription_type,
@@ -57,7 +71,10 @@ class SubscriptionService:
                 current_period_end=data.get("current_period_end"),
                 portfolio_count=portfolio_count,
                 max_portfolios=max_portfolios,
-                can_add_portfolio=portfolio_count < max_portfolios
+                can_add_portfolio=portfolio_count < max_portfolios,
+                project_count=project_count,
+                max_projects=max_projects,
+                can_add_project=project_count < max_projects
             )
         except Exception as e:
             print(f"Get subscription info error: {e}")

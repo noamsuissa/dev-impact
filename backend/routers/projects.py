@@ -11,6 +11,7 @@ from backend.schemas.project import (
     EvidenceStatsResponse,
 )
 from backend.services.project_service import ProjectService
+from backend.services.subscription_service import SubscriptionService
 from backend.utils import auth_utils
 from backend.schemas.auth import MessageResponse
 from backend.utils.dependencies import ServiceDBClient
@@ -68,8 +69,17 @@ async def create_project(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
+    # Step 1: Check subscription limits (orchestration in router)
+    subscription_info = await SubscriptionService.get_subscription_info(client, user_id)
+    
+    # Step 2: Create project
     project_data = request.model_dump()
-    project = await ProjectService.create_project(client, user_id, project_data)
+    project = await ProjectService.create_project(
+        client=client,
+        subscription_info=subscription_info,
+        user_id=user_id,
+        project_data=project_data
+    )
     return project
 
 
