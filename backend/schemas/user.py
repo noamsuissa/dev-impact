@@ -19,6 +19,8 @@ class UserProfile(BaseModel):
     full_name: Optional[str] = None
     github_username: Optional[str] = None
     github_avatar_url: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
     is_published: bool = False
     created_at: Union[str, datetime]
     updated_at: Union[str, datetime]
@@ -36,6 +38,8 @@ class UpdateProfileRequest(BaseModel):
     full_name: Optional[str] = None
     github_username: Optional[str] = None
     github_avatar_url: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
 
 
 class OnboardingRequest(BaseModel):
@@ -43,6 +47,8 @@ class OnboardingRequest(BaseModel):
     username: str
     name: str
     github: Optional[GitHubInfo] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
 
 
 class CheckUsernameResponse(BaseModel):

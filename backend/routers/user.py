@@ -66,6 +66,8 @@ async def complete_onboarding(
         "full_name": request.name,
         "github_username": request.github.username if request.github else None,
         "github_avatar_url": request.github.avatar_url if request.github else None,
+        "city": request.city,
+        "country": request.country,
     }
     profile = await UserService.create_or_update_profile(client, user_id, profile_data)
     return profile
