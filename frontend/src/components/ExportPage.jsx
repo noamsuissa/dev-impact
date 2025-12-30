@@ -2,10 +2,17 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Download, FileText, Code, FileJson, Globe } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
+import PortfolioSelectionModal from './PortfolioSelectionModal';
+import { useDashboard } from '../hooks/useDashboard';
+import { isLegacyMetric, formatMetricValue, formatComparison } from '../utils/metrics';
+import { wrapText } from '../utils/helpers';
+import jsPDF from 'jspdf';
 
 const ExportPage = ({ user, projects }) => {
+  const { portfolios } = useDashboard();
   const [selectedFormat, setSelectedFormat] = useState(null);
   const [exportStatus, setExportStatus] = useState('');
+  const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false);
 
   const exportFormats = [
     {
@@ -64,8 +71,13 @@ const ExportPage = ({ user, projects }) => {
           exportText();
           break;
         case 'pdf':
-          setExportStatus('PDF export coming soon!');
-          setTimeout(() => setExportStatus(''), 2000);
+          // Show portfolio selection modal first
+          if (portfolios.list.length === 0) {
+            setExportStatus('Please create a portfolio first before exporting to PDF.');
+            setTimeout(() => setExportStatus(''), 3000);
+          } else {
+            setIsPortfolioModalOpen(true);
+          }
           break;
         default:
           setExportStatus('');
@@ -212,6 +224,13 @@ const ExportPage = ({ user, projects }) => {
   const exportText = () => {
     const githubUsername = user.github?.username || '';
     const width = 80;
+    const contentWidth = width - 4; // Width for content inside borders (│ ... │)
+    
+    // Helper function to format a line within borders
+    const formatLine = (content) => {
+      const padded = content.padEnd(contentWidth);
+      return `│ ${padded} │`;
+    };
     
     let text = `${'='.repeat(width)}\n`;
     text += `  ${user.name.toUpperCase()}\n`;
@@ -221,26 +240,101 @@ const ExportPage = ({ user, projects }) => {
     text += `${'='.repeat(width)}\n\n`;
 
     projects.forEach(project => {
+      // Top border
       text += `┌${'─'.repeat(width - 2)}┐\n`;
-      text += `│ ${project.projectName.padEnd(width - 4)} │\n`;
-      text += `│ ${project.company.padEnd(width - 4)} │\n`;
-      text += `│ ${`${project.role} • Team of ${project.teamSize}`.padEnd(width - 4)} │\n`;
+      
+      // Project name (wrapped if needed)
+      const projectNameLines = wrapText(project.projectName || 'Untitled Project', contentWidth);
+      projectNameLines.forEach(line => {
+        text += formatLine(line) + '\n';
+      });
+      
+      // Company (wrapped if needed)
+      const companyLines = wrapText(project.company || '', contentWidth);
+      companyLines.forEach(line => {
+        text += formatLine(line) + '\n';
+      });
+      
+      // Role and team size
+      const roleText = `${project.role || ''} • Team of ${project.teamSize || 1}`;
+      const roleLines = wrapText(roleText, contentWidth);
+      roleLines.forEach(line => {
+        text += formatLine(line) + '\n';
+      });
+      
+      // Divider
       text += `├${'─'.repeat(width - 2)}┤\n`;
-      text += `│ ${''.padEnd(width - 4)} │\n`;
-      text += `│ Problem: ${project.problem.padEnd(width - 12)} │\n`;
-      text += `│ ${''.padEnd(width - 4)} │\n`;
-      text += `│ Solution:${' '.repeat(width - 13)}│\n`;
-      project.contributions.forEach(contrib => {
-        text += `│ • ${contrib.padEnd(width - 6)} │\n`;
+      text += formatLine('') + '\n';
+      
+      // Problem
+      text += formatLine('Problem:') + '\n';
+      const problemLines = wrapText(project.problem || '', contentWidth);
+      problemLines.forEach(line => {
+        text += formatLine(line) + '\n';
       });
-      text += `│ ${''.padEnd(width - 4)} │\n`;
-      text += `│ Impact:${' '.repeat(width - 11)}│\n`;
-      project.metrics.forEach(metric => {
-        const metricText = `${metric.primary} ${metric.label}${metric.detail ? ` (${metric.detail})` : ''}`;
-        text += `│   ${metricText.padEnd(width - 6)} │\n`;
-      });
-      text += `│ ${''.padEnd(width - 4)} │\n`;
-      text += `│ ${project.techStack.join(' • ').padEnd(width - 4)} │\n`;
+      text += formatLine('') + '\n';
+      
+      // Solution
+      text += formatLine('Solution:') + '\n';
+      if (project.contributions && project.contributions.length > 0) {
+        project.contributions.forEach(contrib => {
+          const contribLines = wrapText(contrib, contentWidth - 2); // -2 for "• "
+          contribLines.forEach((line, idx) => {
+            const prefix = idx === 0 ? '• ' : '  ';
+            text += formatLine(prefix + line) + '\n';
+          });
+        });
+      }
+      text += formatLine('') + '\n';
+      
+      // Impact
+      text += formatLine('Impact:') + '\n';
+      if (project.metrics && project.metrics.length > 0) {
+        project.metrics.forEach(metric => {
+          let metricText = '';
+          if (isLegacyMetric(metric)) {
+            // Legacy format
+            metricText = `${metric.primary} ${metric.label || ''}`;
+            if (metric.detail) {
+              metricText += ` (${metric.detail})`;
+            }
+          } else if (metric.type && metric.primary && typeof metric.primary === 'object') {
+            // Standardized format
+            const primaryValue = formatMetricValue(metric.primary.value, metric.primary.unit);
+            metricText = `${primaryValue} ${metric.primary.label || ''}`;
+            if (metric.comparison) {
+              const comparisonStr = formatComparison(metric.comparison);
+              if (comparisonStr) {
+                metricText += ` (${comparisonStr})`;
+              }
+            }
+            if (metric.timeframe) {
+              metricText += ` - ${metric.timeframe}`;
+            }
+          }
+          if (metricText) {
+            const metricLines = wrapText(metricText, contentWidth - 2); // -2 for "  "
+            metricLines.forEach((line, idx) => {
+              const prefix = idx === 0 ? '  ' : '    ';
+              text += formatLine(prefix + line) + '\n';
+            });
+          }
+        });
+      }
+      text += formatLine('') + '\n';
+      
+      // Tech Stack
+      const techStackText = project.techStack && project.techStack.length > 0 
+        ? project.techStack.join(' • ') 
+        : '';
+      if (techStackText) {
+        const techStackLines = wrapText(techStackText, contentWidth);
+        techStackLines.forEach(line => {
+          text += formatLine(line) + '\n';
+        });
+      }
+      
+      // Bottom border
       text += `└${'─'.repeat(width - 2)}┘\n\n`;
     });
 
@@ -259,6 +353,278 @@ const ExportPage = ({ user, projects }) => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const exportPDF = (selectedPortfolio) => {
+    try {
+      setExportStatus('Generating PDF...');
+      
+      // Filter projects for the selected portfolio
+      const portfolioProjects = projects.filter(p => {
+        const pid = p.portfolio_id;
+        return pid && pid === selectedPortfolio.id;
+      });
+
+      // Create new PDF document
+      const doc = new jsPDF();
+      let yPosition = 20;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - (margin * 2);
+
+      // Helper function to add a new page if needed
+      const checkPageBreak = (requiredSpace = 20) => {
+        if (yPosition + requiredSpace > pageHeight - margin) {
+          doc.addPage();
+          yPosition = margin;
+        }
+      };
+
+      // Helper function to add text with word wrapping
+      const addWrappedText = (text, fontSize, isBold = false, color = [0, 0, 0]) => {
+        doc.setFontSize(fontSize);
+        doc.setTextColor(color[0], color[1], color[2]);
+        if (isBold) {
+          doc.setFont(undefined, 'bold');
+        } else {
+          doc.setFont(undefined, 'normal');
+        }
+        
+        const lines = doc.splitTextToSize(text, maxWidth);
+        lines.forEach((line) => {
+          checkPageBreak(10);
+          doc.text(line, margin, yPosition);
+          yPosition += 7;
+        });
+        return lines.length * 7;
+      };
+
+      // Title
+      doc.setFontSize(24);
+      doc.setTextColor(255, 140, 66); // Terminal orange
+      doc.setFont(undefined, 'bold');
+      doc.text(user.name || 'Developer Profile', margin, yPosition);
+      yPosition += 15;
+
+      // Contact Information Section (no username, no duplicate name)
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'normal');
+
+      // Email
+      if (user.email) {
+        checkPageBreak(10);
+        doc.text(user.email, margin, yPosition);
+        yPosition += 7;
+      }
+
+      // Location
+      if (user.city || user.country) {
+        checkPageBreak(10);
+        const location = [user.city, user.country].filter(Boolean).join(', ');
+        doc.text(location, margin, yPosition);
+        yPosition += 7;
+      }
+
+      // GitHub
+      if (user.github?.username) {
+        checkPageBreak(10);
+        doc.text(`GitHub: @${user.github.username}`, margin, yPosition);
+        yPosition += 7;
+      }
+
+      yPosition += 10;
+
+      // Portfolio Information
+      if (selectedPortfolio) {
+        checkPageBreak(20);
+        doc.setFontSize(16);
+        doc.setTextColor(255, 140, 66);
+        doc.setFont(undefined, 'bold');
+        doc.text('Portfolio', margin, yPosition);
+        yPosition += 10;
+
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        
+        if (selectedPortfolio.name) {
+          checkPageBreak(10);
+          doc.text(`Portfolio Name: ${selectedPortfolio.name}`, margin, yPosition);
+          yPosition += 7;
+        }
+
+        if (selectedPortfolio.description) {
+          checkPageBreak(15);
+          addWrappedText(`Description: ${selectedPortfolio.description}`, 11, false, [0, 0, 0]);
+          yPosition += 5;
+        }
+
+        yPosition += 5;
+      }
+
+      // Projects Section
+      if (portfolioProjects.length > 0) {
+        checkPageBreak(20);
+        doc.setFontSize(16);
+        doc.setTextColor(255, 140, 66);
+        doc.setFont(undefined, 'bold');
+        doc.text('Projects', margin, yPosition);
+        yPosition += 10;
+
+        portfolioProjects.forEach((project, index) => {
+          checkPageBreak(50);
+
+          // Project Title
+          doc.setFontSize(14);
+          doc.setTextColor(255, 140, 66);
+          doc.setFont(undefined, 'bold');
+          doc.text(project.projectName || 'Untitled Project', margin, yPosition);
+          yPosition += 10;
+
+          doc.setFontSize(11);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont(undefined, 'normal');
+
+          // Company, Role, Team Size
+          const projectMeta = [
+            project.company && `Company: ${project.company}`,
+            project.role && `Role: ${project.role}`,
+            project.teamSize && `Team Size: ${project.teamSize}`
+          ].filter(Boolean).join(' | ');
+          
+          if (projectMeta) {
+            checkPageBreak(10);
+            doc.text(projectMeta, margin, yPosition);
+            yPosition += 7;
+          }
+
+          // Problem
+          if (project.problem) {
+            checkPageBreak(15);
+            doc.setFont(undefined, 'bold');
+            doc.text('Problem:', margin, yPosition);
+            yPosition += 7;
+            doc.setFont(undefined, 'normal');
+            addWrappedText(project.problem, 11, false, [0, 0, 0]);
+            yPosition += 3;
+          }
+
+          // Contributions/Solution
+          if (project.contributions && project.contributions.length > 0) {
+            checkPageBreak(15);
+            doc.setFont(undefined, 'bold');
+            doc.text('Solution:', margin, yPosition);
+            yPosition += 7;
+            doc.setFont(undefined, 'normal');
+            project.contributions.forEach(contrib => {
+              checkPageBreak(10);
+              addWrappedText(`• ${contrib}`, 11, false, [0, 0, 0]);
+            });
+            yPosition += 3;
+          }
+
+          // Metrics
+          if (project.metrics && project.metrics.length > 0) {
+            checkPageBreak(15);
+            doc.setFont(undefined, 'bold');
+            doc.text('Impact:', margin, yPosition);
+            yPosition += 7;
+            doc.setFont(undefined, 'normal');
+            project.metrics.forEach(metric => {
+              checkPageBreak(10);
+              let metricText = '';
+              if (isLegacyMetric(metric)) {
+                // Legacy format
+                metricText = `${metric.primary} ${metric.label || ''}`;
+                if (metric.detail) {
+                  metricText += ` (${metric.detail})`;
+                }
+              } else if (metric.type && metric.primary && typeof metric.primary === 'object') {
+                // Standardized format
+                const primaryValue = formatMetricValue(metric.primary.value, metric.primary.unit);
+                metricText = `${primaryValue} ${metric.primary.label || ''}`;
+                if (metric.comparison) {
+                  const comparisonStr = formatComparison(metric.comparison);
+                  if (comparisonStr) {
+                    metricText += ` (${comparisonStr})`;
+                  }
+                }
+                if (metric.timeframe) {
+                  metricText += ` - ${metric.timeframe}`;
+                }
+              }
+              if (metricText) {
+                addWrappedText(`• ${metricText}`, 11, false, [0, 0, 0]);
+              }
+            });
+            yPosition += 3;
+          }
+
+          // Tech Stack
+          if (project.techStack && project.techStack.length > 0) {
+            checkPageBreak(10);
+            doc.setFont(undefined, 'bold');
+            doc.text('Tech Stack:', margin, yPosition);
+            yPosition += 7;
+            doc.setFont(undefined, 'normal');
+            const techStackText = project.techStack.join(' • ');
+            addWrappedText(techStackText, 11, false, [0, 0, 0]);
+            yPosition += 5;
+          }
+
+          // Add spacing between projects
+          if (index < portfolioProjects.length - 1) {
+            yPosition += 10;
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, yPosition, pageWidth - margin, yPosition);
+            yPosition += 10;
+          }
+        });
+      } else {
+        checkPageBreak(20);
+        doc.setFontSize(16);
+        doc.setTextColor(255, 140, 66);
+        doc.setFont(undefined, 'bold');
+        doc.text('Projects', margin, yPosition);
+        yPosition += 10;
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        doc.text('No projects in this portfolio.', margin, yPosition);
+      }
+
+      // Footer
+      const totalPages = doc.internal.pages.length - 1;
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+          `Page ${i} of ${totalPages} | Exported from dev-impact.io`,
+          pageWidth - margin,
+          pageHeight - 10,
+          { align: 'right' }
+        );
+      }
+
+      // Save the PDF
+      const filename = `${(user.name || 'portfolio').replace(/\s+/g, '-')}-${(selectedPortfolio?.name || 'export').replace(/\s+/g, '-')}.pdf`;
+      doc.save(filename);
+      
+      setExportStatus('✓ PDF exported successfully!');
+      setTimeout(() => setExportStatus(''), 2000);
+    } catch (error) {
+      console.error('PDF export error:', error);
+      setExportStatus('✗ Error generating PDF: ' + error.message);
+      setTimeout(() => setExportStatus(''), 3000);
+    }
+  };
+
+  const handlePortfolioSelect = (portfolio) => {
+    exportPDF(portfolio);
   };
 
   return (
@@ -323,9 +689,17 @@ const ExportPage = ({ user, projects }) => {
           <li><strong>Markdown:</strong> Great for GitHub READMEs and documentation</li>
           <li><strong>HTML:</strong> Standalone webpage you can host or share</li>
           <li><strong>Plain Text:</strong> ASCII art format that maintains the terminal aesthetic</li>
-          <li><strong>PDF:</strong> Professional format for traditional applications (coming soon)</li>
+          <li><strong>PDF:</strong> Professional format for traditional applications with account information and portfolio projects</li>
         </ul>
       </div>
+
+      {/* Portfolio Selection Modal for PDF Export */}
+      <PortfolioSelectionModal
+        isOpen={isPortfolioModalOpen}
+        onClose={() => setIsPortfolioModalOpen(false)}
+        portfolios={portfolios.list}
+        onSelect={handlePortfolioSelect}
+      />
     </div>
   );
 };
