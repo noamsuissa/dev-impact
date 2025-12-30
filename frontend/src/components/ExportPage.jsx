@@ -5,6 +5,7 @@ import TerminalButton from './common/TerminalButton';
 import PortfolioSelectionModal from './PortfolioSelectionModal';
 import { useDashboard } from '../hooks/useDashboard';
 import { isLegacyMetric, formatMetricValue, formatComparison } from '../utils/metrics';
+import { wrapText } from '../utils/helpers';
 import jsPDF from 'jspdf';
 
 const ExportPage = ({ user, projects }) => {
@@ -223,6 +224,13 @@ const ExportPage = ({ user, projects }) => {
   const exportText = () => {
     const githubUsername = user.github?.username || '';
     const width = 80;
+    const contentWidth = width - 4; // Width for content inside borders (│ ... │)
+    
+    // Helper function to format a line within borders
+    const formatLine = (content) => {
+      const padded = content.padEnd(contentWidth);
+      return `│ ${padded} │`;
+    };
     
     let text = `${'='.repeat(width)}\n`;
     text += `  ${user.name.toUpperCase()}\n`;
@@ -232,26 +240,101 @@ const ExportPage = ({ user, projects }) => {
     text += `${'='.repeat(width)}\n\n`;
 
     projects.forEach(project => {
+      // Top border
       text += `┌${'─'.repeat(width - 2)}┐\n`;
-      text += `│ ${project.projectName.padEnd(width - 4)} │\n`;
-      text += `│ ${project.company.padEnd(width - 4)} │\n`;
-      text += `│ ${`${project.role} • Team of ${project.teamSize}`.padEnd(width - 4)} │\n`;
+      
+      // Project name (wrapped if needed)
+      const projectNameLines = wrapText(project.projectName || 'Untitled Project', contentWidth);
+      projectNameLines.forEach(line => {
+        text += formatLine(line) + '\n';
+      });
+      
+      // Company (wrapped if needed)
+      const companyLines = wrapText(project.company || '', contentWidth);
+      companyLines.forEach(line => {
+        text += formatLine(line) + '\n';
+      });
+      
+      // Role and team size
+      const roleText = `${project.role || ''} • Team of ${project.teamSize || 1}`;
+      const roleLines = wrapText(roleText, contentWidth);
+      roleLines.forEach(line => {
+        text += formatLine(line) + '\n';
+      });
+      
+      // Divider
       text += `├${'─'.repeat(width - 2)}┤\n`;
-      text += `│ ${''.padEnd(width - 4)} │\n`;
-      text += `│ Problem: ${project.problem.padEnd(width - 12)} │\n`;
-      text += `│ ${''.padEnd(width - 4)} │\n`;
-      text += `│ Solution:${' '.repeat(width - 13)}│\n`;
-      project.contributions.forEach(contrib => {
-        text += `│ • ${contrib.padEnd(width - 6)} │\n`;
+      text += formatLine('') + '\n';
+      
+      // Problem
+      text += formatLine('Problem:') + '\n';
+      const problemLines = wrapText(project.problem || '', contentWidth);
+      problemLines.forEach(line => {
+        text += formatLine(line) + '\n';
       });
-      text += `│ ${''.padEnd(width - 4)} │\n`;
-      text += `│ Impact:${' '.repeat(width - 11)}│\n`;
-      project.metrics.forEach(metric => {
-        const metricText = `${metric.primary} ${metric.label}${metric.detail ? ` (${metric.detail})` : ''}`;
-        text += `│   ${metricText.padEnd(width - 6)} │\n`;
-      });
-      text += `│ ${''.padEnd(width - 4)} │\n`;
-      text += `│ ${project.techStack.join(' • ').padEnd(width - 4)} │\n`;
+      text += formatLine('') + '\n';
+      
+      // Solution
+      text += formatLine('Solution:') + '\n';
+      if (project.contributions && project.contributions.length > 0) {
+        project.contributions.forEach(contrib => {
+          const contribLines = wrapText(contrib, contentWidth - 2); // -2 for "• "
+          contribLines.forEach((line, idx) => {
+            const prefix = idx === 0 ? '• ' : '  ';
+            text += formatLine(prefix + line) + '\n';
+          });
+        });
+      }
+      text += formatLine('') + '\n';
+      
+      // Impact
+      text += formatLine('Impact:') + '\n';
+      if (project.metrics && project.metrics.length > 0) {
+        project.metrics.forEach(metric => {
+          let metricText = '';
+          if (isLegacyMetric(metric)) {
+            // Legacy format
+            metricText = `${metric.primary} ${metric.label || ''}`;
+            if (metric.detail) {
+              metricText += ` (${metric.detail})`;
+            }
+          } else if (metric.type && metric.primary && typeof metric.primary === 'object') {
+            // Standardized format
+            const primaryValue = formatMetricValue(metric.primary.value, metric.primary.unit);
+            metricText = `${primaryValue} ${metric.primary.label || ''}`;
+            if (metric.comparison) {
+              const comparisonStr = formatComparison(metric.comparison);
+              if (comparisonStr) {
+                metricText += ` (${comparisonStr})`;
+              }
+            }
+            if (metric.timeframe) {
+              metricText += ` - ${metric.timeframe}`;
+            }
+          }
+          if (metricText) {
+            const metricLines = wrapText(metricText, contentWidth - 2); // -2 for "  "
+            metricLines.forEach((line, idx) => {
+              const prefix = idx === 0 ? '  ' : '    ';
+              text += formatLine(prefix + line) + '\n';
+            });
+          }
+        });
+      }
+      text += formatLine('') + '\n';
+      
+      // Tech Stack
+      const techStackText = project.techStack && project.techStack.length > 0 
+        ? project.techStack.join(' • ') 
+        : '';
+      if (techStackText) {
+        const techStackLines = wrapText(techStackText, contentWidth);
+        techStackLines.forEach(line => {
+          text += formatLine(line) + '\n';
+        });
+      }
+      
+      // Bottom border
       text += `└${'─'.repeat(width - 2)}┘\n\n`;
     });
 
