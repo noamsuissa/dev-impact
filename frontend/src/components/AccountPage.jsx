@@ -183,6 +183,18 @@ const AccountPage = ({ user, projects }) => {
               <div className="text-terminal-gray text-sm mb-1">Total Achievements</div>
               <div className="text-terminal-orange">{projects.reduce((sum, p) => sum + p.metrics.length, 0)} Achievements</div>
             </div>
+            <div>
+              <div className="text-terminal-gray text-sm mb-1">Location</div>
+              <div className="text-terminal-orange">
+                {user.city && user.country
+                  ? `${user.city}, ${user.country}`
+                  : user.city
+                  ? user.city
+                  : user.country
+                  ? user.country
+                  : 'N/A'}
+              </div>
+            </div>
           </div>
         </div>
       </div>

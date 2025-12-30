@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
+import LocationAutocomplete from './common/LocationAutocomplete';
+import { formatLocation } from '../utils/photonApi';
 import { completeGitHubAuth } from '../utils/githubAuth';
 import { user } from '../utils/client';
 
@@ -14,6 +16,7 @@ const Onboarding = ({ onComplete }) => {
   const [githubData, setGithubData] = useState(null);
   const [deviceCode, setDeviceCode] = useState(null);
   const [error, setError] = useState(null);
+  const [location, setLocation] = useState(null); // { city, country } or null
 
   const steps = [
     {
@@ -35,6 +38,10 @@ const Onboarding = ({ onComplete }) => {
     {
       prompt: '> Connect your GitHub account (optional):',
       input: 'github'
+    },
+    {
+      prompt: '> Your location (optional):',
+      input: 'location'
     }
   ];
 
@@ -79,7 +86,9 @@ const Onboarding = ({ onComplete }) => {
       const userData = {
         name,
         username,
-        github: githubData || null
+        github: githubData || null,
+        city: location?.city || null,
+        country: location?.country || null
       };
       onComplete(userData);
     }
@@ -265,11 +274,36 @@ const Onboarding = ({ onComplete }) => {
                 {githubData ? `@${githubData.username}` : '(skipped)'}
               </div>
             )}
+
+            {/* Location input */}
+            {i === step && s.input === 'location' && (
+              <div className="mt-5">
+                <LocationAutocomplete
+                  value={location}
+                  onChange={setLocation}
+                  placeholder="Search for a city..."
+                  autoFocus
+                />
+                <div className="mt-2 text-sm text-terminal-gray">
+                  This helps us show your location on your profile
+                </div>
+                <div className="mt-5 flex gap-5">
+                  <TerminalButton onClick={handleNext}>
+                    {location ? '[Continue]' : '[Skip]'}
+                  </TerminalButton>
+                </div>
+              </div>
+            )}
+            {i < step && s.input === 'location' && (
+              <div className="text-terminal-orange">
+                {location ? formatLocation(location) : '(skipped)'}
+              </div>
+            )}
           </div>
         ))}
 
-        {/* Show continue button when GitHub step is complete */}
-        {step === steps.length - 1 && (githubState === 'success' || githubState === 'initial') && (
+        {/* Show continue button when GitHub step is complete (but not on location step) */}
+        {step === steps.length - 2 && steps[step].input === 'github' && (githubState === 'success' || githubState === 'initial') && (
           <div className="fade-in mt-10">
             <TerminalButton onClick={handleNext}>
               [Continue]
