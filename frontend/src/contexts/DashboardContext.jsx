@@ -112,6 +112,24 @@ export const DashboardProvider = ({ children }) => {
       const pendingSub = localStorage.getItem('pendingSubscription')
 
       if ((planParam === 'pro' || pendingSub === 'pro') && user) {
+        // Wait for subscription info to load before proceeding
+        if (!subscriptionInfo) {
+          return
+        }
+
+        // Check if user is already PRO - don't redirect to checkout if they are
+        if (subscriptionInfo.subscription_type === 'pro') {
+          // User is already PRO, just clean up the query parameter
+          if (planParam) {
+            const newUrl = window.location.pathname
+            window.history.replaceState({}, '', newUrl)
+          }
+          if (pendingSub) {
+            localStorage.removeItem('pendingSubscription')
+          }
+          return
+        }
+
         try {
           // Create checkout session directly
           const baseUrl = window.location.origin

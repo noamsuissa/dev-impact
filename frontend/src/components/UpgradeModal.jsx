@@ -46,6 +46,14 @@ const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false 
         setError(null);
 
         try {
+            // Check if user is already PRO before creating checkout session
+            const subInfo = await subscriptions.getSubscriptionInfo();
+            if (subInfo?.subscription_type === 'pro') {
+                setError('You already have a Pro subscription!');
+                setIsProcessing(false);
+                return;
+            }
+
             // Get current URL for success/cancel redirects
             const baseUrl = window.location.origin;
             const successUrl = `${baseUrl}/subscription/success`;
