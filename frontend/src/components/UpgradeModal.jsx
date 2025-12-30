@@ -22,10 +22,12 @@ const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false 
 
     const proFeatures = [
         'Everything in Free, plus:',
-        'Unlimited public profiles',
-        'Custom domain for your public profiles',
+        'Integrated LLM in your public portfolios',
+        'Unlimited public portfolios',
+        'Custom domain for your public portfolios',
         '5GB total storage',
-        'Advanced analytics and metrics',
+        'Multi-tier badge awards system',
+        'Advanced analytics and metrics tracking',
         'Priority support',
         'Early access to new features'
     ];

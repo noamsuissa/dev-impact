@@ -25,3 +25,6 @@ class SubscriptionInfoResponse(BaseModel):
     portfolio_count: int
     max_portfolios: int
     can_add_portfolio: bool
+    project_count: int
+    max_projects: int
+    can_add_project: bool
