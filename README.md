@@ -9,18 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="https://uptime.betterstack.com/status-badges/v1/monitor/2c0mr.svg">
-    <img src="https://uptime.betterstack.com/status-badges/v1/monitor/2c0mr.svg" alt="Better Stack Frontend" />
-  </a>
-  <a href="https://uptime.betterstack.com/status-badges/v1/monitor/2c0kw.svg">
-    <img src="https://uptime.betterstack.com/status-badges/v1/monitor/2c0kw.svg" alt="Better Stack Backend" />
-  </a>
-  <a href="https://github.com/noamsuissa/dev-impact/actions/workflows/codeql.yml">
-    <img src="https://github.com/noamsuissa/dev-impact/actions/workflows/codeql.yml/badge.svg" alt="CodeQL Advanced" />
-  </a>
-  <a href="https://github.com/noamsuissa/dev-impact/actions/workflows/pylint.yml">
-    <img src="https://github.com/noamsuissa/dev-impact/actions/workflows/pylint.yml/badge.svg" alt="Pylint" />
-  </a>
+  <img src="https://uptime.betterstack.com/status-badges/v1/monitor/2c0mr.svg" alt="Better Stack Frontend" style="pointer-events:none; border:none; box-shadow:none;"/>
+  <img src="https://uptime.betterstack.com/status-badges/v1/monitor/2c0kw.svg" alt="Better Stack Backend" style="pointer-events:none; border:none; box-shadow:none;"/>
+  <img src="https://github.com/noamsuissa/dev-impact/actions/workflows/codeql.yml/badge.svg" alt="CodeQL Advanced" style="pointer-events:none; border:none; box-shadow:none;"/>
+  <img src="https://github.com/noamsuissa/dev-impact/actions/workflows/pylint.yml/badge.svg" alt="Pylint" style="pointer-events:none; border:none; box-shadow:none;"/>
 </p>
 
 <p align="center">
