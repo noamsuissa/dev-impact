@@ -2,9 +2,37 @@
   <img src="frontend/public/dev-impact-short.svg" width="170" />
 </p>
 
-# dev-impact
+<h1 align="center" style="font-size: 4.5em; font-weight: bold; margin: 0.1em 0; border-bottom: none; text-decoration: none;">dev-impact</h1>
 
-> A new standard in showcasing developer impact. Out with the old resumes that end up nowhere.
+<p align="center">
+  <strong>A new standard in showcasing developer impact. Out with the old resumes that end up nowhere.</strong>
+</p>
+
+<p align="center">
+  <iframe src="https://status.dev-impact.io/badge?theme=dark" width="250" height="30" frameborder="0" scrolling="no" style="color-scheme: normal"></iframe>
+</p>
+<p align="center">
+  <a href="https://uptime.betterstack.com/status-badges/v1/monitor/2c0mr.svg">
+    <img src="https://uptime.betterstack.com/status-badges/v1/monitor/2c0mr.svg" alt="Better Stack Frontend" />
+  </a>
+  <a href="https://uptime.betterstack.com/status-badges/v1/monitor/2c0kw.svg">
+    <img src="https://uptime.betterstack.com/status-badges/v1/monitor/2c0kw.svg" alt="Better Stack Backend" />
+  </a>
+  <a href="https://github.com/noamsuissa/dev-impact/actions/workflows/codeql.yml">
+    <img src="https://github.com/noamsuissa/dev-impact/actions/workflows/codeql.yml/badge.svg" alt="CodeQL Advanced" />
+  </a>
+  <a href="https://github.com/noamsuissa/dev-impact/actions/workflows/pylint.yml">
+    <img src="https://github.com/noamsuissa/dev-impact/actions/workflows/pylint.yml/badge.svg" alt="Pylint" />
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-AGPLv3-blue.svg" alt="License" />
+  <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python" />
+  <img src="https://img.shields.io/badge/node-16+-blue.svg" alt="Node.js" />
+</p>
+
+---
 
 ## Motivation
 
