@@ -11,7 +11,7 @@ const LandingPage = () => {
   useMetaTags({
     title: 'dev-impact - Show Your Developer Impact',
     description: 'A new standard in showcasing developer impact. Show real impact, not just bullet points. Create beautiful, shareable developer profiles with quantifiable metrics.',
-    image: 'https://www.dev-impact.io/og-image.png',
+    image: 'https://www.dev-impact.io/og-image-2.png',
     url: 'https://www.dev-impact.io/',
     type: 'website'
   });
@@ -72,7 +72,7 @@ const LandingPage = () => {
           {showButtons && (
             <div className="fade-in hidden md:block flex-shrink-0">
               <img
-                src="/dev-impact.svg"
+                src="/dev-impact-short.svg"
                 alt="dev-impact logo"
                 width={200}
                 className="opacity-90"

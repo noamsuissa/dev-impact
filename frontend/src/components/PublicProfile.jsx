@@ -101,8 +101,8 @@ const PublicProfile = () => {
   // Use static OG image for all profiles
   const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
   const profileImage = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? `http://localhost:${window.location.port || '5173'}/og-image.png`
-    : `https://${baseDomain}/og-image.png`;
+    ? `http://localhost:${window.location.port || '5173'}/og-image-2.png`
+    : `https://${baseDomain}/og-image-2.png`;
 
   useMetaTags({
     title: profileTitle,
