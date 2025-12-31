@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/public/dev-impact-short.svg" width="120" />
+  <img src="frontend/public/dev-impact-short.svg" width="180" />
 </p>
 
 # dev-impact
