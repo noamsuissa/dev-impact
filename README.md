@@ -9,9 +9,6 @@
 </p>
 
 <p align="center">
-  <iframe src="https://status.dev-impact.io/badge?theme=dark" width="250" height="30" frameborder="0" scrolling="no" style="color-scheme: normal"></iframe>
-</p>
-<p align="center">
   <a href="https://uptime.betterstack.com/status-badges/v1/monitor/2c0mr.svg">
     <img src="https://uptime.betterstack.com/status-badges/v1/monitor/2c0mr.svg" alt="Better Stack Frontend" />
   </a>
