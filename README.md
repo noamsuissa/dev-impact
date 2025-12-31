@@ -23,6 +23,12 @@
 
 ---
 
+<p align="center">
+  ⭐️ If you like this project, <b>give us a star on GitHub</b> and help us grow! <br/>
+  Your support means more visibility, faster improvements, and a bigger impact for developers everywhere.
+</p>
+
+
 ## Motivation
 
 Traditional resumes are static documents that rarely capture the true impact of a developer's work. They get lost in the pile, forgotten in inboxes, and fail to tell the compelling story of what you've actually built and achieved.
@@ -30,7 +36,7 @@ Traditional resumes are static documents that rarely capture the true impact of 
 **dev-impact** changes this. It's a platform for developers to showcase their real impact through:
 - Quantifiable metrics that matter
 - Clear problem-solution narratives
-- Beautiful, shareable profiles at `dev-impact.io/your-username`
+- Beautiful, shareable profiles at `your-username.dev-impact.io`
 - Easy export to multiple formats
 - Public profile links to share with anyone
 
@@ -39,7 +45,7 @@ Show your work. Show your impact. Stand out.
 ## How to Run
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.9+
 - Node.js 16+
 - A GitHub account (optional)
 - Cloud or [Self-hosted](https://supabase.com/docs/guides/self-hosting/docker) Supabase
