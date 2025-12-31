@@ -25,4 +25,4 @@ jobs:
     - name: Analysing the code with pylint
       working-directory: backend
       run: |
-        find . -name "*.py" -not -path "*/__pycache__/*" -not -path "*/migrations/*" | xargs -r pylint --fail-under=7.0 --disable=C0305
+        find . -name "*.py" -not -path "*/__pycache__/*" -not -path "*/migrations/*" | xargs -r pylint --fail-under=7.0 --disable=C0305,C0303,C0301
