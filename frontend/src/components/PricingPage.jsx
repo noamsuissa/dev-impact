@@ -196,54 +196,117 @@ const PricingPage = () => {
             </span>
           </div>
           <div className="space-y-6">
-            <div>
-              <div className="text-terminal-orange mb-2">Q: Can I change plans later?</div>
-              <div className="text-terminal-gray text-sm">
-                A: Yes! You can upgrade or downgrade at any time. Changes take effect immediately.
-              </div>
-            </div>
-            <div>
-              <div className="text-terminal-orange mb-2">Q: What payment methods do you accept?</div>
-              <div className="text-terminal-gray text-sm">
-                A: All payments are processed securely through Stripe. We do not store your full credit card information.
-              </div>
-            </div>
-            <div>
-              <div className="text-terminal-orange mb-2">Q: Do you offer refunds?</div>
-              <div className="text-terminal-gray text-sm">
-                A: Yes, we offer a 30-day money-back guarantee. If you're not satisfied, we'll refund your payment.
-              </div>
-            </div>
-            <div>
-              <div className="text-terminal-orange mb-2">Q: What happens to my data if I cancel my subscription?</div>
-              <div className="text-terminal-gray text-sm">
-                A: Your data remains accessible and you get downgraded to the Hobby plan.
-              </div>
-            </div>
-            <div>
-              <div className="text-terminal-orange mb-2">Q: What happens to my data if I delete my account?</div>
-              <div className="text-terminal-gray text-sm">
-                A: Your data is permanently deleted and you cannot access it again.
-              </div>
-            </div>
-            <div>
-              <div className="text-terminal-orange mb-2">Q: Can I export my data?</div>
-              <div className="text-terminal-gray text-sm">
-                A: Yes, you can export your data at any time.
-              </div>
-            </div>
-            <div>
-              <div className="text-terminal-orange mb-2">Q: How can I contribute to the project?</div>
-              <div className="text-terminal-gray text-sm">
-                A: You can contribute to the project <a href="https://github.com/dev-impact/dev-impact" className="text-terminal-orange">here</a>.
-              </div>
-            </div>
-            <div>
-              <div className="text-terminal-orange mb-2">Q: How do I contact you?</div>
-              <div className="text-terminal-gray text-sm">
-                A: You can contact us at <a href="mailto:noam@dev-impact.io" className="text-terminal-orange">noam@dev-impact.io</a>.
-              </div>
-            </div>
+            {enablePayments ? (
+              // FAQ when payments are enabled
+              <>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: Can I change plans later?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: Yes! You can upgrade or downgrade at any time. Changes take effect immediately.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: What payment methods do you accept?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: All payments are processed securely through Stripe. We do not store your full credit card information.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: Do you offer refunds?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: Yes, we offer a 30-day money-back guarantee. If you're not satisfied, we'll refund your payment.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: What happens to my data if I cancel my subscription?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: Your data remains accessible and you get downgraded to the Hobby plan.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: What happens to my data if I delete my account?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: Your data is permanently deleted and you cannot access it again.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: Can I export my data?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: Yes, you can export your data at any time.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: How can I contribute to the project?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: You can contribute to the project <a href="https://github.com/noamsuissa/dev-impact" className="text-terminal-orange hover:underline">here</a>.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: How do I contact you?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: You can contact us at <a href="mailto:support@dev-impact.io" className="text-terminal-orange hover:underline">support@dev-impact.io</a>.
+                  </div>
+                </div>
+              </>
+            ) : (
+              // FAQ when waitlist is enabled (payments disabled)
+              <>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: What is the waitlist?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: The waitlist is for developers who want early access to the Pro plan. Join to be notified when Pro features become available.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: When will Pro be available?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: We're working hard to launch Pro soon. Join the waitlist to be among the first to know when it's ready.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: What happens when I join the waitlist?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: You'll receive an email notification when Pro is available, and you'll have priority access to upgrade.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: Will I get early access or special pricing?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: Waitlist members will be notified first and may receive special launch offers. Stay tuned!
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: Can I still use the free plan?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: Absolutely! The Hobby plan is free forever and available to everyone right now.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: What happens to my data if I delete my account?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: Your data is permanently deleted and you cannot access it again.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: Can I export my data?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: Yes, you can export your data at any time.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: How can I contribute to the project?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: You can contribute to the project <a href="https://github.com/noamsuissa/dev-impact" className="text-terminal-orange hover:underline">here</a>.
+                  </div>
+                </div>
+                <div>
+                  <div className="text-terminal-orange mb-2">Q: How do I contact you?</div>
+                  <div className="text-terminal-gray text-sm">
+                    A: You can contact us at <a href="mailto:support@dev-impact.io" className="text-terminal-orange hover:underline">support@dev-impact.io</a>.
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
