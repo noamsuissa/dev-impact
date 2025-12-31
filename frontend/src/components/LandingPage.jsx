@@ -6,6 +6,7 @@ import { useMetaTags } from '../hooks/useMetaTags';
 const LandingPage = () => {
   const [lines, setLines] = useState([]);
   const [showButtons, setShowButtons] = useState(false);
+  const [starCount, setStarCount] = useState(null);
 
   // Set meta tags for landing page
   useMetaTags({
@@ -54,8 +55,57 @@ const LandingPage = () => {
     }
   }, []);
 
+  // Fetch GitHub star count
+  useEffect(() => {
+    const fetchStarCount = async () => {
+      try {
+        const response = await fetch('https://api.github.com/repos/noamsuissa/dev-impact');
+        if (response.ok) {
+          const data = await response.json();
+          setStarCount(data.stargazers_count);
+        }
+      } catch (error) {
+        // Silently fail if API call fails
+        console.error('Failed to fetch star count:', error);
+      }
+    };
+
+    fetchStarCount();
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-5">
+    <div className="min-h-screen flex items-center justify-center p-5 relative">
+      {/* GitHub Button - Top Right */}
+      {showButtons && (
+        <div className="absolute top-6 right-6 fade-in">
+          <a 
+            href="https://github.com/noamsuissa/dev-impact" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="group"
+          >
+            <TerminalButton className="flex items-center gap-2">
+              <div className="relative w-6 h-6">
+                <img 
+                  src="/github-mark-white.svg" 
+                  alt="GitHub" 
+                  className="w-6 h-6 group-hover:opacity-0 transition-opacity"
+                />
+                <img 
+                  src="/github-mark.svg" 
+                  alt="GitHub" 
+                  className="w-6 h-6 absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                />
+              </div>
+              {starCount !== null && (
+                <span className="text-sm">
+                  ⭐ {starCount}
+                </span>
+              )}
+            </TerminalButton>
+          </a>
+        </div>
+      )}
       <div className="w-full max-w-[630px]">
         {/* Text and Logo Container */}
         <div className="flex items-start gap-6 mb-10">
