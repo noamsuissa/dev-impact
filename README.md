@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="https://status.betterstack.com/" target="_blank" rel="noopener noreferrer">
+  <a href="https://status.dev-impact.io/" target="_blank" rel="noopener noreferrer">
     <img src="https://uptime.betterstack.com/status-badges/v1/monitor/2c0mr.svg" alt="Better Stack Frontend" style="border:none; box-shadow:none;"/>
   </a>
-  <a href="https://status.betterstack.com/" target="_blank" rel="noopener noreferrer">
+  <a href="https://status.dev-impact.io/" target="_blank" rel="noopener noreferrer">
     <img src="https://uptime.betterstack.com/status-badges/v1/monitor/2c0kw.svg" alt="Better Stack Backend" style="border:none; box-shadow:none;"/>
   </a>
   <a href="https://github.com/noamsuissa/dev-impact/actions/workflows/codeql.yml" target="_blank" rel="noopener noreferrer">
