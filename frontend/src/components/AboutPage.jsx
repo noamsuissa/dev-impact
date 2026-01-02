@@ -10,8 +10,11 @@ const AboutPage = () => {
     title: 'About dev-impact - A New Standard for Developer Resumes',
     description: 'Learn about dev-impact\'s philosophy: showing real developer impact through quantifiable metrics, clear problem-solution narratives, and beautiful shareable profiles.',
     image: 'https://www.dev-impact.io/og-image-2.png',
+    imageSecureUrl: 'https://www.dev-impact.io/og-image-2.png',
     url: 'https://www.dev-impact.io/about',
-    type: 'website'
+    type: 'website',
+    author: 'dev-impact',
+    siteName: 'dev-impact'
   });
 
   const principles = [
