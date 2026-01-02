@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /project/new
+Disallow: /project/*/edit
+Disallow: /onboarding
+Disallow: /signin
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /export
+Disallow: /subscription/
+
+# Allow public profiles
+Allow: /*/$
+Allow: /*/*/$
+
+# Sitemap location
+Sitemap: https://www.dev-impact.io/sitemap.xml
+
