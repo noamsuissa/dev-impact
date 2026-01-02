@@ -166,7 +166,7 @@ export const DashboardProvider = ({ children }) => {
     initCheckoutRedirect()
   }, [user, subscriptionInfo])
 
-  // Check published status for all profiles
+  // Check published status for all profiles (only when portfolios list changes)
   useEffect(() => {
     const checkPublishedStatus = async () => {
       if (!user || portfoliosList.length === 0) return
@@ -189,23 +189,31 @@ export const DashboardProvider = ({ children }) => {
       }
 
       setPublishedPortfolioSlugs(publishedSlugs)
-
-      // Update published state for selected profile
-      if (selectedPortfolioId) {
-        const selectedPortfolio = portfoliosList.find(p => p.id === selectedPortfolioId)
-        if (selectedPortfolio && publishedSlugs.includes(selectedPortfolio.slug)) {
-          setIsPublished(true)
-          const shareUrl = generatePortfolioUrl(username, selectedPortfolio.slug)
-          setPublishedUrl(shareUrl)
-        } else {
-          setIsPublished(false)
-          setPublishedUrl(null)
-        }
-      }
     }
 
     checkPublishedStatus()
-  }, [user, portfoliosList, selectedPortfolioId])
+  }, [user, portfoliosList])
+
+  // Compute published state for selected profile immediately (using cached data)
+  const selectedPortfolioPublishedState = useMemo(() => {
+    if (!user || !selectedPortfolioId || portfoliosList.length === 0) {
+      return { isPublished: false, publishedUrl: null }
+    }
+
+    const selectedPortfolio = portfoliosList.find(p => p.id === selectedPortfolioId)
+    if (selectedPortfolio && publishedPortfolioSlugs.includes(selectedPortfolio.slug)) {
+      const shareUrl = generatePortfolioUrl(user.username, selectedPortfolio.slug)
+      return { isPublished: true, publishedUrl: shareUrl }
+    }
+    
+    return { isPublished: false, publishedUrl: null }
+  }, [user, selectedPortfolioId, portfoliosList, publishedPortfolioSlugs])
+
+  // Sync computed state to actual state
+  useEffect(() => {
+    setIsPublished(selectedPortfolioPublishedState.isPublished)
+    setPublishedUrl(selectedPortfolioPublishedState.publishedUrl)
+  }, [selectedPortfolioPublishedState])
 
   // Save selected profile to localStorage
   useEffect(() => {
