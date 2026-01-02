@@ -8,8 +8,15 @@ export default defineConfig({
     // Optimize chunk splitting for better caching
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+        manualChunks(id) {
+          // Split React vendor code into separate chunk
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'react-vendor';
+            }
+            // Other node_modules can go into a separate vendor chunk
+            return 'vendor';
+          }
         },
       },
     },
