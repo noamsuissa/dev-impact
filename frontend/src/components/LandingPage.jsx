@@ -26,6 +26,13 @@ const LandingPage = () => {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "dev-impact",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.dev-impact.io/dev-impact-short.png",
+      "width": 200,
+      "height": 200
+    },
+    "image": "https://www.dev-impact.io/dev-impact-short.png",
     "description": "A new standard in showcasing developer impact. Show real impact, not just bullet points. Create beautiful, shareable developer profiles with quantifiable metrics.",
     "url": "https://www.dev-impact.io/",
     "applicationCategory": "DeveloperApplication",
@@ -35,9 +42,33 @@ const LandingPage = () => {
       "price": "0",
       "priceCurrency": "USD"
     },
+    "publisher": {
+      "@type": "Organization",
+      "name": "dev-impact",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.dev-impact.io/dev-impact-short.png",
+        "width": 200,
+        "height": 200
+      },
+      "url": "https://www.dev-impact.io/",
+      "sameAs": [
+        "https://github.com/noamsuissa/dev-impact"
+      ]
+    },
     "creator": {
       "@type": "Organization",
-      "name": "dev-impact"
+      "name": "dev-impact",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.dev-impact.io/dev-impact-short.png",
+        "width": 200,
+        "height": 200
+      },
+      "url": "https://www.dev-impact.io/",
+      "sameAs": [
+        "https://github.com/noamsuissa/dev-impact"
+      ]
     },
     ...(starCount && {
       "aggregateRating": {
