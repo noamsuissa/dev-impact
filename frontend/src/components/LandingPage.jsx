@@ -88,7 +88,7 @@ const LandingPage = () => {
     }
   }, []);
 
-  // Fetch GitHub star count
+  // Fetch GitHub star count - Deferred to avoid blocking critical rendering
   useEffect(() => {
     const fetchStarCount = async () => {
       try {
@@ -103,7 +103,14 @@ const LandingPage = () => {
       }
     };
 
-    fetchStarCount();
+    // Defer GitHub API call until after initial render using requestIdleCallback
+    // Falls back to setTimeout if requestIdleCallback is not available
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(fetchStarCount, { timeout: 2000 });
+    } else {
+      // Fallback: wait for page to be interactive
+      setTimeout(fetchStarCount, 1000);
+    }
   }, []);
 
   return (
