@@ -11,8 +11,11 @@ const ExamplePage = () => {
     title: 'Example Developer Profile - dev-impact',
     description: 'View an example developer profile on dev-impact. See how developers showcase their impact with quantifiable metrics, project details, and achievements.',
     image: 'https://www.dev-impact.io/og-image-2.png',
+    imageSecureUrl: 'https://www.dev-impact.io/og-image-2.png',
     url: 'https://www.dev-impact.io/example',
-    type: 'website'
+    type: 'website',
+    author: 'dev-impact',
+    siteName: 'dev-impact'
   });
 
   // Example profile data

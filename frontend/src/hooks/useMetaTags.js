@@ -8,16 +8,22 @@ import { useEffect } from 'react';
  * @param {string} metaTags.image - OG image URL
  * @param {string} metaTags.url - Canonical URL
  * @param {string} metaTags.type - OG type (default: 'website')
+ * @param {string} metaTags.author - Author name (optional)
+ * @param {string} metaTags.siteName - Site name for og:site_name (optional)
+ * @param {string} metaTags.imageSecureUrl - Secure URL for og:image:secure_url (optional)
  */
-export const useMetaTags = ({ title, description, image, url, type = 'website' }) => {
+export const useMetaTags = ({ title, description, image, url, type = 'website', author, siteName, imageSecureUrl }) => {
   useEffect(() => {
     // Store original values to restore on unmount
     const originalTitle = document.title;
     const originalTags = {
       description: document.querySelector('meta[name="description"]')?.content,
+      author: document.querySelector('meta[name="author"]')?.content,
       ogTitle: document.querySelector('meta[property="og:title"]')?.content,
       ogDescription: document.querySelector('meta[property="og:description"]')?.content,
       ogImage: document.querySelector('meta[property="og:image"]')?.content,
+      ogImageSecureUrl: document.querySelector('meta[property="og:image:secure_url"]')?.content,
+      ogSiteName: document.querySelector('meta[property="og:site_name"]')?.content,
       ogUrl: document.querySelector('meta[property="og:url"]')?.content,
       ogType: document.querySelector('meta[property="og:type"]')?.content,
       twitterTitle: document.querySelector('meta[name="twitter:title"]')?.content,
@@ -48,10 +54,15 @@ export const useMetaTags = ({ title, description, image, url, type = 'website' }
     // Update meta description
     updateMetaTag('meta[name="description"]', 'name', 'description', description);
 
+    // Update author meta tag
+    updateMetaTag('meta[name="author"]', 'name', 'author', author);
+
     // Update OpenGraph tags
     updateMetaTag('meta[property="og:title"]', 'property', 'og:title', title);
     updateMetaTag('meta[property="og:description"]', 'property', 'og:description', description);
     updateMetaTag('meta[property="og:image"]', 'property', 'og:image', image);
+    updateMetaTag('meta[property="og:image:secure_url"]', 'property', 'og:image:secure_url', imageSecureUrl || image);
+    updateMetaTag('meta[property="og:site_name"]', 'property', 'og:site_name', siteName);
     updateMetaTag('meta[property="og:url"]', 'property', 'og:url', url);
     updateMetaTag('meta[property="og:type"]', 'property', 'og:type', type);
 
@@ -79,6 +90,9 @@ export const useMetaTags = ({ title, description, image, url, type = 'website' }
       if (originalTags.description) {
         updateMetaTag('meta[name="description"]', 'name', 'description', originalTags.description);
       }
+      if (originalTags.author) {
+        updateMetaTag('meta[name="author"]', 'name', 'author', originalTags.author);
+      }
       if (originalTags.ogTitle) {
         updateMetaTag('meta[property="og:title"]', 'property', 'og:title', originalTags.ogTitle);
       }
@@ -87,6 +101,12 @@ export const useMetaTags = ({ title, description, image, url, type = 'website' }
       }
       if (originalTags.ogImage) {
         updateMetaTag('meta[property="og:image"]', 'property', 'og:image', originalTags.ogImage);
+      }
+      if (originalTags.ogImageSecureUrl) {
+        updateMetaTag('meta[property="og:image:secure_url"]', 'property', 'og:image:secure_url', originalTags.ogImageSecureUrl);
+      }
+      if (originalTags.ogSiteName) {
+        updateMetaTag('meta[property="og:site_name"]', 'property', 'og:site_name', originalTags.ogSiteName);
       }
       if (originalTags.ogUrl) {
         updateMetaTag('meta[property="og:url"]', 'property', 'og:url', originalTags.ogUrl);
@@ -113,6 +133,6 @@ export const useMetaTags = ({ title, description, image, url, type = 'website' }
         }
       }
     };
-  }, [title, description, image, url, type]);
+  }, [title, description, image, url, type, author, siteName, imageSecureUrl]);
 };
 

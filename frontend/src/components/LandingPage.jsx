@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalButton from './common/TerminalButton';
 import { useMetaTags } from '../hooks/useMetaTags';
+import { useStructuredData } from '../hooks/useStructuredData';
 
 const LandingPage = () => {
   const [lines, setLines] = useState([]);
@@ -13,9 +14,41 @@ const LandingPage = () => {
     title: 'dev-impact - Show Your Developer Impact',
     description: 'A new standard in showcasing developer impact. Show real impact, not just bullet points. Create beautiful, shareable developer profiles with quantifiable metrics.',
     image: 'https://www.dev-impact.io/og-image-2.png',
+    imageSecureUrl: 'https://www.dev-impact.io/og-image-2.png',
     url: 'https://www.dev-impact.io/',
-    type: 'website'
+    type: 'website',
+    author: 'dev-impact',
+    siteName: 'dev-impact'
   });
+
+  // Add structured data (JSON-LD) for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "dev-impact",
+    "description": "A new standard in showcasing developer impact. Show real impact, not just bullet points. Create beautiful, shareable developer profiles with quantifiable metrics.",
+    "url": "https://www.dev-impact.io/",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "creator": {
+      "@type": "Organization",
+      "name": "dev-impact"
+    },
+    ...(starCount && {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "ratingCount": starCount.toString()
+      }
+    })
+  };
+
+  useStructuredData(structuredData, 'landing-page-structured-data');
 
   useEffect(() => {
     const bootSequence = [
@@ -74,7 +107,7 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-5 relative">
+    <main className="min-h-screen flex items-center justify-center p-5 relative">
       {/* GitHub Button - Top Right */}
       {showButtons && (
         <div className="absolute top-6 right-6 fade-in">
@@ -106,7 +139,7 @@ const LandingPage = () => {
           </a>
         </div>
       )}
-      <div className="w-full max-w-[630px]">
+      <article className="w-full max-w-[630px]">
         {/* Text and Logo Container */}
         <div className="flex items-start gap-6 mb-10">
           {/* Left column - Text content */}
@@ -126,6 +159,7 @@ const LandingPage = () => {
                 alt="dev-impact logo"
                 width={200}
                 className="opacity-90"
+                loading="lazy"
               />
             </div>
           )}
@@ -166,8 +200,8 @@ const LandingPage = () => {
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </article>
+    </main>
   );
 };
 
