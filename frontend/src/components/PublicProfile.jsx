@@ -4,6 +4,7 @@ import { Github, Eye } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import ProjectModal from './ProjectModal';
 import { useMetaTags } from '../hooks/useMetaTags';
+import { useStructuredData } from '../hooks/useStructuredData';
 import { generatePortfolioUrl } from '../utils/helpers';
 import { useAuth } from '../hooks/useAuth';
 
@@ -108,9 +109,32 @@ const PublicProfile = () => {
     title: profileTitle,
     description: profileDescription,
     image: profileImage,
+    imageSecureUrl: profileImage.startsWith('https://') ? profileImage : undefined,
     url: profileUrl,
-    type: 'profile'
+    type: 'profile',
+    siteName: 'dev-impact'
   });
+
+  // Add structured data (JSON-LD) for SEO
+  const structuredData = profile ? {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    "mainEntity": {
+      "@type": "Person",
+      "name": profile.user.name,
+      "url": profileUrl,
+      ...(profile.user.github?.username && {
+        "sameAs": `https://github.com/${profile.user.github.username}`
+      }),
+      "jobTitle": "Developer",
+      "description": profileDescription,
+      ...(profile.user.github?.avatar_url && {
+        "image": profile.user.github.avatar_url
+      })
+    }
+  } : null;
+
+  useStructuredData(structuredData, 'profile-structured-data');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -165,10 +189,10 @@ const PublicProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#2d2d2d] text-terminal-text">
+    <main className="min-h-screen bg-[#2d2d2d] text-terminal-text">
       <div className="p-10 max-w-[1200px] mx-auto">
         {/* Navigation */}
-        <div className="mb-10 flex items-center justify-between">
+        <header className="mb-10 flex items-center justify-between">
           <Link 
             to={user ? "/dashboard" : "/"}
             onClick={handleLogoClick}
@@ -180,25 +204,26 @@ const PublicProfile = () => {
             <Eye size={14} />
             <span>{profile.view_count || 0} views</span>
           </div>
-        </div>
+        </header>
 
         {/* Profile Header */}
-        <div className="border border-terminal-border p-10 mb-10">
+        <section className="border border-terminal-border p-10 mb-10">
           <div className="flex items-start gap-6">
             {profile.user.github?.avatar_url && (
               <img
                 src={profile.user.github.avatar_url}
                 alt={profile.user.name}
                 className="w-24 h-24 rounded-full border-2 border-terminal-orange"
+                loading="lazy"
               />
             )}
             <div className="flex-1">
-              <div className="text-[32px] mb-2.5 uppercase text-terminal-orange">
+              <h1 className="text-[32px] mb-2.5 uppercase text-terminal-orange">
                 {profile.user.name}
-              </div>
-              <div className="text-lg text-[#c9c5c0] mb-2">
+              </h1>
+              <h2 className="text-lg text-[#c9c5c0] mb-2">
                 {profile.portfolio?.name || 'Developer Profile'}
-              </div>
+              </h2>
               {profile.portfolio?.description && (
                 <div className="text-sm text-terminal-gray mb-5">
                   {profile.portfolio.description}
@@ -225,14 +250,14 @@ const PublicProfile = () => {
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Projects */}
         {profile.projects && profile.projects.length > 0 && (
-          <div>
-            <div className="text-lg mb-5">
+          <section>
+            <h2 className="text-lg mb-5">
               &gt; Projects ({profile.projects.length})
-            </div>
+            </h2>
             <div className="bg-terminal-bg-lighter border border-terminal-border p-5">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start auto-rows-fr">
                 {profile.projects.map(project => (
@@ -249,11 +274,11 @@ const PublicProfile = () => {
                 ))}
               </div>
             </div>
-          </div>
+          </section>
         )}
 
         {/* Footer */}
-        <div className="mt-10 pt-5 border-t border-terminal-border text-center text-terminal-gray text-sm">
+        <footer className="mt-10 pt-5 border-t border-terminal-border text-center text-terminal-gray text-sm">
           <div>
             Published on dev-impact.io
           </div>
@@ -268,7 +293,7 @@ const PublicProfile = () => {
               Create your own developer profile
             </Link>
           </div>
-        </div>
+        </footer>
       </div>
 
       {/* Project Modal (Read-only) */}
@@ -281,7 +306,7 @@ const PublicProfile = () => {
         project={selectedProject}
         readOnly={true}
       />
-    </div>
+    </main>
   );
 };
 
