@@ -93,3 +93,15 @@ class ListPortfoliosResponse(BaseModel):
     limit: Optional[int] = None
     offset: Optional[int] = None
 
+
+class PortfolioViewStats(BaseModel):
+    """View count statistics for a portfolio"""
+    portfolio_slug: str
+    view_count: int
+    is_published: bool
+
+
+class PortfolioStatsResponse(BaseModel):
+    """Response containing portfolio view statistics"""
+    stats: List[PortfolioViewStats]
+
