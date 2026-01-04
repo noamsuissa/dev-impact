@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Github, ArrowLeft, Trash2, User, Shield, ShieldCheck, ShieldOff, CreditCard, Sparkles } from 'lucide-react';
+import { Github, ArrowLeft, Trash2, User, Shield, ShieldCheck, ShieldOff, CreditCard, Sparkles, Edit2, Save, X } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
+import TerminalInput from './common/TerminalInput';
+import LocationAutocomplete from './common/LocationAutocomplete';
 import DeleteAccountModal from './DeleteAccountModal';
 import MFASetup from './auth/MFASetup';
 import UpgradeModal from './UpgradeModal';
@@ -10,7 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 
 const AccountPage = ({ user, projects }) => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, updateUserProfile } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [mfaFactors, setMfaFactors] = useState([]);
@@ -18,6 +20,18 @@ const AccountPage = ({ user, projects }) => {
   const [showMFASetup, setShowMFASetup] = useState(false);
   const [mfaError, setMfaError] = useState(null);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  
+  // Account editing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    full_name: '',
+    location: null, // { city, country } object or null
+  });
+  
+  // GitHub disconnect state
+  const [isDisconnectingGitHub, setIsDisconnectingGitHub] = useState(false);
 
   useEffect(() => {
     loadMFAFactors();
@@ -125,6 +139,95 @@ const AccountPage = ({ user, projects }) => {
     setShowMFASetup(false);
   };
 
+  // Account editing handlers
+  const handleEditClick = () => {
+    setEditFormData({
+      full_name: user.name || '',
+      location: (user.city || user.country) ? {
+        city: user.city || null,
+        country: user.country || null,
+      } : null,
+    });
+    setIsEditing(true);
+    setEditError(null);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditFormData({
+      full_name: '',
+      location: null,
+    });
+    setEditError(null);
+  };
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    setEditError(null);
+
+    try {
+      // Prepare update data
+      // Convert empty strings to null for optional fields, or include trimmed non-empty values
+      // Note: GitHub username and avatar are managed via OAuth connection, not manually editable
+      const updateData = {};
+      
+      const fullName = editFormData.full_name.trim();
+      updateData.full_name = fullName || null;
+      
+      // Location comes from LocationAutocomplete as { city, country } object
+      if (editFormData.location) {
+        updateData.city = editFormData.location.city || null;
+        updateData.country = editFormData.location.country || null;
+      } else {
+        // If location is cleared, set both to null
+        updateData.city = null;
+        updateData.country = null;
+      }
+
+      await userClient.updateProfile(updateData);
+      
+      // Refresh user profile in AuthContext
+      // This will trigger a re-render of the parent component which will pass the updated userProfile prop
+      await updateUserProfile();
+      
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      setEditError(error.message || 'Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // GitHub disconnect handler
+  const handleDisconnectGitHub = async () => {
+    if (!confirm('Are you sure you want to disconnect your GitHub account? This will remove your GitHub username and avatar from your profile.')) {
+      return;
+    }
+
+    setIsDisconnectingGitHub(true);
+    setEditError(null);
+
+    try {
+      // Set GitHub fields to null to disconnect
+      await userClient.updateProfile({
+        github_username: null,
+        github_avatar_url: null,
+      });
+      
+      // Refresh user profile in AuthContext
+      await updateUserProfile();
+      
+      // Force page reload to update the user prop
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to disconnect GitHub:', error);
+      setEditError(error.message || 'Failed to disconnect GitHub');
+    } finally {
+      setIsDisconnectingGitHub(false);
+    }
+  };
+
   return (
     <div className="p-10 max-w-[1200px] mx-auto">
       <div className="mb-10 flex items-center gap-5">
@@ -157,45 +260,114 @@ const AccountPage = ({ user, projects }) => {
               Account Settings
             </div>
             {user.github?.username && (
-              <div className="mb-2.5 flex items-center gap-2">
-                <Github size={16} />
-                <span className="text-terminal-gray">github.com/{user.github.username}</span>
+              <div className="mb-2.5 flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Github size={16} />
+                  <span className="text-terminal-gray">github.com/{user.github.username}</span>
+                </div>
+                <TerminalButton
+                  onClick={handleDisconnectGitHub}
+                  disabled={isDisconnectingGitHub}
+                  className="bg-red-500/10 hover:bg-red-500/20 border-red-500/30 text-red-400 text-xs px-2 py-1"
+                >
+                  {isDisconnectingGitHub ? '[Disconnecting...]' : '[Disconnect]'}
+                </TerminalButton>
               </div>
             )}
           </div>
         </div>
 
         <div className="border-t border-terminal-border pt-5 mt-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[#c9c5c0]">
-            <div>
-              <div className="text-terminal-gray text-sm mb-1">Username</div>
-              <div className="text-terminal-orange">{user.username || 'N/A'}</div>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg text-terminal-orange">Account Information</h3>
+            {!isEditing && (
+              <TerminalButton onClick={handleEditClick}>
+                <Edit2 size={16} className="inline mr-2" />
+                [Edit]
+              </TerminalButton>
+            )}
+          </div>
+
+          {editError && (
+            <div className="text-red-400 bg-red-400/10 border border-red-400/30 p-3 rounded mb-5">
+              ✗ {editError}
             </div>
-            <div>
-              <div className="text-terminal-gray text-sm mb-1">Full Name</div>
-              <div className="text-terminal-orange">{user.name || 'N/A'}</div>
-            </div>
-            <div>
-              <div className="text-terminal-gray text-sm mb-1">Projects</div>
-              <div className="text-terminal-orange">{projects.length} {projects.length === 1 ? 'Project' : 'Projects'}</div>
-            </div>
-            <div>
-              <div className="text-terminal-gray text-sm mb-1">Total Achievements</div>
-              <div className="text-terminal-orange">{projects.reduce((sum, p) => sum + p.metrics.length, 0)} Achievements</div>
-            </div>
-            <div>
-              <div className="text-terminal-gray text-sm mb-1">Location</div>
-              <div className="text-terminal-orange">
-                {user.city && user.country
-                  ? `${user.city}, ${user.country}`
-                  : user.city
-                  ? user.city
-                  : user.country
-                  ? user.country
-                  : 'N/A'}
+          )}
+
+          {isEditing ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-terminal-gray text-sm mb-1 block">Full Name</label>
+                  <TerminalInput
+                    value={editFormData.full_name}
+                    onChange={(value) => setEditFormData({ ...editFormData, full_name: value })}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+                <div>
+                  <label className="text-terminal-gray text-sm mb-1 block">Location</label>
+                  <LocationAutocomplete
+                    value={editFormData.location}
+                    onChange={(location) => setEditFormData({ ...editFormData, location })}
+                    placeholder="Search for a city..."
+                  />
+                </div>
+              </div>
+              <div className="text-terminal-gray text-sm mt-2">
+                Note: GitHub information is managed through your GitHub OAuth connection and cannot be manually edited.
+              </div>
+              <div className="flex gap-3 pt-2">
+                <TerminalButton
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="bg-terminal-orange/20 hover:bg-terminal-orange/30 border-terminal-orange text-terminal-orange"
+                >
+                  <Save size={16} className="inline mr-2" />
+                  {isSaving ? '[Saving...]' : '[Save]'}
+                </TerminalButton>
+                <TerminalButton
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                  className="bg-terminal-gray/20 hover:bg-terminal-gray/30 border-terminal-gray text-terminal-gray"
+                >
+                  <X size={16} className="inline mr-2" />
+                  [Cancel]
+                </TerminalButton>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[#c9c5c0]">
+              <div>
+                <div className="text-terminal-gray text-sm mb-1">Username</div>
+                <div className="text-terminal-orange">{user.username || 'N/A'}</div>
+              </div>
+              <div>
+                <div className="text-terminal-gray text-sm mb-1">Full Name</div>
+                <div className="text-terminal-orange">{user.name || 'N/A'}</div>
+              </div>
+              <div>
+                <div className="text-terminal-gray text-sm mb-1">Projects</div>
+                <div className="text-terminal-orange">{projects.length} {projects.length === 1 ? 'Project' : 'Projects'}</div>
+              </div>
+              <div>
+                <div className="text-terminal-gray text-sm mb-1">Total Achievements</div>
+                <div className="text-terminal-orange">{projects.reduce((sum, p) => sum + p.metrics.length, 0)} Achievements</div>
+              </div>
+              <div>
+                <div className="text-terminal-gray text-sm mb-1">Location</div>
+                <div className="text-terminal-orange">
+                  {user.city && user.country
+                    ? `${user.city}, ${user.country}`
+                    : user.city
+                    ? user.city
+                    : user.country
+                    ? user.country
+                    : 'N/A'}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
