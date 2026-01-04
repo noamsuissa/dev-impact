@@ -311,6 +311,7 @@ const Dashboard = () => {
           onAddPortfolio={() => portfolios.openPortfolioModal()}
           onManagePortfolios={portfolios.openManageModal}
           publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
+          portfolioViewCounts={publish.portfolioViewCounts}
           canAddPortfolio={portfolios.subscriptionInfo?.can_add_portfolio ?? true}
           onUpgradeClick={() => upgrade.setIsModalOpen(true)}
         />
@@ -406,6 +407,7 @@ const Dashboard = () => {
         onDeletePortfolio={portfolios.handleDelete}
         onEditPortfolio={portfolios.openPortfolioModal}
         publishedPortfolioSlugs={publish.publishedPortfolioSlugs}
+        portfolioViewCounts={publish.portfolioViewCounts}
         projects={projects.list}
       />
 

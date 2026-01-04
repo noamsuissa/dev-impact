@@ -1,7 +1,7 @@
 import React from 'react';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles, Eye } from 'lucide-react';
 
-const PortfolioTabs = ({ portfolios, selectedPortfolioId, onSelectPortfolio, onAddPortfolio, onManagePortfolios, publishedPortfolioSlugs = [], canAddPortfolio = true, onUpgradeClick }) => {
+const PortfolioTabs = ({ portfolios, selectedPortfolioId, onSelectPortfolio, onAddPortfolio, onManagePortfolios, publishedPortfolioSlugs = [], portfolioViewCounts = {}, canAddPortfolio = true, onUpgradeClick }) => {
   if (!portfolios || portfolios.length === 0) {
     return (
       <div className="mb-5">
@@ -33,6 +33,7 @@ const PortfolioTabs = ({ portfolios, selectedPortfolioId, onSelectPortfolio, onA
             {portfolios.map((portfolio, index) => {
               const isActive = portfolio.id === selectedPortfolioId;
               const isPublished = publishedPortfolioSlugs.includes(portfolio.slug);
+              const viewCount = portfolioViewCounts[portfolio.slug] || 0;
 
               return (
                 <div key={portfolio.id} className="relative">
@@ -57,6 +58,12 @@ const PortfolioTabs = ({ portfolios, selectedPortfolioId, onSelectPortfolio, onA
                         <span className="relative flex h-2 w-2">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                      )}
+                      {viewCount > 0 && (
+                        <span className="flex items-center gap-1 text-terminal-gray text-xs">
+                          <Eye size={12} />
+                          <span>{viewCount}</span>
                         </span>
                       )}
                     </div>
