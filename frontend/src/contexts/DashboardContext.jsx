@@ -27,6 +27,7 @@ export const DashboardProvider = ({ children }) => {
   const [portfoliosList, setPortfoliosList] = useState([])
   const [selectedPortfolioId, setSelectedPortfolioId] = useState(null)
   const [publishedPortfolioSlugs, setPublishedPortfolioSlugs] = useState([])
+  const [portfolioViewCounts, setPortfolioViewCounts] = useState({}) // Map of portfolio slug to view count
   const [subscriptionInfo, setSubscriptionInfo] = useState(null)
   
   // Modal state
@@ -166,19 +167,42 @@ export const DashboardProvider = ({ children }) => {
     initCheckoutRedirect()
   }, [user, subscriptionInfo])
 
-  // Check published status for all profiles (only when portfolios list changes)
+  // Fetch view counts for all portfolios
   useEffect(() => {
-    const checkPublishedStatus = async () => {
+    const fetchViewCounts = async () => {
+      if (!user || portfoliosList.length === 0) return
+
+      try {
+        const stats = await portfoliosClient.getPublishedStats()
+        const viewCountsMap = {}
+        stats.stats.forEach(stat => {
+          viewCountsMap[stat.portfolio_slug] = stat.view_count
+        })
+        setPortfolioViewCounts(viewCountsMap)
+        
+        // Also update published slugs from stats
+        const publishedSlugs = stats.stats
+          .filter(stat => stat.is_published)
+          .map(stat => stat.portfolio_slug)
+        setPublishedPortfolioSlugs(publishedSlugs)
+      } catch (err) {
+        console.error('Failed to fetch portfolio stats:', err)
+        // Fallback to old method if stats endpoint fails
+        checkPublishedStatusFallback()
+      }
+    }
+
+    const checkPublishedStatusFallback = async () => {
       if (!user || portfoliosList.length === 0) return
 
       const username = user.username
       const publishedSlugs = []
 
-      // Check each profile's published status
+      // Check each profile's published status (without incrementing)
       for (const portfolio of portfoliosList) {
         try {
           const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-          const response = await fetch(`${apiUrl}/api/portfolios/${username}/${portfolio.slug}`)
+          const response = await fetch(`${apiUrl}/api/portfolios/${username}/${portfolio.slug}?increment=false`)
 
           if (response.ok) {
             publishedSlugs.push(portfolio.slug)
@@ -191,7 +215,7 @@ export const DashboardProvider = ({ children }) => {
       setPublishedPortfolioSlugs(publishedSlugs)
     }
 
-    checkPublishedStatus()
+    fetchViewCounts()
   }, [user, portfoliosList])
 
   // Compute published state for selected profile immediately (using cached data)
@@ -588,6 +612,7 @@ export const DashboardProvider = ({ children }) => {
       closeUnpublishModal: handleCloseUnpublishModal,
       isUnpublishModalOpen: isUnpublishModalOpen,
       publishedPortfolioSlugs,
+      portfolioViewCounts,
     },
     portfolios: {
       list: portfoliosList,

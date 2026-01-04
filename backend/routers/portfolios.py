@@ -12,6 +12,7 @@ from backend.schemas.portfolio import (
     PublishPortfolioResponse,
     PortfolioResponse,
     ListPortfoliosResponse,
+    PortfolioStatsResponse,
 )
 from backend.schemas.auth import MessageResponse
 from backend.services.portfolio_service import PortfolioService
@@ -70,6 +71,24 @@ async def list_portfolios(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     portfolios = await PortfolioService.list_portfolios(client, user_id)
     return portfolios
+
+
+@router.get("/published/stats", response_model=PortfolioStatsResponse)
+async def get_published_portfolio_stats(
+    client: ServiceDBClient,
+    authorization: str = Depends(auth_utils.get_access_token)
+):
+    """
+    Get view count statistics for all of the authenticated user's portfolios
+    
+    This endpoint returns view counts for all portfolios (including unpublished ones).
+    Only the portfolio owner can view their own statistics.
+    
+    NOTE: This must be defined BEFORE /published to avoid route conflicts.
+    """
+    user_id = auth_utils.get_user_id_from_authorization(authorization)
+    result = await PortfolioService.get_published_portfolio_stats(client, user_id)
+    return result
 
 
 @router.get("/published", response_model=ListPortfoliosResponse)
@@ -207,16 +226,18 @@ async def unpublish_portfolio(
 async def get_published_portfolio_with_slug(
     username: str,
     portfolio_slug: str,
-    client: ServiceDBClient
+    client: ServiceDBClient,
+    increment: bool = True
 ):
     """
     Get a published portfolio by username and portfolio slug (PUBLIC)
     
     This endpoint is public and doesn't require authentication.
-    It increments the view count each time it's accessed.
+    By default, it increments the view count each time it's accessed.
+    Set ?increment=false to prevent incrementing the view count.
     
-    URL format: /api/portfolios/{username}/{portfolio-slug}
+    URL format: /api/portfolios/{username}/{portfolio-slug}?increment=false
     """
-    portfolio = await PortfolioService.get_published_portfolio(client, username, portfolio_slug)
+    portfolio = await PortfolioService.get_published_portfolio(client, username, portfolio_slug, increment_view_count=increment)
     return portfolio
 

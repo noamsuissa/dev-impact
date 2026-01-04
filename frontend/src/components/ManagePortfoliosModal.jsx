@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, Eye } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import DeletePortfolioModal from './DeletePortfolioModal';
 
@@ -10,6 +10,7 @@ const ManagePortfoliosModal = ({
   onDeletePortfolio, 
   onEditPortfolio,
   publishedPortfolioSlugs = [],
+  portfolioViewCounts = {},
   projects = []
 }) => {
   const [deletingPortfolio, setDeletingPortfolio] = useState(null);
@@ -60,6 +61,7 @@ const ManagePortfoliosModal = ({
               portfolios.map((portfolio) => {
                 const isPublished = publishedPortfolioSlugs.includes(portfolio.slug);
                 const projectCount = projects.filter(p => p.portfolio_id === portfolio.id).length;
+                const viewCount = portfolioViewCounts[portfolio.slug] || 0;
 
                 return (
                   <div
@@ -83,9 +85,15 @@ const ManagePortfoliosModal = ({
                           {portfolio.description}
                         </div>
                       )}
-                      <div className="text-terminal-gray text-xs">
-                        {projectCount} project{projectCount !== 1 ? 's' : ''} assigned
-                        {isPublished && ' • Published'}
+                      <div className="text-terminal-gray text-xs flex items-center gap-2">
+                        <span>{projectCount} project{projectCount !== 1 ? 's' : ''} assigned</span>
+                        {isPublished && <span>• Published</span>}
+                        {viewCount > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Eye size={12} />
+                            <span>{viewCount} view{viewCount !== 1 ? 's' : ''}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">

@@ -669,6 +669,20 @@ export const portfolios = {
 
     return response.json();
   },
+
+  /**
+   * Get published portfolio stats (view counts) for authenticated user
+   */
+  getPublishedStats: async () => {
+    const response = await fetchWithAuth('/api/portfolios/published/stats');
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to fetch portfolio stats');
+    }
+
+    return response.json();
+  },
 };
 
 /**

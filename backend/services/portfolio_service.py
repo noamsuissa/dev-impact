@@ -18,6 +18,8 @@ from backend.schemas.portfolio import (
     UserData,
     GitHubData,
     PortfolioData,
+    PortfolioViewStats,
+    PortfolioStatsResponse,
 )
 from backend.schemas.auth import MessageResponse
 from backend.schemas.subscription import SubscriptionInfoResponse
@@ -583,7 +585,7 @@ class PortfolioService:
     # ============================================
 
     @staticmethod
-    async def get_published_portfolio(client, username: str, portfolio_slug: Optional[str] = None) -> PortfolioResponse:
+    async def get_published_portfolio(client, username: str, portfolio_slug: Optional[str] = None, increment_view_count: bool = True) -> PortfolioResponse:
         """
         Get a published portfolio by username and optional portfolio slug (PUBLIC)
         
@@ -591,6 +593,7 @@ class PortfolioService:
             client: Supabase client (injected from router)
             username: The profile username to fetch
             portfolio_slug: Optional portfolio slug (for multi-portfolio support)
+            increment_view_count: Whether to increment the view count (default True)
             
         Returns:
             PortfolioResponse containing portfolio data
@@ -618,21 +621,24 @@ class PortfolioService:
             
             # Get the first one (or the specific one if slug provided)
             portfolio = result.data[0]
+            current_view_count = portfolio["view_count"]
             
-            # Increment view count
-            try:
-                update_query = client.table("published_profiles")\
-                    .update({"view_count": portfolio["view_count"] + 1})\
-                    .eq("username", username)
-                
-                if portfolio_slug:
-                    update_query = update_query.eq("profile_slug", portfolio_slug)
-                else:
-                    update_query = update_query.eq("id", portfolio["id"])
-                
-                update_query.execute()
-            except Exception as e:
-                print(f"Failed to increment view count: {e}")
+            # Increment view count only if requested
+            if increment_view_count:
+                try:
+                    update_query = client.table("published_profiles")\
+                        .update({"view_count": current_view_count + 1})\
+                        .eq("username", username)
+                    
+                    if portfolio_slug:
+                        update_query = update_query.eq("profile_slug", portfolio_slug)
+                    else:
+                        update_query = update_query.eq("id", portfolio["id"])
+                    
+                    update_query.execute()
+                    current_view_count += 1
+                except Exception as e:
+                    print(f"Failed to increment view count: {e}")
             
             # Return portfolio data
             portfolio_data = portfolio["profile_data"]
@@ -642,7 +648,7 @@ class PortfolioService:
                 user=portfolio_data["user"],
                 portfolio=portfolio_data.get("profile"),
                 projects=portfolio_data["projects"],
-                view_count=portfolio["view_count"] + 1,
+                view_count=current_view_count,
                 published_at=portfolio["published_at"],
                 updated_at=portfolio["updated_at"]
             )
@@ -651,6 +657,41 @@ class PortfolioService:
         except Exception as e:
             print(f"Error in get_published_portfolio: {e}")
             raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching the portfolio")
+
+    @staticmethod
+    async def get_published_portfolio_stats(client, user_id: str) -> PortfolioStatsResponse:
+        """
+        Get view count statistics for all of a user's published portfolios (including unpublished)
+        
+        Args:
+            client: Supabase client (injected from router)
+            user_id: The authenticated user's ID
+            
+        Returns:
+            PortfolioStatsResponse containing view counts for all portfolios
+        """
+        try:
+            # Query published_profiles by user_id (not filtered by is_published)
+            # This allows us to get view counts even for unpublished portfolios
+            result = client.table("published_profiles")\
+                .select("profile_slug, view_count, is_published")\
+                .eq("user_id", user_id)\
+                .execute()
+            
+            stats = []
+            for portfolio in result.data:
+                stats.append(
+                    PortfolioViewStats(
+                        portfolio_slug=portfolio.get("profile_slug") or "",
+                        view_count=portfolio.get("view_count", 0),
+                        is_published=portfolio.get("is_published", False)
+                    )
+                )
+            
+            return PortfolioStatsResponse(stats=stats)
+        except Exception as e:
+            print(f"Error in get_published_portfolio_stats: {e}")
+            raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching portfolio stats")
 
     @staticmethod
     async def list_published_portfolios(client, limit: int = 50, offset: int = 0) -> ListPortfoliosResponse:

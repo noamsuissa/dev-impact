@@ -143,7 +143,35 @@ const PublicProfile = () => {
         setError(null);
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        const url = `${apiUrl}/api/portfolios/${username}/${portfolioSlug}`;
+        
+        // Check if we should increment view count
+        // Don't increment if:
+        // 1. Already viewed in this session (sessionStorage)
+        // 2. Viewed within last 30 minutes (localStorage with timestamp)
+        const sessionKey = `portfolio_viewed_${username}_${portfolioSlug}`;
+        const timeKey = `portfolio_viewed_time_${username}_${portfolioSlug}`;
+        
+        const viewedInSession = sessionStorage.getItem(sessionKey);
+        const lastViewedTime = localStorage.getItem(timeKey);
+        
+        let shouldIncrement = true;
+        if (viewedInSession) {
+          shouldIncrement = false;
+        } else if (lastViewedTime) {
+          const lastViewed = parseInt(lastViewedTime, 10);
+          const now = Date.now();
+          const thirtyMinutes = 30 * 60 * 1000; // 30 minutes in milliseconds
+          
+          if (now - lastViewed < thirtyMinutes) {
+            shouldIncrement = false;
+          }
+        }
+        
+        // Build URL with increment parameter
+        let url = `${apiUrl}/api/portfolios/${username}/${portfolioSlug}`;
+        if (!shouldIncrement) {
+          url += '?increment=false';
+        }
         
         const response = await fetch(url);
 
@@ -156,6 +184,12 @@ const PublicProfile = () => {
 
         const data = await response.json();
         setProfile(data);
+        
+        // Store view tracking if we incremented
+        if (shouldIncrement) {
+          sessionStorage.setItem(sessionKey, 'true');
+          localStorage.setItem(timeKey, Date.now().toString());
+        }
       } catch (err) {
         console.error('Error fetching profile:', err);
         setError(err.message);
