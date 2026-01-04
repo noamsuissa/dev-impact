@@ -18,7 +18,7 @@ class TestGetPublishedPortfolioStats:
     """Tests for get_published_portfolio_stats method"""
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_stats_success(mock_supabase_client):
+    async def test_get_published_portfolio_stats_success(self, mock_supabase_client):
         """Test successful retrieval of portfolio stats"""
         # Arrange
         user_id = "user-123"
@@ -55,7 +55,7 @@ class TestGetPublishedPortfolioStats:
         mock_supabase_client.table.return_value.select.return_value.eq.assert_called_with("user_id", user_id)
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_stats_empty(mock_supabase_client):
+    async def test_get_published_portfolio_stats_empty(self, mock_supabase_client):
         """Test retrieval when user has no published portfolios"""
         # Arrange
         user_id = "user-123"
@@ -72,7 +72,7 @@ class TestGetPublishedPortfolioStats:
         assert len(result.stats) == 0
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_stats_missing_slug(mock_supabase_client):
+    async def test_get_published_portfolio_stats_missing_slug(self, mock_supabase_client):
         """Test handling of missing profile_slug (should default to empty string)"""
         # Arrange
         user_id = "user-123"
@@ -95,7 +95,7 @@ class TestGetPublishedPortfolioStats:
         assert result.stats[0].portfolio_slug == ""
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_stats_exception(mock_supabase_client):
+    async def test_get_published_portfolio_stats_exception(self, mock_supabase_client):
         """Test exception handling"""
         # Arrange
         user_id = "user-123"
@@ -112,7 +112,7 @@ class TestGetPublishedPortfolio:
     """Tests for get_published_portfolio method with increment flag"""
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_increment_true(mock_supabase_client):
+    async def test_get_published_portfolio_increment_true(self, mock_supabase_client):
         """Test that view count increments when increment_view_count=True"""
         # Arrange
         username = "testuser"
@@ -149,24 +149,21 @@ class TestGetPublishedPortfolio:
         mock_update_response = MagicMock()
         
         # Set up the mock chain
+        # The query object returns itself on each method call (fluent interface)
+        mock_query = MagicMock()
+        mock_query.eq.return_value = mock_query  # Each .eq() returns the same query object
+        mock_query.execute.return_value = mock_select_response
+        
         mock_table = MagicMock()
-        mock_select = MagicMock()
-        mock_eq1 = MagicMock()
-        mock_eq2 = MagicMock()
-        mock_update = MagicMock()
-        mock_update_eq1 = MagicMock()
-        mock_update_eq2 = MagicMock()
+        mock_table.select.return_value = mock_query
+        
+        # Set up update chain
+        mock_update_query = MagicMock()
+        mock_update_query.eq.return_value = mock_update_query  # Each .eq() returns the same query object
+        mock_update_query.execute.return_value = mock_update_response
         
         mock_supabase_client.table.return_value = mock_table
-        mock_table.select.return_value = mock_select
-        mock_select.eq.return_value = mock_eq1
-        mock_eq1.eq.return_value = mock_eq2
-        mock_eq2.execute.return_value = mock_select_response
-        
-        mock_table.update.return_value = mock_update
-        mock_update.eq.return_value = mock_update_eq1
-        mock_update_eq1.eq.return_value = mock_update_eq2
-        mock_update_eq2.execute.return_value = mock_update_response
+        mock_table.update.return_value = mock_update_query
         
         # Act
         result = await PortfolioService.get_published_portfolio(
@@ -185,7 +182,7 @@ class TestGetPublishedPortfolio:
         mock_table.update.assert_called_with({"view_count": initial_view_count + 1})
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_increment_false(mock_supabase_client):
+    async def test_get_published_portfolio_increment_false(self, mock_supabase_client):
         """Test that view count does NOT increment when increment_view_count=False"""
         # Arrange
         username = "testuser"
@@ -219,16 +216,15 @@ class TestGetPublishedPortfolio:
         }]
         
         # Set up the mock chain
+        # The query object returns itself on each method call (fluent interface)
+        mock_query = MagicMock()
+        mock_query.eq.return_value = mock_query  # Each .eq() returns the same query object
+        mock_query.execute.return_value = mock_select_response
+        
         mock_table = MagicMock()
-        mock_select = MagicMock()
-        mock_eq1 = MagicMock()
-        mock_eq2 = MagicMock()
+        mock_table.select.return_value = mock_query
         
         mock_supabase_client.table.return_value = mock_table
-        mock_table.select.return_value = mock_select
-        mock_select.eq.return_value = mock_eq1
-        mock_eq1.eq.return_value = mock_eq2
-        mock_eq2.execute.return_value = mock_select_response
         
         # Act
         result = await PortfolioService.get_published_portfolio(
@@ -247,7 +243,7 @@ class TestGetPublishedPortfolio:
         mock_table.update.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_increment_default_true(mock_supabase_client):
+    async def test_get_published_portfolio_increment_default_true(self, mock_supabase_client):
         """Test that increment_view_count defaults to True"""
         # Arrange
         username = "testuser"
@@ -279,24 +275,20 @@ class TestGetPublishedPortfolio:
             }
         }]
         
+        # Set up the mock chain
+        mock_query = MagicMock()
+        mock_query.eq.return_value = mock_query
+        mock_query.execute.return_value = mock_select_response
+        
+        mock_update_query = MagicMock()
+        mock_update_query.eq.return_value = mock_update_query
+        mock_update_query.execute.return_value = MagicMock()
+        
         mock_table = MagicMock()
-        mock_select = MagicMock()
-        mock_eq1 = MagicMock()
-        mock_eq2 = MagicMock()
-        mock_update = MagicMock()
-        mock_update_eq1 = MagicMock()
-        mock_update_eq2 = MagicMock()
+        mock_table.select.return_value = mock_query
+        mock_table.update.return_value = mock_update_query
         
         mock_supabase_client.table.return_value = mock_table
-        mock_table.select.return_value = mock_select
-        mock_select.eq.return_value = mock_eq1
-        mock_eq1.eq.return_value = mock_eq2
-        mock_eq2.execute.return_value = mock_select_response
-        
-        mock_table.update.return_value = mock_update
-        mock_update.eq.return_value = mock_update_eq1
-        mock_update_eq1.eq.return_value = mock_update_eq2
-        mock_update_eq2.execute.return_value = MagicMock()
         
         # Act (no increment_view_count parameter, should default to True)
         result = await PortfolioService.get_published_portfolio(
@@ -310,7 +302,7 @@ class TestGetPublishedPortfolio:
         mock_table.update.assert_called()
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_not_found(mock_supabase_client):
+    async def test_get_published_portfolio_not_found(self, mock_supabase_client):
         """Test error when portfolio not found"""
         # Arrange
         username = "testuser"
@@ -319,16 +311,15 @@ class TestGetPublishedPortfolio:
         mock_select_response = MagicMock()
         mock_select_response.data = []
         
+        # Set up the mock chain
+        mock_query = MagicMock()
+        mock_query.eq.return_value = mock_query
+        mock_query.execute.return_value = mock_select_response
+        
         mock_table = MagicMock()
-        mock_select = MagicMock()
-        mock_eq1 = MagicMock()
-        mock_eq2 = MagicMock()
+        mock_table.select.return_value = mock_query
         
         mock_supabase_client.table.return_value = mock_table
-        mock_table.select.return_value = mock_select
-        mock_select.eq.return_value = mock_eq1
-        mock_eq1.eq.return_value = mock_eq2
-        mock_eq2.execute.return_value = mock_select_response
         
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
@@ -342,7 +333,7 @@ class TestGetPublishedPortfolio:
         assert "Portfolio not found" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_increment_exception_handled(mock_supabase_client):
+    async def test_get_published_portfolio_increment_exception_handled(self, mock_supabase_client):
         """Test that exception during increment doesn't break the response"""
         # Arrange
         username = "testuser"
@@ -374,25 +365,21 @@ class TestGetPublishedPortfolio:
             }
         }]
         
-        mock_table = MagicMock()
-        mock_select = MagicMock()
-        mock_eq1 = MagicMock()
-        mock_eq2 = MagicMock()
-        mock_update = MagicMock()
-        mock_update_eq1 = MagicMock()
-        mock_update_eq2 = MagicMock()
-        
-        mock_supabase_client.table.return_value = mock_table
-        mock_table.select.return_value = mock_select
-        mock_select.eq.return_value = mock_eq1
-        mock_eq1.eq.return_value = mock_eq2
-        mock_eq2.execute.return_value = mock_select_response
+        # Set up the mock chain
+        mock_query = MagicMock()
+        mock_query.eq.return_value = mock_query
+        mock_query.execute.return_value = mock_select_response
         
         # Make update raise an exception
-        mock_table.update.return_value = mock_update
-        mock_update.eq.return_value = mock_update_eq1
-        mock_update_eq1.eq.return_value = mock_update_eq2
-        mock_update_eq2.execute.side_effect = Exception("Update failed")
+        mock_update_query = MagicMock()
+        mock_update_query.eq.return_value = mock_update_query
+        mock_update_query.execute.side_effect = Exception("Update failed")
+        
+        mock_table = MagicMock()
+        mock_table.select.return_value = mock_query
+        mock_table.update.return_value = mock_update_query
+        
+        mock_supabase_client.table.return_value = mock_table
         
         # Act
         result = await PortfolioService.get_published_portfolio(
