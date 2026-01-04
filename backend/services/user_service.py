@@ -73,8 +73,10 @@ class UserService:
         """
         try:
             
-            # Prepare update data (only include non-None values)
-            update_data = {k: v for k, v in profile_data.items() if v is not None}
+            # Prepare update data
+            # Include all values, even None, to allow clearing fields (e.g., disconnecting GitHub)
+            # Only exclude keys that weren't provided in the request
+            update_data = {k: v for k, v in profile_data.items()}
             
             if not update_data:
                 # If no data to update, just return current profile
@@ -85,20 +87,23 @@ class UserService:
                 .eq("id", user_id)\
                 .execute()
             
-            if not result.data:
+            if not result.data or len(result.data) == 0:
                 raise HTTPException(status_code=404, detail="Profile not found")
             
+            # Update returns a list, get the first item
+            updated_profile = result.data[0]
+            
             return UserProfile(
-                id=result.data["id"],
-                username=result.data["username"],
-                full_name=result.data["full_name"],
-                github_username=result.data["github_username"],
-                github_avatar_url=result.data["github_avatar_url"],
-                city=result.data.get("city"),
-                country=result.data.get("country"),
-                is_published=result.data["is_published"],
-                created_at=result.data["created_at"],
-                updated_at=result.data["updated_at"]
+                id=updated_profile["id"],
+                username=updated_profile["username"],
+                full_name=updated_profile["full_name"],
+                github_username=updated_profile["github_username"],
+                github_avatar_url=updated_profile["github_avatar_url"],
+                city=updated_profile.get("city"),
+                country=updated_profile.get("country"),
+                is_published=updated_profile["is_published"],
+                created_at=updated_profile["created_at"],
+                updated_at=updated_profile["updated_at"]
             )
         except HTTPException:
             raise
