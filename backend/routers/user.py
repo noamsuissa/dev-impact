@@ -40,10 +40,14 @@ async def update_profile(
     Update current user's profile
     
     Updates the authenticated user's profile data.
+    Note: Setting a field to null will clear that field (e.g., disconnecting GitHub).
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    profile_data = request.model_dump(exclude_none=True)
+    # Use exclude_unset=True instead of exclude_none=True
+    # This allows explicitly set None values to be included (for clearing fields)
+    # while excluding fields that weren't provided in the request
+    profile_data = request.model_dump(exclude_unset=True)
     profile = await UserService.update_profile(client, user_id, profile_data)
     return profile
 

@@ -210,6 +210,7 @@ const AccountPage = ({ user, projects }) => {
 
     try {
       // Set GitHub fields to null to disconnect
+      // The backend will accept these null values to clear the fields
       await userClient.updateProfile({
         github_username: null,
         github_avatar_url: null,
@@ -218,12 +219,13 @@ const AccountPage = ({ user, projects }) => {
       // Refresh user profile in AuthContext
       await updateUserProfile();
       
-      // Force page reload to update the user prop
-      window.location.reload();
+      // Small delay to ensure context updates, then reload
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
     } catch (error) {
       console.error('Failed to disconnect GitHub:', error);
       setEditError(error.message || 'Failed to disconnect GitHub');
-    } finally {
       setIsDisconnectingGitHub(false);
     }
   };
