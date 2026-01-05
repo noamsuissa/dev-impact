@@ -8,7 +8,7 @@
           "value": "dev-impact.io"
         }
       ],
-      "destination": "https://www.dev-impact.io/:1",
+      "destination": "https://www.dev-impact.io/$1",
       "permanent": true
     },
     {
@@ -20,7 +20,7 @@
           "value": "http"
         }
       ],
-      "destination": "https://www.dev-impact.io/:1",
+      "destination": "https://www.dev-impact.io/$1",
       "permanent": true
     }
   ],
