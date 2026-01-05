@@ -11,9 +11,12 @@ class StripeService:
     """Service for handling Stripe operations"""
     
     @staticmethod
-    def _get_stripe_config() -> Dict[str, str]:
+    def _get_stripe_config(billing_period: str = "monthly") -> Dict[str, str]:
         """
         Get Stripe configuration from environment variables
+        
+        Args:
+            billing_period: "monthly" or "yearly" to select the appropriate price ID
         
         Returns:
             Dictionary with Stripe API keys and price ID
@@ -23,7 +26,18 @@ class StripeService:
         """
         secret_key = os.getenv("STRIPE_SECRET_KEY")
         publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY")
-        price_id = os.getenv("STRIPE_PRICE_ID")
+        
+        # Get price ID based on billing period
+        if billing_period == "yearly":
+            price_id = os.getenv("STRIPE_PRICE_ID_YEARLY")
+            # Fallback to old env var for backward compatibility
+            if not price_id:
+                price_id = os.getenv("STRIPE_PRICE_ID")
+        else:
+            price_id = os.getenv("STRIPE_PRICE_ID_MONTHLY")
+            # Fallback to old env var for backward compatibility
+            if not price_id:
+                price_id = os.getenv("STRIPE_PRICE_ID")
         
         if not secret_key:
             raise HTTPException(
@@ -40,7 +54,7 @@ class StripeService:
         if not price_id:
             raise HTTPException(
                 status_code=500,
-                detail="Stripe price ID not configured"
+                detail=f"Stripe price ID not configured for {billing_period} billing"
             )
         
         return {
@@ -55,7 +69,8 @@ class StripeService:
         user_id: str,
         user_email: str,
         success_url: str,
-        cancel_url: str
+        cancel_url: str,
+        billing_period: str = "monthly"
     ) -> Dict[str, Any]:
         """
         Create a Stripe Checkout session for Pro plan subscription
@@ -66,6 +81,7 @@ class StripeService:
             user_email: User's email address
             success_url: URL to redirect to after successful payment
             cancel_url: URL to redirect to if user cancels
+            billing_period: "monthly" or "yearly" billing period
             
         Returns:
             Dictionary with checkout_url and session_id
@@ -74,7 +90,7 @@ class StripeService:
             HTTPException if checkout session creation fails
         """
         try:
-            config = StripeService._get_stripe_config()
+            config = StripeService._get_stripe_config(billing_period)
             stripe.api_key = config["secret_key"]
             
             # Check for existing Stripe customer ID in database

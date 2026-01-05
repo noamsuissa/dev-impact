@@ -10,6 +10,7 @@ class CheckoutSessionRequest(BaseModel):
     """Request model for creating a Stripe checkout session"""
     success_url: str
     cancel_url: str
+    billing_period: str = "monthly"  # "monthly" or "yearly"
 
 
 class CheckoutSessionResponse(BaseModel):

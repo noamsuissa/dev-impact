@@ -772,12 +772,13 @@ export const subscriptions = {
   /**
    * Create a Stripe checkout session
    */
-  createCheckoutSession: async (successUrl, cancelUrl) => {
+  createCheckoutSession: async (successUrl, cancelUrl, billingPeriod = 'monthly') => {
     const response = await fetchWithAuth('/api/subscriptions/create-checkout-session', {
       method: 'POST',
       body: JSON.stringify({
         success_url: successUrl,
         cancel_url: cancelUrl,
+        billing_period: billingPeriod,
       }),
     });
 
