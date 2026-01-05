@@ -21,6 +21,9 @@
   <a href="https://github.com/noamsuissa/dev-impact/actions/workflows/pylint.yml" target="_blank" rel="noopener noreferrer">
     <img src="https://github.com/noamsuissa/dev-impact/actions/workflows/pylint.yml/badge.svg" alt="Pylint" style="border:none; box-shadow:none;"/>
   </a>
+  <a href="https://github.com/noamsuissa/dev-impact/actions/workflows/test.yml" target="_blank" rel="noopener noreferrer">
+    <img src="https://github.com/noamsuissa/dev-impact/actions/workflows/test.yml/badge.svg" alt="Tests" style="border:none; box-shadow:none;"/>
+  </a>
 </p>
 
 <p align="center">
