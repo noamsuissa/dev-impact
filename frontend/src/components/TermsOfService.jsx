@@ -1,8 +1,21 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalButton from './common/TerminalButton';
+import { useMetaTags } from '../hooks/useMetaTags';
 
 const TermsOfService = () => {
+    // Set meta tags for terms of service page
+    useMetaTags({
+        title: 'Terms of Service - dev-impact',
+        description: 'Read dev-impact\'s Terms of Service. Understand the rules and guidelines for using our developer portfolio platform.',
+        image: 'https://www.dev-impact.io/og-image-2.png',
+        imageSecureUrl: 'https://www.dev-impact.io/og-image-2.png',
+        url: 'https://www.dev-impact.io/terms',
+        type: 'website',
+        author: 'dev-impact',
+        siteName: 'dev-impact'
+    });
+
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);

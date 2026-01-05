@@ -1,8 +1,21 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import TerminalButton from './common/TerminalButton';
+import { useMetaTags } from '../hooks/useMetaTags';
 
 const PrivacyPolicy = () => {
+    // Set meta tags for privacy policy page
+    useMetaTags({
+        title: 'Privacy Policy - dev-impact',
+        description: 'Read dev-impact\'s Privacy Policy. Learn how we collect, use, and protect your personal information in compliance with Quebec Law 25.',
+        image: 'https://www.dev-impact.io/og-image-2.png',
+        imageSecureUrl: 'https://www.dev-impact.io/og-image-2.png',
+        url: 'https://www.dev-impact.io/privacy',
+        type: 'website',
+        author: 'dev-impact',
+        siteName: 'dev-impact'
+    });
+
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);

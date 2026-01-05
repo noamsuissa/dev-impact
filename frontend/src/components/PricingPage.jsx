@@ -4,10 +4,22 @@ import { Check, ArrowLeft } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import WaitlistModal from './WaitlistModal';
 import UpgradeModal from './UpgradeModal';
+import { useMetaTags } from '../hooks/useMetaTags';
 
 import { useAuth } from '../hooks/useAuth';
 
 const PricingPage = () => {
+  // Set meta tags for pricing page
+  useMetaTags({
+    title: 'Pricing - dev-impact',
+    description: 'Choose the right plan for your developer portfolio. Free Hobby plan available, or upgrade to Pro for unlimited portfolios, custom domains, and advanced features.',
+    image: 'https://www.dev-impact.io/og-image-2.png',
+    imageSecureUrl: 'https://www.dev-impact.io/og-image-2.png',
+    url: 'https://www.dev-impact.io/pricing',
+    type: 'website',
+    author: 'dev-impact',
+    siteName: 'dev-impact'
+  });
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const { user } = useAuth();

@@ -78,7 +78,7 @@ function generatePortfolioUrl(username, portfolioSlug = null) {
   return `https://${username}.${baseDomain}`;
 }
 
-// Fetch all published portfolios from the API
+// Fetch all published portfolios from the API with timeout
 async function fetchPublishedPortfolios() {
   // eslint-disable-next-line no-undef
   const apiUrl = process.env.VITE_API_URL || process.env.API_URL || 'https://api.dev-impact.io';
@@ -86,36 +86,49 @@ async function fetchPublishedPortfolios() {
   const portfolios = [];
   let offset = 0;
   let hasMore = true;
+  const TIMEOUT_MS = 2000; // 2 second timeout to ensure fast sitemap response
 
   try {
-    while (hasMore) {
-      const response = await fetch(`${apiUrl}/api/portfolios/published?limit=${limit}&offset=${offset}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Portfolio fetch timeout')), TIMEOUT_MS);
+    });
 
-      if (!response.ok) {
-        console.error(`Failed to fetch portfolios: ${response.status}`);
-        break;
-      }
+    // Race between fetch and timeout
+    const fetchPromise = (async () => {
+      while (hasMore) {
+        const response = await fetch(`${apiUrl}/api/portfolios/published?limit=${limit}&offset=${offset}`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
-      const data = await response.json();
-      
-      if (data.portfolios && data.portfolios.length > 0) {
-        portfolios.push(...data.portfolios);
-        offset += limit;
-        hasMore = data.portfolios.length === limit;
-      } else {
-        hasMore = false;
+        if (!response.ok) {
+          console.error(`Failed to fetch portfolios: ${response.status}`);
+          break;
+        }
+
+        const data = await response.json();
+        
+        if (data.portfolios && data.portfolios.length > 0) {
+          portfolios.push(...data.portfolios);
+          offset += limit;
+          hasMore = data.portfolios.length === limit;
+        } else {
+          hasMore = false;
+        }
       }
-    }
+      return portfolios;
+    })();
+
+    // Race: if timeout wins, return empty array (static pages only)
+    await Promise.race([fetchPromise, timeoutPromise]);
+    return portfolios;
   } catch (error) {
-    console.error('Error fetching portfolios:', error);
-    // Continue with static pages even if portfolio fetch fails
+    // Timeout or other error - return empty array, sitemap will still include static pages
+    console.error('Error fetching portfolios (using static pages only):', error.message);
+    return [];
   }
-
-  return portfolios;
 }
 
 // Generate sitemap XML
