@@ -108,6 +108,12 @@ class StripeService:
                 print(f"Error fetching profile for Stripe customer ID: {e}")
                 # Proceed without it, Stripe will create a new one
             
+            # Note: We don't pre-validate customer IDs here because:
+            # - Stripe allows retrieving deleted customers (returns 200) but they can't be used
+            # - Deleted customers don't expose a 'deleted' attribute
+            # - The only reliable way to detect invalid/deleted customers is when they fail during use
+            # - We handle this in the checkout session creation fallback (lines 172-189)
+            
             # Prepare session arguments
             session_args = {
                 "payment_method_types": ["card"],
@@ -140,7 +146,26 @@ class StripeService:
                 session_args["customer_email"] = user_email
                 
             # Create Stripe Checkout Session
-            session = stripe.checkout.Session.create(**session_args)
+            try:
+                session = stripe.checkout.Session.create(**session_args)
+            except stripe.error.InvalidRequestError as e:
+                # If customer doesn't exist (e.g., was deleted), clear it and retry
+                if "customer" in session_args and "No such customer" in str(e):
+                    print(f"Customer {stripe_customer_id} not found during checkout creation, clearing and retrying: {e}")
+                    # Clear customer ID from database
+                    try:
+                        client.table("profiles").update({
+                            "stripe_customer_id": None
+                        }).eq("id", user_id).execute()
+                    except Exception as db_error:
+                        print(f"Error clearing invalid customer ID from database: {db_error}")
+                    # Retry without customer ID
+                    session_args.pop("customer", None)
+                    session_args["customer_email"] = user_email
+                    session = stripe.checkout.Session.create(**session_args)
+                else:
+                    # Re-raise if it's a different error
+                    raise
 
             
             return {
