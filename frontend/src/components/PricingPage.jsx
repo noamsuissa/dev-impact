@@ -22,9 +22,18 @@ const PricingPage = () => {
   });
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState('monthly'); // 'monthly' or 'yearly'
   const { user } = useAuth();
   const navigate = useNavigate();
   const enablePayments = import.meta.env.VITE_ENABLE_PAYMENTS === 'true';
+  
+  const getProPlanPrice = () => {
+    if (billingPeriod === 'yearly') {
+      return { price: '$8', period: 'per month', billed: '$96 billed yearly' };
+    }
+    return { price: '$10', period: 'per month', billed: null };
+  };
+  
   const plans = [
     {
       name: 'Hobby',
@@ -49,8 +58,7 @@ const PricingPage = () => {
     },
     {
       name: 'Pro',
-      price: '$7',
-      period: 'per month',
+      getPrice: getProPlanPrice,
       description: 'For serious developers',
       features: [
         'Everything in Free, plus:',
@@ -80,7 +88,7 @@ const PricingPage = () => {
 
     // Check if user is authenticated
     if (user) {
-      // User is logged in - show upgrade modal
+      // User is logged in - show upgrade modal with billing period
       setIsUpgradeModalOpen(true);
     } else {
       // User is not logged in - redirect to signup with plan parameter
@@ -105,10 +113,40 @@ const PricingPage = () => {
           </div>
         </div>
 
+        {/* Billing Period Toggle - only show when payments enabled */}
+        {enablePayments && (
+          <div className="mb-6 flex justify-center">
+            <div className="inline-flex items-center gap-3 border border-terminal-border p-1 rounded bg-terminal-bg">
+              <button
+                onClick={() => setBillingPeriod('monthly')}
+                className={`px-4 py-2 rounded text-sm transition-colors ${
+                  billingPeriod === 'monthly'
+                    ? 'bg-terminal-orange text-terminal-bg'
+                    : 'text-terminal-text hover:text-terminal-orange'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingPeriod('yearly')}
+                className={`px-4 py-2 rounded text-sm transition-colors ${
+                  billingPeriod === 'yearly'
+                    ? 'bg-terminal-orange text-terminal-bg'
+                    : 'text-terminal-text hover:text-terminal-orange'
+                }`}
+              >
+                Yearly
+                <span className="ml-1 text-xs text-terminal-green">Save 20%</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Pricing Cards */}
         <div className="grid md:grid-cols-2 gap-6 mb-10">
           {plans.map((plan, index) => {
             const isComingSoon = plan.comingSoon;
+            const priceInfo = plan.getPrice ? plan.getPrice() : { price: plan.price, period: plan.period, billed: null };
 
             return (
               <div
@@ -138,10 +176,15 @@ const PricingPage = () => {
                       </span>
                     </div>
                   ) : (
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-3xl text-terminal-orange">{plan.price}</span>
-                      {plan.period && (
-                        <span className="text-terminal-gray text-sm">/{plan.period}</span>
+                    <div className="mb-2">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl text-terminal-orange">{priceInfo.price}</span>
+                        {priceInfo.period && (
+                          <span className="text-terminal-gray text-sm">/{priceInfo.period}</span>
+                        )}
+                      </div>
+                      {priceInfo.billed && (
+                        <div className="text-terminal-gray text-xs mt-1">{priceInfo.billed}</div>
                       )}
                     </div>
                   )}
@@ -337,6 +380,8 @@ const PricingPage = () => {
         message={enablePayments
           ? "Unlock the full power of Dev Impact with a Pro subscription."
           : "Get unlimited profiles, 5GB storage, and more with Dev Impact Pro."}
+        billingPeriod={billingPeriod}
+        onBillingPeriodChange={setBillingPeriod}
       />
     </div>
   );

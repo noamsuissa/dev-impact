@@ -34,7 +34,8 @@ async def create_checkout_session(
         user_id=user_id,
         user_email=user_email,
         success_url=request.success_url,
-        cancel_url=request.cancel_url
+        cancel_url=request.cancel_url,
+        billing_period=request.billing_period
     )
 
     

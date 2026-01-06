@@ -8,10 +8,15 @@ import { Sparkles } from 'lucide-react';
 const enablePayments = import.meta.env.VITE_ENABLE_PAYMENTS === 'true';
 
 
-const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false }) => {
+const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false, billingPeriod: propBillingPeriod, onBillingPeriodChange }) => {
     const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState(null);
+    const [internalBillingPeriod, setInternalBillingPeriod] = useState('monthly');
+    
+    // Use prop if provided, otherwise use internal state
+    const billingPeriod = propBillingPeriod !== undefined ? propBillingPeriod : internalBillingPeriod;
+    const setBillingPeriod = onBillingPeriodChange || setInternalBillingPeriod;
 
     // Determine content based on context
     const modalTitle = title || (isLimitReached ? "Limit Reached" : "Upgrade to Pro");
@@ -32,11 +37,14 @@ const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false 
         'Early access to new features'
     ];
 
-    const plan = {
-        name: 'Pro',
-        price: '$7',
-        period: 'per month',
+    const getPlanPrice = () => {
+        if (billingPeriod === 'yearly') {
+            return { price: '$8', period: 'per month', billed: '$96 billed yearly' };
+        }
+        return { price: '$10', period: 'per month', billed: null };
     };
+
+    const planPrice = getPlanPrice();
 
     const handleUpgrade = async () => {
         if (!enablePayments) {
@@ -61,8 +69,8 @@ const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false 
             const successUrl = `${baseUrl}/subscription/success`;
             const cancelUrl = `${baseUrl}/subscription/cancel`;
 
-            // Create checkout session
-            const { checkout_url } = await subscriptions.createCheckoutSession(successUrl, cancelUrl);
+            // Create checkout session with billing period
+            const { checkout_url } = await subscriptions.createCheckoutSession(successUrl, cancelUrl, billingPeriod);
 
             // Redirect to Stripe Checkout
             window.location.href = checkout_url;
@@ -120,11 +128,40 @@ const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false 
                             </div>
                         </div>
 
+                        {/* Billing Period Toggle - only show when payments enabled */}
+                        {enablePayments && (
+                            <div className="flex justify-center mb-4">
+                                <div className="inline-flex items-center gap-3 border border-terminal-border p-1 rounded bg-terminal-bg">
+                                    <button
+                                        onClick={() => setBillingPeriod('monthly')}
+                                        className={`px-4 py-2 rounded text-sm transition-colors ${
+                                            billingPeriod === 'monthly'
+                                                ? 'bg-terminal-orange text-terminal-bg'
+                                                : 'text-terminal-text hover:text-terminal-orange'
+                                        }`}
+                                    >
+                                        Monthly
+                                    </button>
+                                    <button
+                                        onClick={() => setBillingPeriod('yearly')}
+                                        className={`px-4 py-2 rounded text-sm transition-colors ${
+                                            billingPeriod === 'yearly'
+                                                ? 'bg-terminal-orange text-terminal-bg'
+                                                : 'text-terminal-text hover:text-terminal-orange'
+                                        }`}
+                                    >
+                                        Yearly
+                                        <span className="ml-1 text-xs text-terminal-green">Save 20%</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Pro Plan Details */}
                         <div>
                             <div className="mb-4">
                                 <div className="inline-block px-2 py-0.5 rounded bg-terminal-orange text-terminal-bg text-lg mb-2">
-                                    {plan.name}
+                                    Pro
                                 </div>
                                 {!enablePayments ? (
                                     <div className="text-xl mb-2">
@@ -133,10 +170,15 @@ const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false 
                                         </span>
                                     </div>
                                 ) : (
-                                    <div className="flex items-baseline gap-2 mb-2">
-                                        <span className="text-3xl text-terminal-orange">{plan.price}</span>
-                                        {plan.period && (
-                                            <span className="text-terminal-gray text-sm">/{plan.period}</span>
+                                    <div className="mb-2">
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-3xl text-terminal-orange">{planPrice.price}</span>
+                                            {planPrice.period && (
+                                                <span className="text-terminal-gray text-sm">/{planPrice.period}</span>
+                                            )}
+                                        </div>
+                                        {planPrice.billed && (
+                                            <div className="text-terminal-gray text-xs mt-1">{planPrice.billed}</div>
                                         )}
                                     </div>
                                 )}
