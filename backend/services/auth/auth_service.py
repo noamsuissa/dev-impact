@@ -16,6 +16,7 @@ from backend.schemas.auth import (
     MessageResponse,
     MFAFactorResponse
 )
+from backend.utils.dependencies import ServiceDBClient
 
 # Load environment variables
 load_dotenv()
@@ -25,7 +26,7 @@ class AuthService:
     """Service for handling authentication operations with Supabase."""    
 
     @staticmethod
-    async def sign_up(client, email: str, password: str) -> AuthResponse:
+    async def sign_up(client: ServiceDBClient, email: str, password: str) -> AuthResponse:
         """
         Sign up a new user
         
@@ -78,7 +79,7 @@ class AuthService:
             raise HTTPException(status_code=400, detail=f"Sign up error: {e}")
 
     @staticmethod
-    async def sign_in(client, email: str, password: str, mfa_challenge_id: Optional[str] = None, mfa_code: Optional[str] = None, mfa_factor_id: Optional[str] = None) -> AuthResponse:
+    async def sign_in(client: ServiceDBClient, email: str, password: str, mfa_challenge_id: Optional[str] = None, mfa_code: Optional[str] = None, mfa_factor_id: Optional[str] = None) -> AuthResponse:
         """
         Sign in an existing user
         
@@ -352,7 +353,7 @@ class AuthService:
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
     @staticmethod
-    async def sign_out(client, access_token: str) -> MessageResponse:
+    async def sign_out(client: ServiceDBClient, access_token: str) -> MessageResponse:
         """
         Sign out a user
         
@@ -375,7 +376,7 @@ class AuthService:
             return MessageResponse(success=True, message="Signed out")
 
     @staticmethod
-    async def reset_password_email(client, email: str) -> MessageResponse:
+    async def reset_password_email(client: ServiceDBClient, email: str) -> MessageResponse:
         """
         Send password reset email
         

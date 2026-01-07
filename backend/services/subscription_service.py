@@ -6,13 +6,14 @@ from fastapi import HTTPException
 from backend.schemas.subscription import SubscriptionInfoResponse
 from backend.schemas.auth import MessageResponse
 from backend.services.stripe_service import StripeService
+from backend.utils.dependencies import ServiceDBClient
 
 class SubscriptionService:
     """Service for handling subscription operations."""
     
     @staticmethod
     async def get_subscription_info(
-        client,
+        client: ServiceDBClient,
         user_id: str
     ) -> SubscriptionInfoResponse:
         """
@@ -81,7 +82,7 @@ class SubscriptionService:
             raise HTTPException(status_code=500, detail="Failed to get subscription info")
 
     @staticmethod
-    async def cancel_subscription(client, user_id: str) -> MessageResponse:
+    async def cancel_subscription(client: ServiceDBClient, user_id: str) -> MessageResponse:
         """
         Cancel user's subscription
         

@@ -2,12 +2,13 @@
 FastAPI dependency injection functions for database clients.
 Provides clean, declarative dependency injection for routers.
 """
-from typing import Annotated, Any
+from typing import Annotated
 from fastapi import Depends
 from backend.db import client as db_client
+from supabase import Client
 
 
-def get_service_db_client() -> Any:
+def get_service_db_client() -> Client:
     """
     FastAPI dependency that provides a service-level Supabase client.
     
@@ -21,5 +22,5 @@ def get_service_db_client() -> Any:
 
 
 # Type alias for cleaner router signatures
-ServiceDBClient = Annotated[Any, Depends(get_service_db_client)]
+ServiceDBClient = Annotated[Client, Depends(get_service_db_client)]
 

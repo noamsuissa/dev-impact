@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from backend.schemas.waitlist import WaitlistEntry, WaitlistResponse
 from backend.services.email_service import EmailService
 import logging
+from backend.utils.dependencies import ServiceDBClient
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ class WaitlistService:
     """Service for handling waitlist operations"""
     
     @staticmethod
-    async def signup(client, email: str, name: Optional[str] = None) -> WaitlistResponse:
+    async def signup(client: ServiceDBClient, email: str, name: Optional[str] = None) -> WaitlistResponse:
         """
         Add a user to the waitlist and send confirmation email
         

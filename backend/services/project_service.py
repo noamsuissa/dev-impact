@@ -10,14 +10,11 @@ from backend.schemas.project import (
     Project,
     ProjectMetric,
     StandardizedProjectMetric,
-    PrimaryMetricValue,
-    ComparisonValue,
-    MetricComparison,
-    MetricContext,
     ProjectEvidence,
 )
 from backend.schemas.auth import MessageResponse
 from backend.schemas.subscription import SubscriptionInfoResponse
+from backend.utils.dependencies import ServiceDBClient
 import uuid
 
 # Load environment variables
@@ -70,7 +67,7 @@ class ProjectService:
         )
 
     @staticmethod
-    async def list_projects(client, user_id: str | None = None, portfolio_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
+    async def list_projects(client: ServiceDBClient, user_id: str | None = None, portfolio_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
         """
         List all projects for a user, optionally filtered by profile
         
@@ -169,7 +166,7 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to fetch projects")
 
     @staticmethod
-    async def get_project(client, project_id: str, user_id: str) -> Project:
+    async def get_project(client: ServiceDBClient, project_id: str, user_id: str) -> Project:
         """
         Get a single project
         
@@ -229,7 +226,7 @@ class ProjectService:
 
     @staticmethod
     async def create_project(
-        client,
+        client: ServiceDBClient,
         subscription_info: SubscriptionInfoResponse,
         user_id: str,
         project_data: Dict[str, Any]
@@ -356,7 +353,7 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to create project")
 
     @staticmethod
-    async def update_project(client, project_id: str, user_id: str, project_data: Dict[str, Any]) -> Project:
+    async def update_project(client: ServiceDBClient, project_id: str, user_id: str, project_data: Dict[str, Any]) -> Project:
         """
         Update a project
         
@@ -461,7 +458,7 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to update project")
 
     @staticmethod
-    async def delete_project(client, project_id: str, user_id: str) -> MessageResponse:
+    async def delete_project(client: ServiceDBClient, project_id: str, user_id: str) -> MessageResponse:
         """
         Delete a project
         
@@ -495,7 +492,7 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to delete project")
 
     @staticmethod
-    async def get_user_total_evidence_size(client, user_id: str) -> int:
+    async def get_user_total_evidence_size(client: ServiceDBClient, user_id: str) -> int:
         """
         Get total size of all evidence for a user across all projects
         
@@ -533,7 +530,7 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to calculate total evidence size")
 
     @staticmethod
-    async def list_project_evidence(client, project_id: str, user_id: Optional[str] = None) -> List[ProjectEvidence]:
+    async def list_project_evidence(client: ServiceDBClient, project_id: str, user_id: Optional[str] = None) -> List[ProjectEvidence]:
         """
         List all evidence for a project
         
@@ -597,7 +594,7 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to fetch evidence")
 
     @staticmethod
-    async def _fetch_evidence_list(client, project_id: str) -> List[ProjectEvidence]:
+    async def _fetch_evidence_list(client: ServiceDBClient, project_id: str) -> List[ProjectEvidence]:
         """
         Fetch evidence list for a project
         
@@ -649,7 +646,7 @@ class ProjectService:
 
     @staticmethod
     async def upload_evidence_file(
-        client,
+        client: ServiceDBClient,
         project_id: str,
         user_id: str,
         file_name: str,
@@ -792,7 +789,7 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to upload evidence file")
 
     @staticmethod
-    async def delete_evidence(client, evidence_id: str, user_id: str) -> MessageResponse:
+    async def delete_evidence(client: ServiceDBClient, evidence_id: str, user_id: str) -> MessageResponse:
         """
         Delete evidence record and file from storage
         
@@ -842,7 +839,7 @@ class ProjectService:
             raise HTTPException(status_code=500, detail="Failed to delete evidence")
 
     @staticmethod
-    async def get_evidence_stats(client, user_id: str) -> dict:
+    async def get_evidence_stats(client: ServiceDBClient, user_id: str) -> dict:
         """
         Get evidence storage statistics for a user
         

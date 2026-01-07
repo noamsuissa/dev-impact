@@ -7,12 +7,13 @@ from fastapi import HTTPException
 from backend.schemas.user import UserProfile, CheckUsernameResponse
 from backend.schemas.auth import MessageResponse
 from backend.services.stripe_service import StripeService
+from backend.utils.dependencies import ServiceDBClient
 
 class UserService:
     """Service for handling user profile operations."""
 
     @staticmethod
-    async def get_profile(client, user_id: str | None = None) -> UserProfile:
+    async def get_profile(client: ServiceDBClient, user_id: str | None = None) -> UserProfile:
         """
         Get user profile by ID
         
@@ -59,7 +60,7 @@ class UserService:
             raise HTTPException(status_code=500, detail="Failed to fetch profile")
 
     @staticmethod
-    async def update_profile(client, user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
+    async def update_profile(client: ServiceDBClient, user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
         """
         Update user profile
         
@@ -112,7 +113,7 @@ class UserService:
             raise HTTPException(status_code=500, detail="Failed to update profile")
 
     @staticmethod
-    async def create_or_update_profile(client, user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
+    async def create_or_update_profile(client: ServiceDBClient, user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
         """
         Create or update user profile (for onboarding)
         
@@ -165,7 +166,7 @@ class UserService:
             raise HTTPException(status_code=500, detail="Failed to create/update profile")
 
     @staticmethod
-    async def delete_account(client, user_id: str) -> MessageResponse:
+    async def delete_account(client: ServiceDBClient, user_id: str) -> MessageResponse:
         """
         Delete user account (profile and auth user)
         
@@ -213,7 +214,7 @@ class UserService:
         return bool(re.match(pattern, username))
 
     @staticmethod
-    async def check_username(client, username: str) -> CheckUsernameResponse:
+    async def check_username(client: ServiceDBClient, username: str) -> CheckUsernameResponse:
         """
         Check if a username is available for publishing portfolios
         

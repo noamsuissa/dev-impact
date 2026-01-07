@@ -23,6 +23,7 @@ from backend.schemas.portfolio import (
 )
 from backend.schemas.auth import MessageResponse
 from backend.schemas.subscription import SubscriptionInfoResponse
+from backend.utils.dependencies import ServiceDBClient
 
 # Load environment variables
 load_dotenv()
@@ -73,7 +74,7 @@ class PortfolioService:
 
     @staticmethod
     async def create_portfolio(
-        client,
+        client: ServiceDBClient,
         subscription_info: SubscriptionInfoResponse,
         user_id: str,
         name: str,
@@ -162,7 +163,7 @@ class PortfolioService:
 
     @staticmethod
     async def list_portfolios(
-        client,
+        client: ServiceDBClient,
         user_id: str
     ) -> List[Portfolio]:
         """
@@ -204,7 +205,7 @@ class PortfolioService:
 
     @staticmethod
     async def get_portfolio(
-        client,
+        client: ServiceDBClient,
         portfolio_id: str,
         user_id: str
     ) -> Portfolio:
@@ -248,7 +249,7 @@ class PortfolioService:
 
     @staticmethod
     async def update_portfolio(
-        client,
+        client: ServiceDBClient,
         portfolio_id: str,
         user_id: str,
         name: Optional[str] = None,
@@ -343,7 +344,7 @@ class PortfolioService:
 
     @staticmethod
     async def delete_portfolio(
-        client,
+        client: ServiceDBClient,
         portfolio_id: str,
         user_id: str
     ) -> MessageResponse:
@@ -400,7 +401,7 @@ class PortfolioService:
     # ============================================
 
     @staticmethod
-    async def publish_portfolio(client, username: str, portfolio_id: str, user_profile, projects: List, user_id: str | None = None) -> PublishPortfolioResponse:
+    async def publish_portfolio(client: ServiceDBClient, username: str, portfolio_id: str, user_profile, projects: List, user_id: str | None = None) -> PublishPortfolioResponse:
         """
         Publish a portfolio with a username
         
@@ -528,7 +529,7 @@ class PortfolioService:
             raise HTTPException(status_code=500, detail="An unexpected error occurred while publishing the portfolio")
 
     @staticmethod
-    async def unpublish_portfolio(client, username: str, portfolio_slug: str, user_id: str) -> MessageResponse:
+    async def unpublish_portfolio(client: ServiceDBClient, username: str, portfolio_slug: str, user_id: str) -> MessageResponse:
         """
         Unpublish a portfolio
         
@@ -585,7 +586,7 @@ class PortfolioService:
     # ============================================
 
     @staticmethod
-    async def get_published_portfolio(client, username: str, portfolio_slug: Optional[str] = None, increment_view_count: bool = True) -> PortfolioResponse:
+    async def get_published_portfolio(client: ServiceDBClient, username: str, portfolio_slug: Optional[str] = None, increment_view_count: bool = True) -> PortfolioResponse:
         """
         Get a published portfolio by username and optional portfolio slug (PUBLIC)
         
@@ -659,7 +660,7 @@ class PortfolioService:
             raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching the portfolio")
 
     @staticmethod
-    async def get_published_portfolio_stats(client, user_id: str) -> PortfolioStatsResponse:
+    async def get_published_portfolio_stats(client: ServiceDBClient, user_id: str) -> PortfolioStatsResponse:
         """
         Get view count statistics for all of a user's published portfolios (including unpublished)
         
@@ -694,7 +695,7 @@ class PortfolioService:
             raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching portfolio stats")
 
     @staticmethod
-    async def list_published_portfolios(client, limit: int = 50, offset: int = 0) -> ListPortfoliosResponse:
+    async def list_published_portfolios(client: ServiceDBClient, limit: int = 50, offset: int = 0) -> ListPortfoliosResponse:
         """
         List all published portfolios (PUBLIC)
         
