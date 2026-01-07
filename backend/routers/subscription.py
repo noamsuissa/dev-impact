@@ -7,7 +7,7 @@ from backend.schemas.auth import MessageResponse
 from backend.services.stripe_service import StripeService
 from backend.services.subscription_service import SubscriptionService
 from backend.utils import auth_utils
-from backend.utils.dependencies import ServiceDBClient
+from backend.utils.dependencies import ServiceDBClient, StripeServiceDep
 
 router = APIRouter(
     prefix="/api/subscriptions",
@@ -61,6 +61,7 @@ async def get_subscription_info(
 @router.post("/cancel", response_model=MessageResponse)
 async def cancel_subscription(
     client: ServiceDBClient,
+    stripe_service: StripeServiceDep,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
@@ -69,5 +70,5 @@ async def cancel_subscription(
     Cancels the user's subscription at the end of the current billing period.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    result = await SubscriptionService.cancel_subscription(client, user_id)
+    result = await SubscriptionService.cancel_subscription(client, user_id, stripe_service)
     return result
