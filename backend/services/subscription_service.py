@@ -3,18 +3,28 @@ Subscription Service - Handle subscription operations
 """
 from typing import Optional
 from fastapi import HTTPException
+from supabase import Client
+
 from backend.schemas.subscription import SubscriptionInfoResponse
 from backend.schemas.auth import MessageResponse
-from backend.services.stripe_service import StripeService
-from backend.utils.dependencies import ServiceDBClient
-from supabase import Client
+from backend.integrations.stripe_client import StripeClient
+
 
 class SubscriptionService:
     """Service for handling subscription operations."""
-    
-    @staticmethod
+
+    def __init__(self, stripe_client: StripeClient):
+        """
+        Initialize SubscriptionService with dependencies.
+
+        Args:
+            stripe_client: Stripe integration client for subscription operations
+        """
+        self.stripe_client = stripe_client
+
     async def get_subscription_info(
-        client: ServiceDBClient,
+        self,
+        client: Client,
         user_id: str
     ) -> SubscriptionInfoResponse:
         """
@@ -82,25 +92,23 @@ class SubscriptionService:
             print(f"Get subscription info error: {e}")
             raise HTTPException(status_code=500, detail="Failed to get subscription info")
 
-    @staticmethod
     async def cancel_subscription(
-        client: ServiceDBClient,
-        user_id: str,
-        stripe_service: StripeService
+        self,
+        client: Client,
+        user_id: str
     ) -> MessageResponse:
         """
-        Cancel user's subscription
-        
+        Cancel user's subscription.
+
         Args:
-            client: Supabase client (injected from router)
+            client: Supabase client
             user_id: The user's ID
-            stripe_service: Stripe service class (injected from router)
-            
+
         Returns:
             MessageResponse indicating success
         """
         try:
-            await stripe_service.cancel_subscription(client, user_id)
+            await self.stripe_client.cancel_subscription(client, user_id)
             return MessageResponse(
                 success=True,
                 message="Subscription has been scheduled for cancellation at the end of the billing period"
