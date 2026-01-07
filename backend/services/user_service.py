@@ -166,13 +166,18 @@ class UserService:
             raise HTTPException(status_code=500, detail="Failed to create/update profile")
 
     @staticmethod
-    async def delete_account(client: ServiceDBClient, user_id: str) -> MessageResponse:
+    async def delete_account(
+        client: ServiceDBClient,
+        user_id: str,
+        stripe_service: StripeService
+    ) -> MessageResponse:
         """
         Delete user account (profile and auth user)
         
         Args:
             client: Supabase client (injected from router)
             user_id: User's ID
+            stripe_service: Stripe service class (injected from router)
             
         Returns:
             MessageResponse with success message
@@ -180,7 +185,7 @@ class UserService:
         try:
             # 1. Try to cancel subscription if exists
             try:
-                await StripeService.cancel_subscription(client, user_id)
+                await stripe_service.cancel_subscription(client, user_id)
             except Exception as e:
                 # Log but continue - user might not have a subscription
                 print(f"Subscription cancellation check during account delete: {e}")

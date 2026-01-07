@@ -6,7 +6,7 @@ from backend.schemas.user import UserProfile, UpdateProfileRequest, OnboardingRe
 from backend.schemas.auth import MessageResponse
 from backend.services.user_service import UserService
 from backend.utils import auth_utils
-from backend.utils.dependencies import ServiceDBClient
+from backend.utils.dependencies import ServiceDBClient, StripeServiceDep
 
 router = APIRouter(
     prefix="/api/user",
@@ -92,6 +92,7 @@ async def check_username(username: str, client: ServiceDBClient):
 @router.delete("/account", response_model=MessageResponse)
 async def delete_account(
     client: ServiceDBClient,
+    stripe_service: StripeServiceDep,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
@@ -102,5 +103,5 @@ async def delete_account(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
     
-    result = await UserService.delete_account(client, user_id)
+    result = await UserService.delete_account(client, user_id, stripe_service)
     return result

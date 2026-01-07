@@ -7,6 +7,7 @@ from backend.schemas.subscription import SubscriptionInfoResponse
 from backend.schemas.auth import MessageResponse
 from backend.services.stripe_service import StripeService
 from backend.utils.dependencies import ServiceDBClient
+from supabase import Client
 
 class SubscriptionService:
     """Service for handling subscription operations."""
@@ -82,19 +83,24 @@ class SubscriptionService:
             raise HTTPException(status_code=500, detail="Failed to get subscription info")
 
     @staticmethod
-    async def cancel_subscription(client: ServiceDBClient, user_id: str) -> MessageResponse:
+    async def cancel_subscription(
+        client: ServiceDBClient,
+        user_id: str,
+        stripe_service: StripeService
+    ) -> MessageResponse:
         """
         Cancel user's subscription
         
         Args:
             client: Supabase client (injected from router)
             user_id: The user's ID
+            stripe_service: Stripe service class (injected from router)
             
         Returns:
             MessageResponse indicating success
         """
         try:
-            await StripeService.cancel_subscription(client, user_id)
+            await stripe_service.cancel_subscription(client, user_id)
             return MessageResponse(
                 success=True,
                 message="Subscription has been scheduled for cancellation at the end of the billing period"

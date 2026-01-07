@@ -1,6 +1,8 @@
 """
 Email Service - Handle email sending with Jinja templates
 """
+from __future__ import annotations
+
 import os
 import aiosmtplib
 from email.mime.text import MIMEText
@@ -15,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class EmailService:
     """Service for sending emails with Jinja templates"""
-    _instance: Optional["EmailService"] = None
+    _instance: Optional[EmailService] = None
     
     def __init__(self):
         """Initialize email service with configuration from environment variables"""
@@ -102,7 +104,7 @@ class EmailService:
             return False
     
     @staticmethod
-    def get_instance() -> "EmailService":
+    def get_instance() -> EmailService:
         """Get singleton instance of EmailService"""
         if EmailService._instance is None:
             EmailService._instance = EmailService()

@@ -6,7 +6,7 @@ import stripe
 from typing import Dict, Any
 from datetime import datetime, timezone
 from fastapi import HTTPException
-from backend.utils.dependencies import ServiceDBClient
+from supabase import Client
 
 class StripeService:
     """Service for handling Stripe operations"""
@@ -66,7 +66,7 @@ class StripeService:
     
     @staticmethod
     async def create_checkout_session(
-        client: ServiceDBClient,
+        client: Client,
         user_id: str,
         user_email: str,
         success_url: str,
@@ -206,7 +206,7 @@ class StripeService:
             )
 
     @staticmethod
-    async def handle_webhook_event(client: ServiceDBClient, payload: bytes, sig_header: str) -> None:
+    async def handle_webhook_event(client: Client, payload: bytes, sig_header: str) -> None:
         """
         Handle Stripe webhook events
         
@@ -250,7 +250,7 @@ class StripeService:
             raise HTTPException(status_code=500, detail="Internal server error")
 
     @staticmethod
-    async def _handle_checkout_completed(client: ServiceDBClient, session: Dict[str, Any]) -> None:
+    async def _handle_checkout_completed(client: Client, session: Dict[str, Any]) -> None:
         """
         Handle successful checkout session
         
@@ -268,7 +268,7 @@ class StripeService:
             await StripeService._update_subscription_type(client, user_id, "pro")
 
     @staticmethod
-    async def _update_customer_id(client: ServiceDBClient, user_id: str, customer_id: str) -> None:
+    async def _update_customer_id(client: Client, user_id: str, customer_id: str) -> None:
         """
         Update user profile with Stripe Customer ID
         
@@ -289,7 +289,7 @@ class StripeService:
             # Don't raise here to avoid failing the webhook response to Stripe
 
     @staticmethod
-    async def _update_subscription_type(client: ServiceDBClient, user_id: str, subscription_type: str) -> None:
+    async def _update_subscription_type(client: Client, user_id: str, subscription_type: str) -> None:
         """
         Update user profile with subscription type
         
@@ -311,7 +311,7 @@ class StripeService:
 
 
     @staticmethod
-    async def _handle_subscription_updated(client: ServiceDBClient, subscription: Dict[str, Any]) -> None:
+    async def _handle_subscription_updated(client: Client, subscription: Dict[str, Any]) -> None:
         """
         Handle subscription updates (created, updated, deleted)
         
@@ -358,7 +358,7 @@ class StripeService:
             # Don't raise, just log
 
     @staticmethod
-    async def cancel_subscription(client: ServiceDBClient, user_id: str) -> None:
+    async def cancel_subscription(client: Client, user_id: str) -> None:
         """
         Cancel a user's subscription (at period end)
         

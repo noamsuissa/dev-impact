@@ -1,12 +1,13 @@
 """
 Waitlist Service - Handle waitlist operations
 """
+
 from typing import Optional
 from fastapi import HTTPException
 from backend.schemas.waitlist import WaitlistEntry, WaitlistResponse
-from backend.services.email_service import EmailService
 import logging
 from backend.utils.dependencies import ServiceDBClient
+from backend.services.email_service import EmailService
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +16,19 @@ class WaitlistService:
     """Service for handling waitlist operations"""
     
     @staticmethod
-    async def signup(client: ServiceDBClient, email: str, name: Optional[str] = None) -> WaitlistResponse:
+    async def signup(
+        client: ServiceDBClient,
+        email: str,
+        email_service: EmailService,
+        name: Optional[str] = None
+    ) -> WaitlistResponse:
         """
         Add a user to the waitlist and send confirmation email
         
         Args:
             client: Supabase client (injected from router)
             email: User's email address
+            email_service: Email service instance (injected from router)
             name: Optional user's name
             
         Returns:
@@ -59,7 +66,6 @@ class WaitlistService:
             entry = WaitlistEntry(**result.data[0])
             
             # Send confirmation email
-            email_service = EmailService.get_instance()
             email_sent = await email_service.send_email(
                 to_email=email,
                 subject="Welcome to the Dev Impact Waitlist!",
