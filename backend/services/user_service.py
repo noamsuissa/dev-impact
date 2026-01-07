@@ -4,16 +4,26 @@ User Service - Handle user profile operations with Supabase
 import re
 from typing import Dict, Any
 from fastapi import HTTPException
+from supabase import Client
+
 from backend.schemas.user import UserProfile, CheckUsernameResponse
 from backend.schemas.auth import MessageResponse
-from backend.services.stripe_service import StripeService
-from backend.utils.dependencies import ServiceDBClient
+from backend.integrations.stripe_client import StripeClient
+
 
 class UserService:
     """Service for handling user profile operations."""
 
-    @staticmethod
-    async def get_profile(client: ServiceDBClient, user_id: str | None = None) -> UserProfile:
+    def __init__(self, stripe_client: StripeClient):
+        """
+        Initialize UserService with dependencies.
+
+        Args:
+            stripe_client: Stripe integration client for subscription operations
+        """
+        self.stripe_client = stripe_client
+
+    async def get_profile(self, client: Client, user_id: str | None = None) -> UserProfile:
         """
         Get user profile by ID
         
@@ -59,8 +69,7 @@ class UserService:
             print(f"Get profile error: {e}")
             raise HTTPException(status_code=500, detail="Failed to fetch profile")
 
-    @staticmethod
-    async def update_profile(client: ServiceDBClient, user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
+    async def update_profile(self, client: Client, user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
         """
         Update user profile
         
@@ -81,7 +90,7 @@ class UserService:
             
             if not update_data:
                 # If no data to update, just return current profile
-                return await UserService.get_profile(client, user_id)
+                return await self.get_profile(client, user_id)
             
             result = client.table("profiles")\
                 .update(update_data)\
@@ -112,8 +121,7 @@ class UserService:
             print(f"Update profile error: {e}")
             raise HTTPException(status_code=500, detail="Failed to update profile")
 
-    @staticmethod
-    async def create_or_update_profile(client: ServiceDBClient, user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
+    async def create_or_update_profile(self, client: Client, user_id: str, profile_data: Dict[str, Any]) -> UserProfile:
         """
         Create or update user profile (for onboarding)
         
@@ -165,27 +173,25 @@ class UserService:
             print(f"Create/update profile error: {e}")
             raise HTTPException(status_code=500, detail="Failed to create/update profile")
 
-    @staticmethod
     async def delete_account(
-        client: ServiceDBClient,
-        user_id: str,
-        stripe_service: StripeService
+        self,
+        client: Client,
+        user_id: str
     ) -> MessageResponse:
         """
-        Delete user account (profile and auth user)
-        
+        Delete user account (profile and auth user).
+
         Args:
-            client: Supabase client (injected from router)
+            client: Supabase client
             user_id: User's ID
-            stripe_service: Stripe service class (injected from router)
-            
+
         Returns:
             MessageResponse with success message
         """
         try:
             # 1. Try to cancel subscription if exists
             try:
-                await stripe_service.cancel_subscription(client, user_id)
+                await self.stripe_client.cancel_subscription(client, user_id)
             except Exception as e:
                 # Log but continue - user might not have a subscription
                 print(f"Subscription cancellation check during account delete: {e}")
@@ -218,8 +224,7 @@ class UserService:
         pattern = r'^[a-z0-9-]{3,50}$'
         return bool(re.match(pattern, username))
 
-    @staticmethod
-    async def check_username(client: ServiceDBClient, username: str) -> CheckUsernameResponse:
+    async def check_username(self, client: Client, username: str) -> CheckUsernameResponse:
         """
         Check if a username is available for publishing portfolios
         
