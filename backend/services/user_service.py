@@ -169,7 +169,7 @@ class UserService:
     async def delete_account(
         client: ServiceDBClient,
         user_id: str,
-        stripe_service: type[StripeService]
+        stripe_service: StripeService
     ) -> MessageResponse:
         """
         Delete user account (profile and auth user)
