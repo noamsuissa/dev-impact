@@ -4,7 +4,7 @@ from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from backend.schemas.auth import AuthResponse, UserResponse, SessionResponse
-from backend.utils.dependencies import ServiceDBClient
+from backend.core.container import ServiceDBClient
 
 load_dotenv()
 
