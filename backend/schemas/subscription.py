@@ -1,6 +1,7 @@
 """
 Subscription Schemas - Pydantic models for subscription operations
 """
+
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -8,6 +9,7 @@ from datetime import datetime
 
 class CheckoutSessionRequest(BaseModel):
     """Request model for creating a Stripe checkout session"""
+
     success_url: str
     cancel_url: str
     billing_period: str = "monthly"  # "monthly" or "yearly"
@@ -15,8 +17,10 @@ class CheckoutSessionRequest(BaseModel):
 
 class CheckoutSessionResponse(BaseModel):
     """Response model containing checkout session URL"""
+
     checkout_url: str
     session_id: str
+
 
 class SubscriptionInfoResponse(BaseModel):
     subscription_type: str
