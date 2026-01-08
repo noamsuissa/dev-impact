@@ -14,7 +14,7 @@ from backend.schemas.project import (
 )
 from backend.schemas.auth import MessageResponse
 from backend.schemas.subscription import SubscriptionInfoResponse
-from backend.utils.dependencies import ServiceDBClient
+from supabase import Client
 import uuid
 
 # Load environment variables
@@ -24,8 +24,8 @@ load_dotenv()
 class ProjectService:
     """Service for handling project operations."""
     
-    @staticmethod
-    def _is_standardized_metric(metric: Union[Dict[str, Any], ProjectMetric, StandardizedProjectMetric]) -> bool:
+    
+    def _is_standardized_metric(self, metric: Union[Dict[str, Any], ProjectMetric, StandardizedProjectMetric]) -> bool:
         """Check if a metric is in standardized format"""
         if isinstance(metric, StandardizedProjectMetric):
             return True
@@ -36,15 +36,15 @@ class ProjectService:
             return "type" in metric and "primary" in metric and isinstance(metric.get("primary"), dict)
         return False
     
-    @staticmethod
-    def _serialize_standardized_metric(metric: Union[StandardizedProjectMetric, Dict[str, Any]]) -> Dict[str, Any]:
+    
+    def _serialize_standardized_metric(self, metric: Union[StandardizedProjectMetric, Dict[str, Any]]) -> Dict[str, Any]:
         """Convert standardized metric to JSONB-compatible dict"""
         if isinstance(metric, StandardizedProjectMetric):
             return metric.model_dump(exclude_none=True)
         return metric
     
-    @staticmethod
-    def _deserialize_metric(db_metric: Dict[str, Any]) -> Union[ProjectMetric, StandardizedProjectMetric]:
+    
+    def _deserialize_metric(self, db_metric: Dict[str, Any]) -> Union[ProjectMetric, StandardizedProjectMetric]:
         """Convert database metric to Pydantic model"""
         # Check if it's a standardized metric
         if db_metric.get("metric_data") and db_metric.get("metric_type"):
@@ -66,8 +66,8 @@ class ProjectService:
             detail=db_metric.get("detail")
         )
 
-    @staticmethod
-    async def list_projects(client: ServiceDBClient, user_id: str | None = None, portfolio_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
+    
+    async def list_projects(self, client: Client, user_id: str | None = None, portfolio_id: Optional[str] = None, include_evidence: bool = False) -> List[Project]:
         """
         List all projects for a user, optionally filtered by profile
         
@@ -138,7 +138,7 @@ class ProjectService:
                 if project.get("metrics"):
                     metrics = sorted(project["metrics"], key=lambda m: m.get("display_order", 0))
                     metrics = [
-                        ProjectService._deserialize_metric(metric)
+                        self._deserialize_metric(metric)
                         for metric in metrics
                     ]
                 
@@ -165,8 +165,8 @@ class ProjectService:
             print(f"List projects error: {e}")
             raise HTTPException(status_code=500, detail="Failed to fetch projects")
 
-    @staticmethod
-    async def get_project(client: ServiceDBClient, project_id: str, user_id: str) -> Project:
+    
+    async def get_project(self, client: Client, project_id: str, user_id: str) -> Project:
         """
         Get a single project
         
@@ -196,12 +196,12 @@ class ProjectService:
             if project.get("metrics"):
                 metrics = sorted(project["metrics"], key=lambda m: m.get("display_order", 0))
                 metrics = [
-                    ProjectService._deserialize_metric(metric)
+                    self._deserialize_metric(metric)
                     for metric in metrics
                 ]
             
             # Get evidence for this project
-            evidence_list = await ProjectService.list_project_evidence(client, project_id, user_id)
+            evidence_list = await self.list_project_evidence(client, project_id, user_id)
             
             project_data = Project(
                 id=project["id"],
@@ -224,9 +224,10 @@ class ProjectService:
             print(f"Get project error: {e}")
             raise HTTPException(status_code=500, detail="Failed to fetch project")
 
-    @staticmethod
+    
     async def create_project(
-        client: ServiceDBClient,
+        self,
+        client: Client,
         subscription_info: SubscriptionInfoResponse,
         user_id: str,
         project_data: Dict[str, Any]
@@ -301,9 +302,9 @@ class ProjectService:
             if metrics:
                 metrics_insert = []
                 for idx, metric in enumerate(metrics):
-                    if ProjectService._is_standardized_metric(metric):
+                    if self._is_standardized_metric(metric):
                         # Standardized format
-                        metric_data = ProjectService._serialize_standardized_metric(metric)
+                        metric_data = self._serialize_standardized_metric(metric)
                         metrics_insert.append({
                             "project_id": project_id,
                             "metric_type": metric_data["type"],
@@ -352,8 +353,8 @@ class ProjectService:
             print(f"Create project error: {e}")
             raise HTTPException(status_code=500, detail="Failed to create project")
 
-    @staticmethod
-    async def update_project(client: ServiceDBClient, project_id: str, user_id: str, project_data: Dict[str, Any]) -> Project:
+    
+    async def update_project(self, client: Client, project_id: str, user_id: str, project_data: Dict[str, Any]) -> Project:
         """
         Update a project
         
@@ -419,9 +420,9 @@ class ProjectService:
                 if metrics:
                     metrics_insert = []
                     for idx, metric in enumerate(metrics):
-                        if ProjectService._is_standardized_metric(metric):
+                        if self._is_standardized_metric(metric):
                             # Standardized format
-                            metric_data = ProjectService._serialize_standardized_metric(metric)
+                            metric_data = self._serialize_standardized_metric(metric)
                             metrics_insert.append({
                                 "project_id": project_id,
                                 "metric_type": metric_data["type"],
@@ -450,15 +451,15 @@ class ProjectService:
                         .execute()
             
             # Fetch and return updated project
-            return await ProjectService.get_project(client, project_id, user_id)
+            return await self.get_project(client, project_id, user_id)
         except HTTPException:
             raise
         except Exception as e:
             print(f"Update project error: {e}")
             raise HTTPException(status_code=500, detail="Failed to update project")
 
-    @staticmethod
-    async def delete_project(client: ServiceDBClient, project_id: str, user_id: str) -> MessageResponse:
+    
+    async def delete_project(self, client: Client, project_id: str, user_id: str) -> MessageResponse:
         """
         Delete a project
         
@@ -491,8 +492,8 @@ class ProjectService:
             print(f"Delete project error: {e}")
             raise HTTPException(status_code=500, detail="Failed to delete project")
 
-    @staticmethod
-    async def get_user_total_evidence_size(client: ServiceDBClient, user_id: str) -> int:
+    
+    async def get_user_total_evidence_size(self, client: Client, user_id: str) -> int:
         """
         Get total size of all evidence for a user across all projects
         
@@ -529,8 +530,8 @@ class ProjectService:
             print(f"Get user total evidence size error: {e}")
             raise HTTPException(status_code=500, detail="Failed to calculate total evidence size")
 
-    @staticmethod
-    async def list_project_evidence(client: ServiceDBClient, project_id: str, user_id: Optional[str] = None) -> List[ProjectEvidence]:
+    
+    async def list_project_evidence(self, client: Client, project_id: str, user_id: Optional[str] = None) -> List[ProjectEvidence]:
         """
         List all evidence for a project
         
@@ -586,15 +587,15 @@ class ProjectService:
             if not has_access:
                 raise HTTPException(status_code=404, detail="Project not found or access denied")
             
-            return await ProjectService._fetch_evidence_list(client, project_id)
+            return await self._fetch_evidence_list(client, project_id)
         except HTTPException:
             raise
         except Exception as e:
             print(f"List project evidence error: {e}")
             raise HTTPException(status_code=500, detail="Failed to fetch evidence")
 
-    @staticmethod
-    async def _fetch_evidence_list(client: ServiceDBClient, project_id: str) -> List[ProjectEvidence]:
+    
+    async def _fetch_evidence_list(self, client: Client, project_id: str) -> List[ProjectEvidence]:
         """
         Fetch evidence list for a project
         
@@ -644,9 +645,10 @@ class ProjectService:
             print(f"List project evidence error: {e}")
             raise HTTPException(status_code=500, detail="Failed to fetch evidence")
 
-    @staticmethod
+    
     async def upload_evidence_file(
-        client: ServiceDBClient,
+        self,
+        client: Client,
         project_id: str,
         user_id: str,
         file_name: str,
@@ -703,7 +705,7 @@ class ProjectService:
             
             max_size_bytes = max_size_mb * 1024 * 1024
 
-            current_total = await ProjectService.get_user_total_evidence_size(client, user_id)
+            current_total = await self.get_user_total_evidence_size(client, user_id)
             if current_total + file_size > max_size_bytes:
                 used_mb = current_total / (1024 * 1024)
                 max_mb = max_size_mb
@@ -788,8 +790,8 @@ class ProjectService:
             print(f"Upload evidence file error: {e}")
             raise HTTPException(status_code=500, detail="Failed to upload evidence file")
 
-    @staticmethod
-    async def delete_evidence(client: ServiceDBClient, evidence_id: str, user_id: str) -> MessageResponse:
+    
+    async def delete_evidence(self, client: Client, evidence_id: str, user_id: str) -> MessageResponse:
         """
         Delete evidence record and file from storage
         
@@ -838,8 +840,8 @@ class ProjectService:
             print(f"Delete evidence error: {e}")
             raise HTTPException(status_code=500, detail="Failed to delete evidence")
 
-    @staticmethod
-    async def get_evidence_stats(client: ServiceDBClient, user_id: str) -> dict:
+    
+    async def get_evidence_stats(self, client: Client, user_id: str) -> dict:
         """
         Get evidence storage statistics for a user
         
@@ -852,7 +854,7 @@ class ProjectService:
         """
         try:
             # Get total size across all projects
-            total_size_bytes = await ProjectService.get_user_total_evidence_size(client, user_id)
+            total_size_bytes = await self.get_user_total_evidence_size(client, user_id)
             
             # Get user's subscription type
             profile_result = client.table("profiles")\
