@@ -16,8 +16,8 @@ load_dotenv()
 class MFAService:
     """Service for handling MFA operations"""
 
-    @staticmethod
-    async def mfa_enroll(access_token: str, friendly_name: Optional[str] = None) -> MFAEnrollResponse:
+    
+    async def mfa_enroll(self, access_token: str, friendly_name: Optional[str] = None) -> MFAEnrollResponse:
         """
         Enroll user in MFA (TOTP)
         
@@ -96,8 +96,8 @@ class MFAService:
             traceback.print_exc()
             raise HTTPException(status_code=400, detail=f"Failed to enroll in MFA")
 
-    @staticmethod
-    async def mfa_verify_enrollment(access_token: str, factor_id: str, code: str) -> MessageResponse:
+    
+    async def mfa_verify_enrollment(self, access_token: str, factor_id: str, code: str) -> MessageResponse:
         """
         Verify MFA enrollment with a code
         
@@ -167,8 +167,8 @@ class MFAService:
             traceback.print_exc()
             raise HTTPException(status_code=400, detail=f"Invalid verification code")
 
-    @staticmethod
-    async def mfa_list_factors(user_id: str | None = None) -> MFAListResponse:
+    
+    async def mfa_list_factors(self, user_id: str | None = None) -> MFAListResponse:
         """
         List all MFA factors for a user
         
@@ -231,8 +231,8 @@ class MFAService:
             traceback.print_exc()
             raise HTTPException(status_code=400, detail=f"Failed to list MFA factors: {e}")
 
-    @staticmethod
-    async def mfa_unenroll(user_id: str | None = None, factor_id: str | None = None) -> MessageResponse:
+    
+    async def mfa_unenroll(self, user_id: str | None = None, factor_id: str | None = None) -> MessageResponse:
         """
         Unenroll (remove) an MFA factor
         

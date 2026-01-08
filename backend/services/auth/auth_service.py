@@ -16,7 +16,7 @@ from backend.schemas.auth import (
     MessageResponse,
     MFAFactorResponse
 )
-from backend.utils.dependencies import ServiceDBClient
+from supabase import Client
 
 # Load environment variables
 load_dotenv()
@@ -25,8 +25,8 @@ load_dotenv()
 class AuthService:
     """Service for handling authentication operations with Supabase."""    
 
-    @staticmethod
-    async def sign_up(client: ServiceDBClient, email: str, password: str) -> AuthResponse:
+    
+    async def sign_up(self, client: Client, email: str, password: str) -> AuthResponse:
         """
         Sign up a new user
         
@@ -78,8 +78,8 @@ class AuthService:
             print(f"Sign up error: {e}")
             raise HTTPException(status_code=400, detail=f"Sign up error: {e}")
 
-    @staticmethod
-    async def sign_in(client: ServiceDBClient, email: str, password: str, mfa_challenge_id: Optional[str] = None, mfa_code: Optional[str] = None, mfa_factor_id: Optional[str] = None) -> AuthResponse:
+    
+    async def sign_in(self, client: Client, email: str, password: str, mfa_challenge_id: Optional[str] = None, mfa_code: Optional[str] = None, mfa_factor_id: Optional[str] = None) -> AuthResponse:
         """
         Sign in an existing user
         
@@ -352,8 +352,8 @@ class AuthService:
                 )
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    @staticmethod
-    async def sign_out(client: ServiceDBClient, access_token: str) -> MessageResponse:
+    
+    async def sign_out(self, client: Client, access_token: str) -> MessageResponse:
         """
         Sign out a user
         
@@ -375,8 +375,8 @@ class AuthService:
             # Even if sign out fails, we still return success as the client will clear local tokens
             return MessageResponse(success=True, message="Signed out")
 
-    @staticmethod
-    async def reset_password_email(client: ServiceDBClient, email: str) -> MessageResponse:
+    
+    async def reset_password_email(self, client: Client, email: str) -> MessageResponse:
         """
         Send password reset email
         
@@ -404,8 +404,8 @@ class AuthService:
             # Return success even on error to prevent email enumeration
             return MessageResponse(success=True, message="If an account exists, a password reset email has been sent")
 
-    @staticmethod
-    async def update_password(access_token: str, new_password: str) -> MessageResponse:
+    
+    async def update_password(self, access_token: str, new_password: str) -> MessageResponse:
         """
         Update user password
         
