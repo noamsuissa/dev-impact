@@ -2,6 +2,7 @@
 Email integration client.
 Handles email sending with Jinja templates via SMTP.
 """
+
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -33,7 +34,7 @@ class EmailClient:
 
         self.jinja_env = Environment(
             loader=FileSystemLoader(str(templates_dir)),
-            autoescape=select_autoescape(['html', 'xml'])
+            autoescape=select_autoescape(["html", "xml"]),
         )
 
     async def send_email(
@@ -41,7 +42,7 @@ class EmailClient:
         to_email: str,
         subject: str,
         template_name: str,
-        template_vars: Optional[Dict[str, Any]] = None
+        template_vars: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Send an email using a Jinja template.

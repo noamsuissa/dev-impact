@@ -2,6 +2,7 @@
 Dependency Injection container for FastAPI.
 Centralizes all dependency providers and configuration.
 """
+
 from typing import Annotated
 from fastapi import Depends
 from supabase import Client
@@ -58,50 +59,48 @@ def get_llm_config() -> LLMConfig:
 
 # Integration Client Providers
 def get_stripe_client(
-    config: Annotated[StripeConfig, Depends(get_stripe_config)]
+    config: Annotated[StripeConfig, Depends(get_stripe_config)],
 ) -> StripeClient:
     """Provides Stripe client instance with injected configuration."""
     return StripeClient(config)
 
 
 def get_email_client(
-    config: Annotated[EmailConfig, Depends(get_email_config)]
+    config: Annotated[EmailConfig, Depends(get_email_config)],
 ) -> EmailClient:
     """Provides Email client instance with injected configuration."""
     return EmailClient(config)
 
 
 def get_github_client(
-    config: Annotated[GitHubConfig, Depends(get_github_config)]
+    config: Annotated[GitHubConfig, Depends(get_github_config)],
 ) -> GitHubClient:
     """Provides GitHub client instance with injected configuration."""
     return GitHubClient(config)
 
 
-def get_llm_client(
-    config: Annotated[LLMConfig, Depends(get_llm_config)]
-) -> LLMClient:
+def get_llm_client(config: Annotated[LLMConfig, Depends(get_llm_config)]) -> LLMClient:
     """Provides LLM client instance with injected configuration."""
     return LLMClient(config)
 
 
 # Business Service Providers
 def get_user_service(
-    stripe_client: Annotated[StripeClient, Depends(get_stripe_client)]
+    stripe_client: Annotated[StripeClient, Depends(get_stripe_client)],
 ) -> UserService:
     """Provides UserService instance with injected dependencies."""
     return UserService(stripe_client=stripe_client)
 
 
 def get_subscription_service(
-    stripe_client: Annotated[StripeClient, Depends(get_stripe_client)]
+    stripe_client: Annotated[StripeClient, Depends(get_stripe_client)],
 ) -> SubscriptionService:
     """Provides SubscriptionService instance with injected dependencies."""
     return SubscriptionService(stripe_client=stripe_client)
 
 
 def get_waitlist_service(
-    email_client: Annotated[EmailClient, Depends(get_email_client)]
+    email_client: Annotated[EmailClient, Depends(get_email_client)],
 ) -> WaitlistService:
     """Provides WaitlistService instance with injected dependencies."""
     return WaitlistService(email_client=email_client)
@@ -141,7 +140,9 @@ LLMClientDep = Annotated[LLMClient, Depends(get_llm_client)]
 
 # Business Services
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
-SubscriptionServiceDep = Annotated[SubscriptionService, Depends(get_subscription_service)]
+SubscriptionServiceDep = Annotated[
+    SubscriptionService, Depends(get_subscription_service)
+]
 WaitlistServiceDep = Annotated[WaitlistService, Depends(get_waitlist_service)]
 PortfolioServiceDep = Annotated[PortfolioService, Depends(get_portfolio_service)]
 ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]

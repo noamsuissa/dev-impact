@@ -2,6 +2,7 @@
 GitHub integration client.
 Handles GitHub OAuth Device Flow and API calls.
 """
+
 import httpx
 from typing import Optional
 from fastapi import HTTPException
@@ -59,8 +60,7 @@ class GitHubClient:
             raise
         except Exception:
             raise HTTPException(
-                status_code=500,
-                detail="Failed to initiate GitHub device flow"
+                status_code=500, detail="Failed to initiate GitHub device flow"
             )
 
     async def poll_for_token(self, device_code: str) -> Optional[TokenResponse]:
@@ -119,8 +119,7 @@ class GitHubClient:
             raise
         except Exception as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to poll for GitHub token: {e}"
+                status_code=500, detail=f"Failed to poll for GitHub token: {e}"
             )
 
     async def get_user_profile(self, access_token: str) -> GitHubUser:
@@ -158,6 +157,5 @@ class GitHubClient:
             raise
         except Exception as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to get GitHub user profile: {e}"
+                status_code=500, detail=f"Failed to get GitHub user profile: {e}"
             )

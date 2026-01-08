@@ -2,6 +2,7 @@
 Centralized configuration classes for all services.
 All configuration is loaded from environment variables.
 """
+
 from dataclasses import dataclass
 import os
 from typing import Optional
@@ -10,6 +11,7 @@ from typing import Optional
 @dataclass
 class StripeConfig:
     """Stripe payment configuration"""
+
     secret_key: str
     publishable_key: str
     price_id_monthly: str
@@ -20,8 +22,12 @@ class StripeConfig:
     def from_env(cls) -> "StripeConfig":
         """Load Stripe configuration from environment variables."""
         # Get price IDs with fallback for backward compatibility
-        price_id_monthly = os.getenv("STRIPE_PRICE_ID_MONTHLY") or os.getenv("STRIPE_PRICE_ID", "")
-        price_id_yearly = os.getenv("STRIPE_PRICE_ID_YEARLY") or os.getenv("STRIPE_PRICE_ID", "")
+        price_id_monthly = os.getenv("STRIPE_PRICE_ID_MONTHLY") or os.getenv(
+            "STRIPE_PRICE_ID", ""
+        )
+        price_id_yearly = os.getenv("STRIPE_PRICE_ID_YEARLY") or os.getenv(
+            "STRIPE_PRICE_ID", ""
+        )
 
         return cls(
             secret_key=os.getenv("STRIPE_SECRET_KEY", ""),
@@ -35,6 +41,7 @@ class StripeConfig:
 @dataclass
 class EmailConfig:
     """SMTP email configuration"""
+
     host: str
     port: int
     user: str
@@ -59,6 +66,7 @@ class EmailConfig:
 @dataclass
 class GitHubConfig:
     """GitHub OAuth configuration"""
+
     client_id: str
     device_auth_url: str
     token_url: str
@@ -70,16 +78,13 @@ class GitHubConfig:
         return cls(
             client_id=os.getenv("GITHUB_CLIENT_ID", ""),
             device_auth_url=os.getenv(
-                "GITHUB_DEVICE_AUTH_URL",
-                "https://github.com/login/device/code"
+                "GITHUB_DEVICE_AUTH_URL", "https://github.com/login/device/code"
             ),
             token_url=os.getenv(
-                "GITHUB_TOKEN_URL",
-                "https://github.com/login/oauth/access_token"
+                "GITHUB_TOKEN_URL", "https://github.com/login/oauth/access_token"
             ),
             user_api_url=os.getenv(
-                "GITHUB_USER_API_URL",
-                "https://api.github.com/user"
+                "GITHUB_USER_API_URL", "https://api.github.com/user"
             ),
         )
 
@@ -87,6 +92,7 @@ class GitHubConfig:
 @dataclass
 class LLMConfig:
     """LLM provider configuration"""
+
     openrouter_api_key: str
     openrouter_model: str
     groq_api_key: str
