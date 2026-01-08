@@ -1,6 +1,7 @@
 """
 Pytest configuration and fixtures for backend tests
 """
+
 import sys
 from pathlib import Path
 from unittest.mock import Mock, AsyncMock
@@ -24,6 +25,7 @@ from backend.integrations.llm_client import LLMClient
 # Configuration Fixtures
 # ============================================
 
+
 @pytest.fixture
 def stripe_config():
     """Mock Stripe configuration"""
@@ -32,7 +34,7 @@ def stripe_config():
         publishable_key="pk_test_mock",
         price_id_monthly="price_test_monthly",
         price_id_yearly="price_test_yearly",
-        webhook_secret="whsec_test_mock"
+        webhook_secret="whsec_test_mock",
     )
 
 
@@ -45,7 +47,7 @@ def email_config():
         user="test@example.com",
         password="test_password",
         from_email="noreply@test.com",
-        from_name="Test App"
+        from_name="Test App",
     )
 
 
@@ -56,7 +58,7 @@ def github_config():
         client_id="test_client_id",
         device_auth_url="https://github.com/login/device/code",
         token_url="https://github.com/login/oauth/access_token",
-        user_api_url="https://api.github.com/user"
+        user_api_url="https://api.github.com/user",
     )
 
 
@@ -67,13 +69,14 @@ def llm_config():
         openrouter_api_key="sk_test_openrouter",
         openrouter_model="test-model",
         groq_api_key="gsk_test_groq",
-        groq_model="test-groq-model"
+        groq_model="test-groq-model",
     )
 
 
 # ============================================
 # Database Client Fixtures
 # ============================================
+
 
 @pytest.fixture
 def mock_supabase_client():
@@ -92,6 +95,7 @@ def mock_supabase_client():
 # ============================================
 # Integration Client Fixtures
 # ============================================
+
 
 @pytest.fixture
 def mock_stripe_client():
@@ -148,10 +152,12 @@ def mock_llm_client():
 # Service Fixtures
 # ============================================
 
+
 @pytest.fixture
 def user_service(mock_stripe_client):
     """UserService instance with mocked dependencies"""
     from backend.services.user_service import UserService
+
     return UserService(stripe_client=mock_stripe_client)
 
 
@@ -159,6 +165,7 @@ def user_service(mock_stripe_client):
 def subscription_service(mock_stripe_client):
     """SubscriptionService instance with mocked dependencies"""
     from backend.services.subscription_service import SubscriptionService
+
     return SubscriptionService(stripe_client=mock_stripe_client)
 
 
@@ -166,6 +173,7 @@ def subscription_service(mock_stripe_client):
 def waitlist_service(mock_email_client):
     """WaitlistService instance with mocked dependencies"""
     from backend.services.waitlist_service import WaitlistService
+
     return WaitlistService(email_client=mock_email_client)
 
 
@@ -173,6 +181,7 @@ def waitlist_service(mock_email_client):
 def portfolio_service():
     """PortfolioService instance"""
     from backend.services.portfolio_service import PortfolioService
+
     return PortfolioService()
 
 
@@ -180,6 +189,7 @@ def portfolio_service():
 def project_service():
     """ProjectService instance"""
     from backend.services.project_service import ProjectService
+
     return ProjectService()
 
 
@@ -187,6 +197,7 @@ def project_service():
 def auth_service():
     """AuthService instance"""
     from backend.services.auth.auth_service import AuthService
+
     return AuthService()
 
 
@@ -194,4 +205,5 @@ def auth_service():
 def mfa_service():
     """MFAService instance"""
     from backend.services.auth.mfa_service import MFAService
+
     return MFAService()

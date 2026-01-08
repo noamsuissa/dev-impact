@@ -2,6 +2,7 @@
 Unit tests for SubscriptionService
 Tests subscription operations with mocked Stripe client
 """
+
 import pytest
 from unittest.mock import Mock, AsyncMock
 from fastapi import HTTPException
@@ -23,18 +24,19 @@ class TestSubscriptionService:
     ):
         """Test getting subscription info for user with active subscription"""
         # Setup mocks
-        mock_stripe_client.get_subscription_info = AsyncMock(return_value={
-            "subscription_id": "sub_123",
-            "status": "active",
-            "billing_period": "monthly",
-            "current_period_end": 1704067200,
-            "cancel_at_period_end": False
-        })
+        mock_stripe_client.get_subscription_info = AsyncMock(
+            return_value={
+                "subscription_id": "sub_123",
+                "status": "active",
+                "billing_period": "monthly",
+                "current_period_end": 1704067200,
+                "cancel_at_period_end": False,
+            }
+        )
 
         # Execute
         result = await subscription_service.get_subscription_info(
-            mock_supabase_client,
-            "user_123"
+            mock_supabase_client, "user_123"
         )
 
         # Assert
@@ -57,8 +59,7 @@ class TestSubscriptionService:
 
         # Execute
         result = await subscription_service.get_subscription_info(
-            mock_supabase_client,
-            "user_free"
+            mock_supabase_client, "user_free"
         )
 
         # Assert
@@ -80,8 +81,7 @@ class TestSubscriptionService:
 
         # Execute
         result = await subscription_service.cancel_subscription(
-            mock_supabase_client,
-            "user_123"
+            mock_supabase_client, "user_123"
         )
 
         # Assert
@@ -90,8 +90,7 @@ class TestSubscriptionService:
 
         # Verify Stripe client was called
         mock_stripe_client.cancel_subscription.assert_called_once_with(
-            mock_supabase_client,
-            "user_123"
+            mock_supabase_client, "user_123"
         )
 
     @pytest.mark.asyncio
@@ -107,8 +106,7 @@ class TestSubscriptionService:
         # Execute and expect exception
         with pytest.raises(HTTPException) as exc_info:
             await subscription_service.cancel_subscription(
-                mock_supabase_client,
-                "user_no_sub"
+                mock_supabase_client, "user_no_sub"
             )
 
         assert exc_info.value.status_code == 404
@@ -119,18 +117,19 @@ class TestSubscriptionService:
     ):
         """Test getting info for subscription that's canceled at period end"""
         # Setup mock
-        mock_stripe_client.get_subscription_info = AsyncMock(return_value={
-            "subscription_id": "sub_456",
-            "status": "active",
-            "billing_period": "yearly",
-            "current_period_end": 1704067200,
-            "cancel_at_period_end": True
-        })
+        mock_stripe_client.get_subscription_info = AsyncMock(
+            return_value={
+                "subscription_id": "sub_456",
+                "status": "active",
+                "billing_period": "yearly",
+                "current_period_end": 1704067200,
+                "cancel_at_period_end": True,
+            }
+        )
 
         # Execute
         result = await subscription_service.get_subscription_info(
-            mock_supabase_client,
-            "user_456"
+            mock_supabase_client, "user_456"
         )
 
         # Assert
@@ -145,18 +144,19 @@ class TestSubscriptionService:
     ):
         """Test getting info for expired subscription"""
         # Setup mock
-        mock_stripe_client.get_subscription_info = AsyncMock(return_value={
-            "subscription_id": "sub_789",
-            "status": "canceled",
-            "billing_period": "monthly",
-            "current_period_end": 1704067200,
-            "cancel_at_period_end": False
-        })
+        mock_stripe_client.get_subscription_info = AsyncMock(
+            return_value={
+                "subscription_id": "sub_789",
+                "status": "canceled",
+                "billing_period": "monthly",
+                "current_period_end": 1704067200,
+                "cancel_at_period_end": False,
+            }
+        )
 
         # Execute
         result = await subscription_service.get_subscription_info(
-            mock_supabase_client,
-            "user_expired"
+            mock_supabase_client, "user_expired"
         )
 
         # Assert - user should be on free tier if subscription expired
