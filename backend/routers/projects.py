@@ -10,11 +10,9 @@ from backend.schemas.project import (
     ProjectEvidence,
     EvidenceStatsResponse,
 )
-from backend.services.project_service import ProjectService
-from backend.services.subscription_service import SubscriptionService
 from backend.utils import auth_utils
 from backend.schemas.auth import MessageResponse
-from backend.utils.dependencies import ServiceDBClient
+from backend.core.container import ServiceDBClient, ProjectServiceDep, SubscriptionServiceDep
 
 router = APIRouter(
     prefix="/api/projects",
@@ -25,17 +23,18 @@ router = APIRouter(
 @router.get("", response_model=List[Project])
 async def list_projects(
     client: ServiceDBClient,
+    project_service: ProjectServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
     portfolio_id: Optional[str] = Query(None, description="Filter projects by portfolio ID")
 ):
     """
     List all projects for current user
-    
+
     Returns all projects owned by the authenticated user, optionally filtered by portfolio.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
-    projects = await ProjectService.list_projects(client, user_id, portfolio_id=portfolio_id)
+
+    projects = await project_service.list_projects(client, user_id, portfolio_id=portfolio_id)
     return projects
 
 
@@ -43,16 +42,17 @@ async def list_projects(
 async def get_project(
     project_id: str,
     client: ServiceDBClient,
+    project_service: ProjectServiceDep,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Get a single project by ID
-    
+
     Returns project data if owned by the authenticated user.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
-    project = await ProjectService.get_project(client, project_id, user_id)
+
+    project = await project_service.get_project(client, project_id, user_id)
     return project
 
 
@@ -60,21 +60,23 @@ async def get_project(
 async def create_project(
     request: CreateProjectRequest,
     client: ServiceDBClient,
+    project_service: ProjectServiceDep,
+    subscription_service: SubscriptionServiceDep,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Create a new project
-    
+
     Creates a new project for the authenticated user.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
+
     # Step 1: Check subscription limits (orchestration in router)
-    subscription_info = await SubscriptionService.get_subscription_info(client, user_id)
-    
+    subscription_info = await subscription_service.get_subscription_info(client, user_id)
+
     # Step 2: Create project
     project_data = request.model_dump()
-    project = await ProjectService.create_project(
+    project = await project_service.create_project(
         client=client,
         subscription_info=subscription_info,
         user_id=user_id,
@@ -88,17 +90,18 @@ async def update_project(
     project_id: str,
     request: UpdateProjectRequest,
     client: ServiceDBClient,
+    project_service: ProjectServiceDep,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Update a project
-    
+
     Updates project data if owned by the authenticated user.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
+
     project_data = request.model_dump(exclude_none=True)
-    project = await ProjectService.update_project(client, project_id, user_id, project_data)
+    project = await project_service.update_project(client, project_id, user_id, project_data)
     return project
 
 
@@ -106,16 +109,17 @@ async def update_project(
 async def delete_project(
     project_id: str,
     client: ServiceDBClient,
+    project_service: ProjectServiceDep,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Delete a project
-    
+
     Deletes project if owned by the authenticated user.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
-    result = await ProjectService.delete_project(client, project_id, user_id)
+
+    result = await project_service.delete_project(client, project_id, user_id)
     return result
 
 
@@ -123,6 +127,7 @@ async def delete_project(
 async def list_project_evidence(
     project_id: str,
     client: ServiceDBClient,
+    project_service: ProjectServiceDep,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
@@ -137,8 +142,8 @@ async def list_project_evidence(
             user_id = auth_utils.get_user_id_from_token(authorization.replace("Bearer ", ""))
         except Exception:
             pass  # keep user_id as None for public access
-    
-    evidence = await ProjectService.list_project_evidence(client, project_id, user_id)
+
+    evidence = await project_service.list_project_evidence(client, project_id, user_id)
     return evidence
 
 
@@ -146,6 +151,7 @@ async def list_project_evidence(
 async def upload_project_evidence(
     project_id: str,
     client: ServiceDBClient,
+    project_service: ProjectServiceDep,
     file: UploadFile = File(...),
     authorization: str = Depends(auth_utils.get_access_token),
 ):
@@ -160,7 +166,7 @@ async def upload_project_evidence(
     file_content = await file.read()
     file_size = len(file_content)
 
-    evidence = await ProjectService.upload_evidence_file(
+    evidence = await project_service.upload_evidence_file(
         client,
         project_id=project_id,
         user_id=user_id,
@@ -176,16 +182,17 @@ async def upload_project_evidence(
 @router.get("/evidence/stats", response_model=EvidenceStatsResponse)
 async def get_evidence_stats(
     client: ServiceDBClient,
+    project_service: ProjectServiceDep,
     authorization: str = Depends(auth_utils.get_access_token)
 ):
     """
     Get user's evidence storage statistics
-    
+
     Returns total evidence size across all projects, limit, and usage percentage.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
-    stats = await ProjectService.get_evidence_stats(client, user_id)
+
+    stats = await project_service.get_evidence_stats(client, user_id)
     return stats
 
 
@@ -193,15 +200,16 @@ async def get_evidence_stats(
 async def delete_evidence(
     evidence_id: str,
     client: ServiceDBClient,
+    project_service: ProjectServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Delete evidence record and file
-    
+
     Deletes evidence record and associated file from storage if owned by the authenticated user.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
-    result = await ProjectService.delete_evidence(client, evidence_id, user_id)
+
+    result = await project_service.delete_evidence(client, evidence_id, user_id)
     return result
 
