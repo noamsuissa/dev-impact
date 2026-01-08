@@ -215,8 +215,7 @@ class UserService:
             print(f"Delete account error: {e}")
             raise HTTPException(status_code=500, detail="Failed to delete account")
 
-    @staticmethod
-    def validate_username(username: str) -> bool:
+    def validate_username(self, username: str) -> bool:
         """Validate username format"""
         if not username:
             return False
@@ -227,16 +226,16 @@ class UserService:
     async def check_username(self, client: Client, username: str) -> CheckUsernameResponse:
         """
         Check if a username is available for publishing portfolios
-        
+
         Args:
             client: Supabase client (injected from router)
             username: The username to check
-            
+
         Returns:
             CheckUsernameResponse with availability status
         """
         try:
-            if not UserService.validate_username(username):
+            if not self.validate_username(username):
                 return CheckUsernameResponse(
                     available=False,
                     valid=False,
