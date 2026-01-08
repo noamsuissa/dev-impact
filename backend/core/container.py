@@ -15,6 +15,10 @@ from backend.integrations.llm_client import LLMClient
 from backend.services.user_service import UserService
 from backend.services.subscription_service import SubscriptionService
 from backend.services.waitlist_service import WaitlistService
+from backend.services.portfolio_service import PortfolioService
+from backend.services.project_service import ProjectService
+from backend.services.auth.auth_service import AuthService
+from backend.services.auth.mfa_service import MFAService
 
 
 # Database Client Provider
@@ -103,8 +107,24 @@ def get_waitlist_service(
     return WaitlistService(email_client=email_client)
 
 
-# Note: Portfolio, Project, Auth, MFA services will be added once they're refactored
-# from static methods to instance methods
+def get_portfolio_service() -> PortfolioService:
+    """Provides PortfolioService instance."""
+    return PortfolioService()
+
+
+def get_project_service() -> ProjectService:
+    """Provides ProjectService instance."""
+    return ProjectService()
+
+
+def get_auth_service() -> AuthService:
+    """Provides AuthService instance."""
+    return AuthService()
+
+
+def get_mfa_service() -> MFAService:
+    """Provides MFAService instance."""
+    return MFAService()
 
 
 # Type Aliases for Cleaner Router Signatures
@@ -123,5 +143,7 @@ LLMClientDep = Annotated[LLMClient, Depends(get_llm_client)]
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 SubscriptionServiceDep = Annotated[SubscriptionService, Depends(get_subscription_service)]
 WaitlistServiceDep = Annotated[WaitlistService, Depends(get_waitlist_service)]
-
-# To be added: PortfolioServiceDep, ProjectServiceDep, AuthServiceDep, MFAServiceDep
+PortfolioServiceDep = Annotated[PortfolioService, Depends(get_portfolio_service)]
+ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+MFAServiceDep = Annotated[MFAService, Depends(get_mfa_service)]
