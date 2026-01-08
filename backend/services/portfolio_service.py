@@ -8,6 +8,8 @@ from typing import Optional, List
 from datetime import datetime
 from dotenv import load_dotenv
 from fastapi import HTTPException
+from supabase import Client
+
 # Note: No cross-service imports - services are fully decoupled
 # Router layer orchestrates multi-service workflows
 from backend.schemas.portfolio import (
@@ -23,21 +25,20 @@ from backend.schemas.portfolio import (
 )
 from backend.schemas.auth import MessageResponse
 from backend.schemas.subscription import SubscriptionInfoResponse
-from backend.utils.dependencies import ServiceDBClient
 
 # Load environment variables
 load_dotenv()
 
 
 class PortfolioService:
-    """Unified service for handling portfolio operations (CRUD + Publishing)"""
+    """Unified service for handling portfolio operations (CRUD + Publishing)."""
 
     # ============================================
     # HELPER/VALIDATION METHODS
     # ============================================
 
-    @staticmethod
-    def validate_username(username: str) -> bool:
+    
+    def validate_username(self, username: str) -> bool:
         """Validate username format"""
         if not username:
             return False
@@ -45,8 +46,8 @@ class PortfolioService:
         pattern = r'^[a-z0-9-]{3,50}$'
         return bool(re.match(pattern, username))
 
-    @staticmethod
-    def generate_slug(name: str) -> str:
+    
+    def generate_slug(self, name: str) -> str:
         """Generate URL-friendly slug from portfolio name"""
         if not name:
             return ""
@@ -59,8 +60,8 @@ class PortfolioService:
             slug = "portfolio"
         return slug
 
-    @staticmethod
-    def validate_slug(slug: str) -> bool:
+    
+    def validate_slug(self, slug: str) -> bool:
         """Validate slug format"""
         if not slug:
             return False
@@ -72,9 +73,9 @@ class PortfolioService:
     # PORTFOLIO CRUD OPERATIONS
     # ============================================
 
-    @staticmethod
-    async def create_portfolio(
-        client: ServiceDBClient,
+    
+    async def create_portfolio(self, 
+        client: Client,
         subscription_info: SubscriptionInfoResponse,
         user_id: str,
         name: str,
@@ -103,7 +104,7 @@ class PortfolioService:
                 raise HTTPException(status_code=400, detail="Portfolio name is required")
             
             # Generate slug from name
-            base_slug = PortfolioService.generate_slug(name)
+            base_slug = self.generate_slug(name)
             slug = base_slug
             
             # Ensure slug is unique per user
@@ -161,9 +162,9 @@ class PortfolioService:
             print(f"Create portfolio error: {e}")
             raise HTTPException(status_code=500, detail="Failed to create portfolio")
 
-    @staticmethod
-    async def list_portfolios(
-        client: ServiceDBClient,
+    
+    async def list_portfolios(self, 
+        client: Client,
         user_id: str
     ) -> List[Portfolio]:
         """
@@ -203,9 +204,9 @@ class PortfolioService:
             print(f"List portfolios error: {e}")
             raise HTTPException(status_code=500, detail="Failed to list portfolios")
 
-    @staticmethod
-    async def get_portfolio(
-        client: ServiceDBClient,
+    
+    async def get_portfolio(self, 
+        client: Client,
         portfolio_id: str,
         user_id: str
     ) -> Portfolio:
@@ -247,9 +248,9 @@ class PortfolioService:
             print(f"Get portfolio error: {e}")
             raise HTTPException(status_code=500, detail="Failed to get portfolio")
 
-    @staticmethod
-    async def update_portfolio(
-        client: ServiceDBClient,
+    
+    async def update_portfolio(self, 
+        client: Client,
         portfolio_id: str,
         user_id: str,
         name: Optional[str] = None,
@@ -288,7 +289,7 @@ class PortfolioService:
                     raise HTTPException(status_code=400, detail="Portfolio name cannot be empty")
                 update_data["name"] = name.strip()
                 # Regenerate slug if name changed
-                new_slug = PortfolioService.generate_slug(name.strip())
+                new_slug = self.generate_slug(name.strip())
                 # Ensure uniqueness
                 base_slug = new_slug
                 counter = 1
@@ -342,9 +343,9 @@ class PortfolioService:
             print(f"Update portfolio error: {e}")
             raise HTTPException(status_code=500, detail="Failed to update portfolio")
 
-    @staticmethod
-    async def delete_portfolio(
-        client: ServiceDBClient,
+    
+    async def delete_portfolio(self, 
+        client: Client,
         portfolio_id: str,
         user_id: str
     ) -> MessageResponse:
@@ -400,8 +401,8 @@ class PortfolioService:
     # PUBLISHING OPERATIONS
     # ============================================
 
-    @staticmethod
-    async def publish_portfolio(client: ServiceDBClient, username: str, portfolio_id: str, user_profile, projects: List, user_id: str | None = None) -> PublishPortfolioResponse:
+    
+    async def publish_portfolio(self, client: Client, username: str, portfolio_id: str, user_profile, projects: List, user_id: str | None = None) -> PublishPortfolioResponse:
         """
         Publish a portfolio with a username
         
@@ -420,7 +421,7 @@ class PortfolioService:
             raise HTTPException(status_code=400, detail="User ID is required")
         
         try:
-            if not PortfolioService.validate_username(username):
+            if not self.validate_username(username):
                 raise HTTPException(status_code=400, detail="Username must be 3-50 characters, lowercase letters, numbers, and hyphens only")
             
             # Ensure username consistency (lowercase)
@@ -528,8 +529,8 @@ class PortfolioService:
             print(f"Error in publish_portfolio: {e}")
             raise HTTPException(status_code=500, detail="An unexpected error occurred while publishing the portfolio")
 
-    @staticmethod
-    async def unpublish_portfolio(client: ServiceDBClient, username: str, portfolio_slug: str, user_id: str) -> MessageResponse:
+    
+    async def unpublish_portfolio(self, client: Client, username: str, portfolio_slug: str, user_id: str) -> MessageResponse:
         """
         Unpublish a portfolio
         
@@ -585,8 +586,8 @@ class PortfolioService:
     # PUBLIC PORTFOLIO VIEWING
     # ============================================
 
-    @staticmethod
-    async def get_published_portfolio(client: ServiceDBClient, username: str, portfolio_slug: Optional[str] = None, increment_view_count: bool = True) -> PortfolioResponse:
+    
+    async def get_published_portfolio(self, client: Client, username: str, portfolio_slug: Optional[str] = None, increment_view_count: bool = True) -> PortfolioResponse:
         """
         Get a published portfolio by username and optional portfolio slug (PUBLIC)
         
@@ -600,7 +601,7 @@ class PortfolioService:
             PortfolioResponse containing portfolio data
         """
         try:
-            if not PortfolioService.validate_username(username):
+            if not self.validate_username(username):
                 raise HTTPException(status_code=400, detail="Invalid username format")
             
             # Build query
@@ -611,7 +612,7 @@ class PortfolioService:
             
             # If portfolio_slug is provided, filter by it
             if portfolio_slug:
-                if not PortfolioService.validate_slug(portfolio_slug):
+                if not self.validate_slug(portfolio_slug):
                     raise HTTPException(status_code=400, detail="Invalid portfolio slug format")
                 query = query.eq("profile_slug", portfolio_slug)
             
@@ -659,8 +660,8 @@ class PortfolioService:
             print(f"Error in get_published_portfolio: {e}")
             raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching the portfolio")
 
-    @staticmethod
-    async def get_published_portfolio_stats(client: ServiceDBClient, user_id: str) -> PortfolioStatsResponse:
+    
+    async def get_published_portfolio_stats(self, client: Client, user_id: str) -> PortfolioStatsResponse:
         """
         Get view count statistics for all of a user's published portfolios (including unpublished)
         
@@ -694,8 +695,8 @@ class PortfolioService:
             print(f"Error in get_published_portfolio_stats: {e}")
             raise HTTPException(status_code=500, detail="An unexpected error occurred while fetching portfolio stats")
 
-    @staticmethod
-    async def list_published_portfolios(client: ServiceDBClient, limit: int = 50, offset: int = 0) -> ListPortfoliosResponse:
+    
+    async def list_published_portfolios(self, client: Client, limit: int = 50, offset: int = 0) -> ListPortfoliosResponse:
         """
         List all published portfolios (PUBLIC)
         
