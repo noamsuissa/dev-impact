@@ -1,8 +1,14 @@
 """
 User Router - Handle user profile endpoints
 """
+
 from fastapi import APIRouter, Depends
-from backend.schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest, CheckUsernameResponse
+from backend.schemas.user import (
+    UserProfile,
+    UpdateProfileRequest,
+    OnboardingRequest,
+    CheckUsernameResponse,
+)
 from backend.schemas.auth import MessageResponse
 from backend.utils import auth_utils
 from backend.core.container import ServiceDBClient, UserServiceDep
@@ -17,7 +23,7 @@ router = APIRouter(
 async def get_profile(
     client: ServiceDBClient,
     user_service: UserServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Get current user's profile
@@ -35,7 +41,7 @@ async def update_profile(
     request: UpdateProfileRequest,
     client: ServiceDBClient,
     user_service: UserServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Update current user's profile
@@ -58,7 +64,7 @@ async def complete_onboarding(
     request: OnboardingRequest,
     client: ServiceDBClient,
     user_service: UserServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Complete user onboarding
@@ -81,9 +87,7 @@ async def complete_onboarding(
 
 @router.get("/check-username/{username}", response_model=CheckUsernameResponse)
 async def check_username(
-    username: str,
-    client: ServiceDBClient,
-    user_service: UserServiceDep
+    username: str, client: ServiceDBClient, user_service: UserServiceDep
 ):
     """
     Check if a username is available for publishing portfolios
@@ -99,7 +103,7 @@ async def check_username(
 async def delete_account(
     client: ServiceDBClient,
     user_service: UserServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Delete current user's account

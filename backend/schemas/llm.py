@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 
+
 class CompletionRequest(BaseModel):
     """Request model for LLM completion"""
+
     provider: str  # 'openrouter' or 'groq'
     messages: List[Dict[str, str]]
     model: Optional[str] = None
@@ -12,6 +14,7 @@ class CompletionRequest(BaseModel):
 
 class CompletionResponse(BaseModel):
     """Response model for LLM completion"""
+
     content: str
     usage: Optional[Dict[str, Any]] = None
     model: str

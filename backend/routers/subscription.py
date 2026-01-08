@@ -1,11 +1,20 @@
 """
 Subscription Router - Handle subscription and payment endpoints
 """
+
 from fastapi import APIRouter, Depends
-from backend.schemas.subscription import CheckoutSessionRequest, CheckoutSessionResponse, SubscriptionInfoResponse
+from backend.schemas.subscription import (
+    CheckoutSessionRequest,
+    CheckoutSessionResponse,
+    SubscriptionInfoResponse,
+)
 from backend.schemas.auth import MessageResponse
 from backend.utils import auth_utils
-from backend.core.container import ServiceDBClient, StripeClientDep, SubscriptionServiceDep
+from backend.core.container import (
+    ServiceDBClient,
+    StripeClientDep,
+    SubscriptionServiceDep,
+)
 
 router = APIRouter(
     prefix="/api/subscriptions",
@@ -18,7 +27,7 @@ async def create_checkout_session(
     request: CheckoutSessionRequest,
     client: ServiceDBClient,
     stripe_client: StripeClientDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Create a Stripe Checkout session for Pro plan subscription.
@@ -34,12 +43,11 @@ async def create_checkout_session(
         user_email=user_email,
         success_url=request.success_url,
         cancel_url=request.cancel_url,
-        billing_period=request.billing_period
+        billing_period=request.billing_period,
     )
 
     return CheckoutSessionResponse(
-        checkout_url=result["checkout_url"],
-        session_id=result["session_id"]
+        checkout_url=result["checkout_url"], session_id=result["session_id"]
     )
 
 
@@ -47,7 +55,7 @@ async def create_checkout_session(
 async def get_subscription_info(
     client: ServiceDBClient,
     subscription_service: SubscriptionServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Get user's subscription information and profile limits.
@@ -61,7 +69,7 @@ async def get_subscription_info(
 async def cancel_subscription(
     client: ServiceDBClient,
     subscription_service: SubscriptionServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Cancel subscription.

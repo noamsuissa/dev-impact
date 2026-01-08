@@ -30,4 +30,3 @@ class GitHubUser(BaseModel):
 
 class UserProfileRequest(BaseModel):
     access_token: str
-

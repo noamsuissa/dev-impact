@@ -1,6 +1,7 @@
 """
 Stripe Webhook Router
 """
+
 from fastapi import APIRouter, Header, Request, HTTPException
 from backend.core.container import ServiceDBClient, StripeClientDep
 
@@ -9,12 +10,13 @@ router = APIRouter(
     tags=["webhooks"],
 )
 
+
 @router.post("/stripe")
 async def stripe_webhook(
     request: Request,
     client: ServiceDBClient,
     stripe_client: StripeClientDep,
-    stripe_signature: str = Header(None)
+    stripe_signature: str = Header(None),
 ):
     """
     Handle incoming Stripe webhooks

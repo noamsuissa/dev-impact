@@ -1,6 +1,7 @@
 """
 Portfolio Schemas - For managing portfolios (project organization tabs that can be published)
 """
+
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from backend.schemas.project import Project
@@ -10,8 +11,10 @@ from backend.schemas.project import Project
 # PORTFOLIO CRUD SCHEMAS (from user_profile.py)
 # ============================================
 
+
 class Portfolio(BaseModel):
     """Portfolio schema - represents a portfolio for organizing projects"""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -23,12 +26,14 @@ class Portfolio(BaseModel):
 
 class CreatePortfolioRequest(BaseModel):
     """Create portfolio request"""
+
     name: str
     description: Optional[str] = None
 
 
 class UpdatePortfolioRequest(BaseModel):
     """Update portfolio request"""
+
     name: Optional[str] = None
     description: Optional[str] = None
 
@@ -36,6 +41,7 @@ class UpdatePortfolioRequest(BaseModel):
 # ============================================
 # PUBLISHING SCHEMAS (from profile.py)
 # ============================================
+
 
 class GitHubData(BaseModel):
     username: Optional[str] = None
@@ -52,12 +58,14 @@ class UserData(BaseModel):
 
 class PublishPortfolioRequest(BaseModel):
     """Request to publish a portfolio"""
+
     username: str
     portfolio_id: str
 
 
 class PublishPortfolioResponse(BaseModel):
     """Response after publishing a portfolio"""
+
     success: bool
     username: str
     portfolio_slug: str
@@ -67,12 +75,14 @@ class PublishPortfolioResponse(BaseModel):
 
 class PortfolioData(BaseModel):
     """Published portfolio metadata"""
+
     name: str
     description: Optional[str] = None
 
 
 class PortfolioResponse(BaseModel):
     """Public portfolio response (for viewing published portfolios)"""
+
     username: str
     portfolio_slug: Optional[str] = Field(None, alias="portfolio_slug")
     user: UserData
@@ -88,6 +98,7 @@ class PortfolioResponse(BaseModel):
 
 class ListPortfoliosResponse(BaseModel):
     """Response for listing published portfolios"""
+
     portfolios: Optional[List[PortfolioResponse]] = None
     total: Optional[int] = None
     limit: Optional[int] = None
@@ -96,6 +107,7 @@ class ListPortfoliosResponse(BaseModel):
 
 class PortfolioViewStats(BaseModel):
     """View count statistics for a portfolio"""
+
     portfolio_slug: str
     view_count: int
     is_published: bool
@@ -103,5 +115,5 @@ class PortfolioViewStats(BaseModel):
 
 class PortfolioStatsResponse(BaseModel):
     """Response containing portfolio view statistics"""
-    stats: List[PortfolioViewStats]
 
+    stats: List[PortfolioViewStats]

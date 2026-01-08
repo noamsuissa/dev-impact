@@ -1,6 +1,7 @@
 """
 Projects Router - Handle project CRUD endpoints
 """
+
 from fastapi import APIRouter, Query, Depends, UploadFile, File, Header
 from typing import Optional, List
 from backend.schemas.project import (
@@ -12,7 +13,11 @@ from backend.schemas.project import (
 )
 from backend.utils import auth_utils
 from backend.schemas.auth import MessageResponse
-from backend.core.container import ServiceDBClient, ProjectServiceDep, SubscriptionServiceDep
+from backend.core.container import (
+    ServiceDBClient,
+    ProjectServiceDep,
+    SubscriptionServiceDep,
+)
 
 router = APIRouter(
     prefix="/api/projects",
@@ -25,7 +30,9 @@ async def list_projects(
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
-    portfolio_id: Optional[str] = Query(None, description="Filter projects by portfolio ID")
+    portfolio_id: Optional[str] = Query(
+        None, description="Filter projects by portfolio ID"
+    ),
 ):
     """
     List all projects for current user
@@ -34,7 +41,9 @@ async def list_projects(
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
 
-    projects = await project_service.list_projects(client, user_id, portfolio_id=portfolio_id)
+    projects = await project_service.list_projects(
+        client, user_id, portfolio_id=portfolio_id
+    )
     return projects
 
 
@@ -43,7 +52,7 @@ async def get_project(
     project_id: str,
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Get a single project by ID
@@ -62,7 +71,7 @@ async def create_project(
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
     subscription_service: SubscriptionServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Create a new project
@@ -72,7 +81,9 @@ async def create_project(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
 
     # Step 1: Check subscription limits (orchestration in router)
-    subscription_info = await subscription_service.get_subscription_info(client, user_id)
+    subscription_info = await subscription_service.get_subscription_info(
+        client, user_id
+    )
 
     # Step 2: Create project
     project_data = request.model_dump()
@@ -80,7 +91,7 @@ async def create_project(
         client=client,
         subscription_info=subscription_info,
         user_id=user_id,
-        project_data=project_data
+        project_data=project_data,
     )
     return project
 
@@ -91,7 +102,7 @@ async def update_project(
     request: UpdateProjectRequest,
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Update a project
@@ -101,7 +112,9 @@ async def update_project(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
 
     project_data = request.model_dump(exclude_none=True)
-    project = await project_service.update_project(client, project_id, user_id, project_data)
+    project = await project_service.update_project(
+        client, project_id, user_id, project_data
+    )
     return project
 
 
@@ -110,7 +123,7 @@ async def delete_project(
     project_id: str,
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Delete a project
@@ -128,7 +141,7 @@ async def list_project_evidence(
     project_id: str,
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     List all evidence for a project.
@@ -139,7 +152,9 @@ async def list_project_evidence(
     if authorization:
         # Try to extract user ID, but don't fail if token is invalid
         try:
-            user_id = auth_utils.get_user_id_from_token(authorization.replace("Bearer ", ""))
+            user_id = auth_utils.get_user_id_from_token(
+                authorization.replace("Bearer ", "")
+            )
         except Exception:
             pass  # keep user_id as None for public access
 
@@ -183,7 +198,7 @@ async def upload_project_evidence(
 async def get_evidence_stats(
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Get user's evidence storage statistics
@@ -212,4 +227,3 @@ async def delete_evidence(
 
     result = await project_service.delete_evidence(client, evidence_id, user_id)
     return result
-
