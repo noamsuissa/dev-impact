@@ -1,6 +1,7 @@
 """
 Auth Router - Handle authentication endpoints
 """
+
 from fastapi import APIRouter, Depends
 from backend.schemas.auth import (
     SignUpRequest,
@@ -13,7 +14,7 @@ from backend.schemas.auth import (
     MFAEnrollRequest,
     MFAVerifyRequest,
     MFAEnrollResponse,
-    MFAListResponse
+    MFAListResponse,
 )
 from backend.utils import auth_utils
 from backend.core.container import ServiceDBClient, AuthServiceDep, MFAServiceDep
@@ -26,9 +27,7 @@ router = APIRouter(
 
 @router.post("/signup", response_model=AuthResponse)
 async def sign_up(
-    request: SignUpRequest,
-    client: ServiceDBClient,
-    auth_service: AuthServiceDep
+    request: SignUpRequest, client: ServiceDBClient, auth_service: AuthServiceDep
 ):
     """
     Sign up a new user
@@ -42,9 +41,7 @@ async def sign_up(
 
 @router.post("/signin", response_model=AuthResponse)
 async def sign_in(
-    request: SignInRequest,
-    client: ServiceDBClient,
-    auth_service: AuthServiceDep
+    request: SignInRequest, client: ServiceDBClient, auth_service: AuthServiceDep
 ):
     """
     Sign in an existing user
@@ -59,7 +56,7 @@ async def sign_in(
         request.password,
         request.mfa_challenge_id,
         request.mfa_code,
-        request.mfa_factor_id
+        request.mfa_factor_id,
     )
     return result
 
@@ -68,7 +65,7 @@ async def sign_in(
 async def sign_out(
     client: ServiceDBClient,
     auth_service: AuthServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Sign out current user
@@ -78,21 +75,25 @@ async def sign_out(
     result = await auth_service.sign_out(client, authorization)
     return result
 
+
 @router.get("/session", response_model=AuthResponse)
-async def get_session(client: ServiceDBClient, authorization: str = Depends(auth_utils.get_access_token)):
+async def get_session(
+    client: ServiceDBClient, authorization: str = Depends(auth_utils.get_access_token)
+):
     """
     Get current session
-    
+
     Returns current user and session data if token is valid.
     """
     result = await auth_utils.get_session(client, authorization)
     return result
 
+
 @router.post("/refresh", response_model=AuthResponse)
 async def refresh_session(request: RefreshTokenRequest, client: ServiceDBClient):
     """
     Refresh user session
-    
+
     Gets a new access token using refresh token.
     """
     result = await auth_utils.refresh_session(client, request.refresh_token)
@@ -101,9 +102,7 @@ async def refresh_session(request: RefreshTokenRequest, client: ServiceDBClient)
 
 @router.post("/reset-password", response_model=MessageResponse)
 async def reset_password(
-    request: ResetPasswordRequest,
-    client: ServiceDBClient,
-    auth_service: AuthServiceDep
+    request: ResetPasswordRequest, client: ServiceDBClient, auth_service: AuthServiceDep
 ):
     """
     Send password reset email
@@ -118,7 +117,7 @@ async def reset_password(
 async def update_password(
     request: UpdatePasswordRequest,
     auth_service: AuthServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Update user password
@@ -134,7 +133,7 @@ async def update_password(
 async def mfa_enroll(
     request: MFAEnrollRequest,
     mfa_service: MFAServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Enroll user in MFA (TOTP)
@@ -150,7 +149,7 @@ async def mfa_enroll(
 async def mfa_verify_enrollment(
     request: MFAVerifyRequest,
     mfa_service: MFAServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Verify MFA enrollment with a code
@@ -158,7 +157,9 @@ async def mfa_verify_enrollment(
     Verifies the TOTP code to complete enrollment.
     Requires valid access token.
     """
-    result = await mfa_service.mfa_verify_enrollment(authorization, request.factor_id, request.code)
+    result = await mfa_service.mfa_verify_enrollment(
+        authorization, request.factor_id, request.code
+    )
     return result
 
 
@@ -166,7 +167,7 @@ async def mfa_verify_enrollment(
 async def mfa_list_factors(
     client: ServiceDBClient,
     mfa_service: MFAServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     List all MFA factors for the current user
@@ -184,7 +185,7 @@ async def mfa_unenroll(
     factor_id: str,
     client: ServiceDBClient,
     mfa_service: MFAServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Unenroll (remove) an MFA factor
@@ -195,4 +196,3 @@ async def mfa_unenroll(
     user_id = await auth_utils.verify_token(client, authorization)
     result = await mfa_service.mfa_unenroll(user_id, factor_id)
     return result
-

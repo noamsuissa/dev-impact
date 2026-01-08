@@ -2,6 +2,7 @@
 LLM integration client.
 Unified interface for LLM providers through LiteLLM.
 """
+
 import os
 import logging
 from typing import Dict, Any, Optional, List
@@ -34,9 +35,7 @@ class LLMClient:
             os.environ["GROQ_API_KEY"] = self.config.groq_api_key
 
     def _get_completion_params(
-        self,
-        provider: str,
-        model: Optional[str] = None
+        self, provider: str, model: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Get provider-specific completion parameters.
@@ -54,33 +53,26 @@ class LLMClient:
         if provider == "openrouter":
             if not self.config.openrouter_api_key:
                 raise HTTPException(
-                    status_code=500,
-                    detail="OpenRouter API key not configured"
+                    status_code=500, detail="OpenRouter API key not configured"
                 )
 
             model_name = model or self.config.openrouter_model
 
-            return {
-                "model": f"openrouter/{model_name}"
-            }
+            return {"model": f"openrouter/{model_name}"}
 
         elif provider == "groq":
             if not self.config.groq_api_key:
                 raise HTTPException(
-                    status_code=500,
-                    detail="Groq API key not configured"
+                    status_code=500, detail="Groq API key not configured"
                 )
 
             model_name = model or self.config.groq_model
 
-            return {
-                "model": f"groq/{model_name}"
-            }
+            return {"model": f"groq/{model_name}"}
 
         else:
             raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported provider: {provider}"
+                status_code=400, detail=f"Unsupported provider: {provider}"
             )
 
     async def generate_completion(
@@ -91,7 +83,7 @@ class LLMClient:
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
         user_id: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Generate a completion using the specified provider through LiteLLM.
@@ -145,27 +137,19 @@ class LLMClient:
         except AuthenticationError as e:
             logger.error(f"Authentication error for {provider}: {e}")
             raise HTTPException(
-                status_code=401,
-                detail=f"Invalid API key for {provider}"
+                status_code=401, detail=f"Invalid API key for {provider}"
             )
         except RateLimitError as e:
             logger.error(f"Rate limit exceeded for {provider}: {e}")
             raise HTTPException(
-                status_code=429,
-                detail=f"Rate limit exceeded for {provider}"
+                status_code=429, detail=f"Rate limit exceeded for {provider}"
             )
         except APIError as e:
             logger.error(f"API error for {provider}: {e}")
-            raise HTTPException(
-                status_code=502,
-                detail=f"API error from {provider}"
-            )
+            raise HTTPException(status_code=502, detail=f"API error from {provider}")
         except Exception as e:
             logger.error(f"Unexpected error in LLM completion for {provider}: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="An unexpected error occurred"
-            )
+            raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
     def generate_completion_sync(
         self,
@@ -174,7 +158,7 @@ class LLMClient:
         model: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Synchronous version of generate_completion.
@@ -225,27 +209,19 @@ class LLMClient:
         except AuthenticationError as e:
             logger.error(f"Authentication error for {provider}: {e}")
             raise HTTPException(
-                status_code=401,
-                detail=f"Invalid API key for {provider}"
+                status_code=401, detail=f"Invalid API key for {provider}"
             )
         except RateLimitError as e:
             logger.error(f"Rate limit exceeded for {provider}: {e}")
             raise HTTPException(
-                status_code=429,
-                detail=f"Rate limit exceeded for {provider}"
+                status_code=429, detail=f"Rate limit exceeded for {provider}"
             )
         except APIError as e:
             logger.error(f"API error for {provider}: {e}")
-            raise HTTPException(
-                status_code=502,
-                detail=f"API error from {provider}"
-            )
+            raise HTTPException(status_code=502, detail=f"API error from {provider}")
         except Exception as e:
             logger.error(f"Unexpected error in LLM completion for {provider}: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="An unexpected error occurred"
-            )
+            raise HTTPException(status_code=500, detail="An unexpected error occurred")
 
     def get_available_models(self) -> Dict[str, List[str]]:
         """

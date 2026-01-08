@@ -1,6 +1,7 @@
 """
 LLM Router - API endpoints for LLM operations
 """
+
 from fastapi import APIRouter, HTTPException, Depends
 from backend.schemas.llm import CompletionRequest, CompletionResponse
 from backend.utils import auth_utils
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/llm", tags=["llm"])
 async def generate_completion(
     request: CompletionRequest,
     llm_client: LLMClientDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Generate a completion using the specified LLM provider
@@ -25,8 +26,7 @@ async def generate_completion(
 
     if request.provider not in ["openrouter", "groq"]:
         raise HTTPException(
-            status_code=400,
-            detail="Provider must be 'openrouter' or 'groq'"
+            status_code=400, detail="Provider must be 'openrouter' or 'groq'"
         )
 
     response = await llm_client.generate_completion(
@@ -35,7 +35,7 @@ async def generate_completion(
         model=request.model,
         temperature=request.temperature,
         max_tokens=request.max_tokens,
-        user_id=user_id
+        user_id=user_id,
     )
 
     return CompletionResponse(**response)

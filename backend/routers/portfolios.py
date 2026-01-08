@@ -2,6 +2,7 @@
 Portfolios Router - Unified router for portfolio CRUD and publishing operations
 Merges endpoints from user_profile.py and profile.py
 """
+
 from fastapi import APIRouter, Header, Depends, HTTPException
 from typing import List, Optional
 from backend.schemas.portfolio import (
@@ -21,7 +22,7 @@ from backend.core.container import (
     PortfolioServiceDep,
     SubscriptionServiceDep,
     UserServiceDep,
-    ProjectServiceDep
+    ProjectServiceDep,
 )
 
 router = APIRouter(
@@ -34,13 +35,14 @@ router = APIRouter(
 # PORTFOLIO CRUD ENDPOINTS (Authenticated)
 # ============================================
 
+
 @router.post("", response_model=Portfolio)
 async def create_portfolio(
     portfolio: CreatePortfolioRequest,
     client: ServiceDBClient,
     portfolio_service: PortfolioServiceDep,
     subscription_service: SubscriptionServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Create a new portfolio
@@ -50,8 +52,9 @@ async def create_portfolio(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
 
     # Step 1: Check subscription limits (orchestration in router)
-    subscription_info = await subscription_service.get_subscription_info(client, user_id)
-
+    subscription_info = await subscription_service.get_subscription_info(
+        client, user_id
+    )
 
     # Step 2: Create portfolio
     result = await portfolio_service.create_portfolio(
@@ -59,7 +62,7 @@ async def create_portfolio(
         subscription_info=subscription_info,
         user_id=user_id,
         name=portfolio.name,
-        description=portfolio.description
+        description=portfolio.description,
     )
     return result
 
@@ -68,7 +71,7 @@ async def create_portfolio(
 async def list_portfolios(
     client: ServiceDBClient,
     portfolio_service: PortfolioServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     List all portfolios for the authenticated user
@@ -82,7 +85,7 @@ async def list_portfolios(
 async def get_published_portfolio_stats(
     client: ServiceDBClient,
     portfolio_service: PortfolioServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Get view count statistics for all of the authenticated user's portfolios
@@ -102,7 +105,7 @@ async def list_published_portfolios(
     client: ServiceDBClient,
     portfolio_service: PortfolioServiceDep,
     limit: int = 50,
-    offset: int = 0
+    offset: int = 0,
 ):
     """
     List all published portfolios (PUBLIC)
@@ -121,7 +124,7 @@ async def get_portfolio(
     portfolio_id: str,
     client: ServiceDBClient,
     portfolio_service: PortfolioServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Get a single portfolio by ID
@@ -137,7 +140,7 @@ async def update_portfolio(
     portfolio: UpdatePortfolioRequest,
     client: ServiceDBClient,
     portfolio_service: PortfolioServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Update a portfolio
@@ -148,7 +151,7 @@ async def update_portfolio(
         portfolio_id,
         user_id,
         name=portfolio.name,
-        description=portfolio.description
+        description=portfolio.description,
     )
     return result
 
@@ -158,7 +161,7 @@ async def delete_portfolio(
     portfolio_id: str,
     client: ServiceDBClient,
     portfolio_service: PortfolioServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Delete a portfolio
@@ -172,6 +175,7 @@ async def delete_portfolio(
 # PUBLISHING ENDPOINTS (Authenticated)
 # ============================================
 
+
 @router.post("/{portfolio_id}/publish", response_model=PublishPortfolioResponse)
 async def publish_portfolio(
     portfolio_id: str,
@@ -180,7 +184,7 @@ async def publish_portfolio(
     portfolio_service: PortfolioServiceDep,
     user_service: UserServiceDep,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Publish a portfolio with a username
@@ -195,10 +199,7 @@ async def publish_portfolio(
 
     # Step 2: Fetch projects for this portfolio
     projects = await project_service.list_projects(
-        client,
-        user_id,
-        portfolio_id=portfolio_id,
-        include_evidence=True
+        client, user_id, portfolio_id=portfolio_id, include_evidence=True
     )
 
     # Step 3: Publish portfolio with pre-fetched data
@@ -208,7 +209,7 @@ async def publish_portfolio(
         portfolio_id=portfolio_id,
         user_id=user_id,
         user_profile=user_profile,
-        projects=projects
+        projects=projects,
     )
     return result
 
@@ -219,7 +220,7 @@ async def unpublish_portfolio(
     portfolio_slug: str,
     client: ServiceDBClient,
     portfolio_service: PortfolioServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
     """
     Unpublish a portfolio
@@ -228,7 +229,9 @@ async def unpublish_portfolio(
     Only the portfolio owner can unpublish their portfolio.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    result = await portfolio_service.unpublish_portfolio(client, username, portfolio_slug, user_id)
+    result = await portfolio_service.unpublish_portfolio(
+        client, username, portfolio_slug, user_id
+    )
     return result
 
 
@@ -236,13 +239,14 @@ async def unpublish_portfolio(
 # PUBLIC ENDPOINTS (No Authentication Required)
 # ============================================
 
+
 @router.get("/{username}/{portfolio_slug}", response_model=PortfolioResponse)
 async def get_published_portfolio_with_slug(
     username: str,
     portfolio_slug: str,
     client: ServiceDBClient,
     portfolio_service: PortfolioServiceDep,
-    increment: bool = True
+    increment: bool = True,
 ):
     """
     Get a published portfolio by username and portfolio slug (PUBLIC)
@@ -253,6 +257,7 @@ async def get_published_portfolio_with_slug(
 
     URL format: /api/portfolios/{username}/{portfolio-slug}?increment=false
     """
-    portfolio = await portfolio_service.get_published_portfolio(client, username, portfolio_slug, increment_view_count=increment)
+    portfolio = await portfolio_service.get_published_portfolio(
+        client, username, portfolio_slug, increment_view_count=increment
+    )
     return portfolio
-

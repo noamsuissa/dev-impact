@@ -44,4 +44,3 @@ async def get_user_profile(request: UserProfileRequest, github_client: GitHubCli
     """
     user = await github_client.get_user_profile(request.access_token)
     return user
-
