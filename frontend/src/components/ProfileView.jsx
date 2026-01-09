@@ -34,7 +34,7 @@ const ProfileView = ({ user, projects }) => {
           </div>
         )}
         <div className="border-t border-terminal-border mt-5 pt-5 text-[#c9c5c0]">
-          {projects.length} {projects.length === 1 ? 'Project' : 'Projects'} • 
+          {projects.length} {projects.length === 1 ? 'Project' : 'Projects'} •
           {' '}{projects.reduce((sum, p) => sum + p.metrics.length, 0)} Achievements
         </div>
       </div>
@@ -73,4 +73,3 @@ const ProfileView = ({ user, projects }) => {
 };
 
 export default ProfileView;
-

@@ -1,15 +1,19 @@
+"""Dev Impact Backend API"""
+
+import logging
+import os
+import re
+import threading
+
+import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-import os
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-import uvicorn
-import re
-import logging
-import threading
+
+from .middleware.rate_limiter import handle_threading_exception, setup_rate_limiter
 from .middleware.traceloop import setup_traceloop
-from .middleware.rate_limiter import setup_rate_limiter, handle_threading_exception
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +30,17 @@ setup_traceloop()
 limiter = setup_rate_limiter()
 
 # Import routers AFTER middleware initialization
-from .routers import github_auth, auth, user, projects, portfolios, waitlist, subscription, webhook, llm
+from .routers import (  # noqa: E402
+    auth,
+    github_auth,
+    llm,
+    portfolios,
+    projects,
+    subscription,
+    user,
+    waitlist,
+    webhook,
+)
 
 # Check if we're in production (disable API docs)
 is_production = os.getenv("ENVIRONMENT", "").lower() in ["production", "prod"]
@@ -60,7 +74,7 @@ if not cors_origins:
     # Default to localhost for development
     cors_origins = ["http://localhost:5173"]
 elif "*" in cors_origins:
-    raise RuntimeError("Wildcard '*' for allowed CORS origins is not permitted. Please specify allowed origins explicitly.")
+    raise RuntimeError(detail="Wildcard '*' for allowed CORS origins is not permitted. Please specify allowed origins explicitly.")
 
 print(f"INFO: CORS allowed origins: {cors_origins}")
 
@@ -86,7 +100,6 @@ app.include_router(webhook.router)
 app.include_router(llm.router)
 
 
-
 @app.get("/")
 async def root():
     """Root endpoint - API health check."""
@@ -108,4 +121,3 @@ threading.excepthook = handle_threading_exception
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=3000)
-

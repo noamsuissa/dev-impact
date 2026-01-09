@@ -3,11 +3,11 @@ import { X, Trash2, Eye } from 'lucide-react';
 import TerminalButton from './common/TerminalButton';
 import DeletePortfolioModal from './DeletePortfolioModal';
 
-const ManagePortfoliosModal = ({ 
-  isOpen, 
-  onClose, 
-  portfolios = [], 
-  onDeletePortfolio, 
+const ManagePortfoliosModal = ({
+  isOpen,
+  onClose,
+  portfolios = [],
+  onDeletePortfolio,
   onEditPortfolio,
   publishedPortfolioSlugs = [],
   portfolioViewCounts = {},
@@ -147,4 +147,3 @@ const ManagePortfoliosModal = ({
 };
 
 export default ManagePortfoliosModal;
-

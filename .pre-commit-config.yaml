@@ -1,0 +1,54 @@
+# Pre-commit hooks configuration
+# See https://pre-commit.com for more information
+# Run: pre-commit install
+# Test: pre-commit run --all-files
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom YAML tags
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: debug-statements
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Custom check: Prevent exception objects in HTTPException detail messages
+  # Catches patterns like: detail=f"Error: {e}", detail=str(e), detail="Error: {}".format(e)
+  # Common exception variable names: e, exc, error, err, exception, _e, _exc, etc.
+  - repo: local
+    hooks:
+      - id: check-exception-in-detail
+        name: Check for exception objects in error messages (f-strings and .format)
+        entry: bash -c 'if grep -rE "detail=.*[{](e|exc|error|err|exception|_e|_exc|_error|_err|_exception)[}]" backend/ --include="*.py" 2>/dev/null; then echo "❌ Found exception object in HTTPException detail message (f-string or .format). Use generic messages instead."; exit 1; fi'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+      - id: check-str-exception-in-detail
+        name: Check for str() or repr() of exception in error messages
+        entry: bash -c 'if grep -rE "detail=.*(str|repr)\((e|exc|error|err|exception|_e|_exc|_error|_err|_exception)\)" backend/ --include="*.py" 2>/dev/null; then echo "❌ Found str() or repr() of exception in HTTPException detail message. Use generic messages instead."; exit 1; fi'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+
+  # Python code formatting and linting with ruff (replaces black, isort, flake8)
+  # Note: Pylint is intentionally excluded - it's too slow for pre-commit hooks.
+  # Run pylint manually or in CI: pylint backend/ --rcfile=backend/.pylintrc
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^backend/.*\.py$
+      - id: ruff-format
+        files: ^backend/.*\.py$

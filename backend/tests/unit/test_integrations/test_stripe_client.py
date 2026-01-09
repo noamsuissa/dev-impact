@@ -1,11 +1,12 @@
-"""
-Unit tests for StripeClient integration
+"""Unit tests for StripeClient integration
 Tests the Stripe SDK wrapper with mocked Stripe calls
 """
+
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+
 from backend.integrations.stripe_client import StripeClient
-from backend.core.config import StripeConfig
 
 
 class TestStripeClient:
@@ -19,14 +20,11 @@ class TestStripeClient:
         assert client.config.secret_key == "sk_test_mock"
 
     @pytest.mark.asyncio
-    @patch('backend.integrations.stripe_client.stripe.checkout.Session.create')
+    @patch("backend.integrations.stripe_client.stripe.checkout.Session.create")
     async def test_create_checkout_session_monthly(self, mock_stripe_create, stripe_config, mock_supabase_client):
         """Test creating monthly checkout session"""
         # Setup mock
-        mock_stripe_create.return_value = Mock(
-            id="cs_test_123",
-            url="https://checkout.stripe.com/test"
-        )
+        mock_stripe_create.return_value = Mock(id="cs_test_123", url="https://checkout.stripe.com/test")
 
         client = StripeClient(stripe_config)
 
@@ -37,7 +35,7 @@ class TestStripeClient:
             user_email="test@example.com",
             success_url="https://app.com/success",
             cancel_url="https://app.com/cancel",
-            billing_period="monthly"
+            billing_period="monthly",
         )
 
         # Assert
@@ -50,14 +48,11 @@ class TestStripeClient:
         assert call_kwargs["line_items"][0]["price"] == stripe_config.price_id_monthly
 
     @pytest.mark.asyncio
-    @patch('backend.integrations.stripe_client.stripe.checkout.Session.create')
+    @patch("backend.integrations.stripe_client.stripe.checkout.Session.create")
     async def test_create_checkout_session_yearly(self, mock_stripe_create, stripe_config, mock_supabase_client):
         """Test creating yearly checkout session"""
         # Setup mock
-        mock_stripe_create.return_value = Mock(
-            id="cs_test_456",
-            url="https://checkout.stripe.com/test_yearly"
-        )
+        mock_stripe_create.return_value = Mock(id="cs_test_456", url="https://checkout.stripe.com/test_yearly")
 
         client = StripeClient(stripe_config)
 
@@ -68,7 +63,7 @@ class TestStripeClient:
             user_email="test@example.com",
             success_url="https://app.com/success",
             cancel_url="https://app.com/cancel",
-            billing_period="yearly"
+            billing_period="yearly",
         )
 
         # Assert
@@ -79,7 +74,7 @@ class TestStripeClient:
         assert call_kwargs["line_items"][0]["price"] == stripe_config.price_id_yearly
 
     @pytest.mark.asyncio
-    @patch('backend.integrations.stripe_client.stripe.Subscription.modify')
+    @patch("backend.integrations.stripe_client.stripe.Subscription.modify")
     async def test_cancel_subscription(self, mock_stripe_modify, stripe_config, mock_supabase_client):
         """Test canceling subscription at period end"""
         # Setup mocks
@@ -90,16 +85,10 @@ class TestStripeClient:
         client = StripeClient(stripe_config)
 
         # Execute
-        await client.cancel_subscription(
-            client=mock_supabase_client,
-            user_id="user_123"
-        )
+        await client.cancel_subscription(client=mock_supabase_client, user_id="user_123")
 
         # Assert
-        mock_stripe_modify.assert_called_once_with(
-            "sub_test_123",
-            cancel_at_period_end=True
-        )
+        mock_stripe_modify.assert_called_once_with("sub_test_123", cancel_at_period_end=True)
 
     @pytest.mark.asyncio
     async def test_cancel_subscription_no_subscription(self, stripe_config, mock_supabase_client):
@@ -112,22 +101,19 @@ class TestStripeClient:
         client = StripeClient(stripe_config)
 
         # Execute - should not raise error
-        await client.cancel_subscription(
-            client=mock_supabase_client,
-            user_id="user_no_sub"
-        )
+        await client.cancel_subscription(client=mock_supabase_client, user_id="user_no_sub")
 
         # No exception means success
 
     @pytest.mark.asyncio
-    @patch('backend.integrations.stripe_client.stripe.Subscription.retrieve')
+    @patch("backend.integrations.stripe_client.stripe.Subscription.retrieve")
     async def test_get_subscription_info(self, mock_stripe_retrieve, stripe_config, mock_supabase_client):
         """Test retrieving subscription info"""
         # Setup mocks
         mock_supabase_client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = Mock(
             data={
                 "stripe_subscription_id": "sub_test_123",
-                "stripe_customer_id": "cus_test_123"
+                "stripe_customer_id": "cus_test_123",
             }
         )
 
@@ -136,25 +122,13 @@ class TestStripeClient:
             status="active",
             current_period_end=1704067200,
             cancel_at_period_end=False,
-            items=Mock(
-                data=[
-                    Mock(
-                        price=Mock(
-                            id="price_monthly",
-                            recurring=Mock(interval="month")
-                        )
-                    )
-                ]
-            )
+            items=Mock(data=[Mock(price=Mock(id="price_monthly", recurring=Mock(interval="month")))]),
         )
 
         client = StripeClient(stripe_config)
 
         # Execute
-        result = await client.get_subscription_info(
-            client=mock_supabase_client,
-            user_id="user_123"
-        )
+        result = await client.get_subscription_info(client=mock_supabase_client, user_id="user_123")
 
         # Assert
         assert result["subscription_id"] == "sub_test_123"

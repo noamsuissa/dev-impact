@@ -6,7 +6,7 @@ export const wrapText = (text, maxWidth) => {
   const lines = [];
   let currentLine = '';
   const words = text.split(' ');
-  
+
   for (const word of words) {
     // If word itself is longer than maxWidth, send word to newline
     if (word.length > maxWidth) {
@@ -25,7 +25,7 @@ export const wrapText = (text, maxWidth) => {
     }
   }
   if (currentLine) lines.push(currentLine);
-  
+
   return lines.length > 0 ? lines : [''];
 };
 
@@ -33,8 +33,8 @@ export const wrapText = (text, maxWidth) => {
 export const padLine = (text, maxWidth) => {
   const textStr = text.toString();
   // Truncate if too long
-  const truncated = textStr.length > maxWidth - 2 
-    ? textStr.substring(0, maxWidth - 5) + '...' 
+  const truncated = textStr.length > maxWidth - 2
+    ? textStr.substring(0, maxWidth - 5) + '...'
     : textStr;
   return `│ ${truncated}${repeat(' ', maxWidth - truncated.length - 1)}│`;
 };
@@ -87,4 +87,3 @@ export const generatePortfolioUrl = (username, portfolioSlug = null) => {
     return `https://${username}.${baseDomain}`;
   }
 };
-

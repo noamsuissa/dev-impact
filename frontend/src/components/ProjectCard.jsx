@@ -1,24 +1,24 @@
 import React from 'react';
 import TerminalButton from './common/TerminalButton';
 import { repeat, padLine, centerText, wrapText } from '../utils/helpers';
-import { 
-  isLegacyMetric, 
-  formatMetricValue, 
+import {
+  isLegacyMetric,
+  formatMetricValue,
   formatComparison,
   getMetricTypeLabel,
-  getMetricTypeColor 
+  getMetricTypeColor
 } from '../utils/metrics';
 
 const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) => {
   const maxWidth = compact ? 45 : 80;
-  
+
   const padLineLocal = (text) => padLine(text, maxWidth);
-  
+
   const padMultiLine = (text, maxWidth) => {
     const wrapped = wrapText(text, maxWidth - 2);
     return wrapped.map(line => padLine(line, maxWidth));
   };
-  
+
   const buildMetricCard = (metric) => {
     const cardWidth = compact ? 12 : 16;
     const lines = [];
@@ -54,26 +54,26 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
       // Standardized format
       const typeColor = getMetricTypeColor(metric.type);
       const typeLabel = getMetricTypeLabel(metric.type);
-      
+
       lines.push({ text: '┌' + repeat('─', cardWidth) + '┐' });
-      
+
       // Type badge (color only the text, not borders)
       wrappedCentered(typeLabel, typeColor, true).forEach(l => lines.push(l));
-      
+
       // Primary value
       const primaryValue = formatMetricValue(metric.primary.value, metric.primary.unit);
       wrappedCentered(primaryValue, 'font-bold').forEach(l => lines.push(l));
-      
+
       // Label
       wrappedCentered(metric.primary.label).forEach(l => lines.push(l));
-      
+
       // Comparison if present
       if (metric.comparison) {
         lines.push({ text: '├' + repeat('─', cardWidth) + '┤' });
         const comparisonStr = formatComparison(metric.comparison);
         wrappedCentered(comparisonStr, 'text-xs').forEach(l => lines.push(l));
       }
-      
+
       // Context/Timeframe if present
       if (metric.context?.scope || metric.context?.frequency || metric.timeframe) {
         if (!metric.comparison) {
@@ -89,38 +89,38 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
           wrappedCentered(metric.timeframe, 'text-xs').forEach(l => lines.push(l));
         }
       }
-      
+
       lines.push({ text: '└' + repeat('─', cardWidth) + '┘' });
     }
 
     return lines;
   };
-  
+
   const metricCards = project.metrics.map(m => buildMetricCard(m));
   const maxMetricLines = Math.max(...metricCards.map(c => c.length), 0);
-  
+
   // Calculate how many metrics fit per line
   const metricSpacing = compact ? 14 : 18; // card width + 2 for padding
   const metricsPerLine = Math.floor((maxWidth - 4) / metricSpacing); // -4 for borders and padding
-  
+
   // Group metrics into rows that fit within maxWidth
   const metricRows = [];
   for (let i = 0; i < metricCards.length; i += metricsPerLine) {
     metricRows.push(metricCards.slice(i, i + metricsPerLine));
   }
-  
+
   // Build combined metrics with wrapping
   const combinedMetrics = [];
   metricRows.forEach((row) => {
     for (let i = 0; i < maxMetricLines; i++) {
       let line = '│ ';
       const colorSegments = []; // Track all colored segments on this line
-      
+
       row.forEach((card, idx) => {
         const lineObj = card[i] || { text: repeat(' ', metricSpacing), className: '' };
         const currentPos = line.length; // Position where this card's text starts
         line += lineObj.text || repeat(' ', metricSpacing);
-        
+
         // Track this colored segment if it exists
         if (lineObj.className && lineObj.colorContent) {
           colorSegments.push({
@@ -129,7 +129,7 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
             startPos: currentPos
           });
         }
-        
+
         if (idx < row.length - 1) line += '  ';
       });
       const currentLength = line.length - 2;
@@ -181,7 +181,7 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
   };
 
   return (
-    <div 
+    <div
       className={`font-mono ${compact ? 'text-xs' : 'text-sm'} leading-normal text-terminal-text whitespace-pre overflow-x-auto flex flex-col h-full ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick ? () => onClick(project) : undefined}
     >
@@ -199,20 +199,20 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
       ))}
       <div>{padLineLocal('')}</div>
       <div>{renderLineWithLabel('Solution:', '', maxWidth)}</div>
-      {project.contributions.map((contrib, idx) => 
+      {project.contributions.map((contrib, idx) =>
         padMultiLine(`• ${contrib}`, maxWidth).map((line, lineIdx) => (
           <div key={`${idx}-${lineIdx}`}>{line}</div>
         ))
       )}
       <div>{padLineLocal('')}</div>
-      
+
       {combinedMetrics.map((lineObj, idx) => {
         // Apply multiple colored segments if present
         if (lineObj.colorSegments && lineObj.colorSegments.length > 0) {
           const text = lineObj.text;
           const parts = [];
           let lastIndex = 0;
-          
+
           // Process each colored segment
           lineObj.colorSegments.forEach((segment, segIdx) => {
             const contentIndex = text.indexOf(segment.content, segment.startPos);
@@ -234,26 +234,26 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
               lastIndex = contentIndex + segment.content.length;
             }
           });
-          
+
           // Add any remaining text after the last colored segment
           if (lastIndex < text.length) {
             parts.push(
               <span key="text-end">{text.substring(lastIndex)}</span>
             );
           }
-          
+
           return <div key={idx}>{parts}</div>;
         }
         return <div key={idx}>{lineObj.text}</div>;
       })}
-      
+
       <div>{padLineLocal('')}</div>
       {padMultiLine(project.techStack.join(' • '), maxWidth).map((line, idx) => (
         <div key={`tech-${idx}`}>{line}</div>
       ))}
       <div>└{repeat('─', maxWidth)}┘</div>
       </div>
-      
+
       {(onEdit || onDelete) && (
         <div className="mt-2.5 ml-[4px] flex gap-2.5">
           {onEdit && (
@@ -279,4 +279,3 @@ const ProjectCard = ({ project, onEdit, onDelete, onClick, compact = false }) =>
 };
 
 export default ProjectCard;
-

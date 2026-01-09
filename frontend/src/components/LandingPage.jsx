@@ -149,22 +149,22 @@ const LandingPage = () => {
       {/* GitHub Button - Top Right */}
       {showButtons && (
         <div className="absolute top-6 right-6 fade-in">
-          <a 
-            href="https://github.com/noamsuissa/dev-impact" 
-            target="_blank" 
+          <a
+            href="https://github.com/noamsuissa/dev-impact"
+            target="_blank"
             rel="noopener noreferrer"
             className="group"
           >
             <TerminalButton className="flex items-center gap-2">
               <div className="relative w-6 h-6">
-                <img 
-                  src="/github-mark-white.svg" 
-                  alt="GitHub" 
+                <img
+                  src="/github-mark-white.svg"
+                  alt="GitHub"
                   className="w-6 h-6 group-hover:opacity-0 transition-opacity"
                 />
-                <img 
-                  src="/github-mark.svg" 
-                  alt="GitHub" 
+                <img
+                  src="/github-mark.svg"
+                  alt="GitHub"
                   className="w-6 h-6 absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity"
                 />
               </div>

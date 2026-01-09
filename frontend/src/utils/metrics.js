@@ -9,9 +9,9 @@
  * @returns {boolean} - True if legacy format
  */
 export const isLegacyMetric = (metric) => {
-  return metric && typeof metric === 'object' && 
-         'primary' in metric && 
-         'label' in metric && 
+  return metric && typeof metric === 'object' &&
+         'primary' in metric &&
+         'label' in metric &&
          typeof metric.primary === 'string';
 };
 
@@ -21,9 +21,9 @@ export const isLegacyMetric = (metric) => {
  * @returns {boolean} - True if standardized format
  */
 export const isStandardizedMetric = (metric) => {
-  return metric && typeof metric === 'object' && 
-         'type' in metric && 
-         'primary' in metric && 
+  return metric && typeof metric === 'object' &&
+         'type' in metric &&
+         'primary' in metric &&
          typeof metric.primary === 'object';
 };
 
@@ -63,14 +63,14 @@ export const convertUnits = (value, fromUnit, toUnit) => {
     };
     return inSeconds * conversions[toUnit];
   }
-  
+
   // Data size conversions
   const sizeUnits = ['MB', 'GB'];
   if (sizeUnits.includes(fromUnit) && sizeUnits.includes(toUnit)) {
     if (fromUnit === 'MB' && toUnit === 'GB') return value / 1024;
     if (fromUnit === 'GB' && toUnit === 'MB') return value * 1024;
   }
-  
+
   // No conversion needed
   return value;
 };
@@ -83,21 +83,21 @@ export const convertUnits = (value, fromUnit, toUnit) => {
  */
 export const calculateImprovement = (before, after) => {
   if (!before || !after) return null;
-  
+
   try {
     const beforeValue = before.value;
     const afterValue = after.value;
-    
+
     // Convert units if different
     let normalizedAfter = afterValue;
     if (before.unit !== after.unit) {
       normalizedAfter = convertUnits(afterValue, after.unit, before.unit);
     }
-    
+
     // Calculate percentage change
     // For metrics where lower is better (like time), we invert the calculation
     const lowerIsBetter = ['ms', 's', 'min', 'hrs', '$'].includes(before.unit);
-    
+
     if (lowerIsBetter) {
       // Reduction is improvement
       const reduction = ((beforeValue - normalizedAfter) / beforeValue) * 100;
@@ -121,10 +121,10 @@ export const calculateImprovement = (before, after) => {
  */
 export const formatMetricValue = (value, unit) => {
   // Format large numbers with commas
-  const formattedValue = typeof value === 'number' 
+  const formattedValue = typeof value === 'number'
     ? value.toLocaleString('en-US', { maximumFractionDigits: 2 })
     : value;
-  
+
   // Unit display mapping
   const unitDisplay = {
     '%': '%',
@@ -141,9 +141,9 @@ export const formatMetricValue = (value, unit) => {
     'items': ' items',
     'calls': ' calls'
   };
-  
+
   const displayUnit = unitDisplay[unit] || ` ${unit}`;
-  
+
   // For currency and percentage, put symbol before/after appropriately
   if (unit === '$') {
     return `$${formattedValue}`;
@@ -195,10 +195,10 @@ export const getMetricTypeLabel = (type) => {
  */
 export const formatComparison = (comparison) => {
   if (!comparison || !comparison.before || !comparison.after) return '';
-  
+
   const beforeStr = formatMetricValue(comparison.before.value, comparison.before.unit);
   const afterStr = formatMetricValue(comparison.after.value, comparison.after.unit);
-  
+
   return `${beforeStr} → ${afterStr}`;
 };
 
@@ -209,20 +209,20 @@ export const formatComparison = (comparison) => {
  */
 export const upgradeLegacyMetric = (legacy) => {
   if (!isLegacyMetric(legacy)) return null;
-  
+
   try {
     // Try to parse the primary value
     // Formats: "96%", "5min→2sec", "200 users", "$50K"
     const primaryStr = legacy.primary.trim();
-    
+
     // Simple pattern matching for value and unit
     const percentMatch = primaryStr.match(/^(\d+(?:\.\d+)?)%$/);
     const timeMatch = primaryStr.match(/^(\d+(?:\.\d+)?)(ms|s|min|hrs)$/);
     const moneyMatch = primaryStr.match(/^\$(\d+(?:\.\d+)?)(K|M)?$/);
     const multipleMatch = primaryStr.match(/^(\d+(?:\.\d+)?)x$/);
-    
+
     let value, unit;
-    
+
     if (percentMatch) {
       value = parseFloat(percentMatch[1]);
       unit = '%';
@@ -241,11 +241,11 @@ export const upgradeLegacyMetric = (legacy) => {
       // Default fallback - treat as plain text
       return null;
     }
-    
+
     // Guess type based on label and unit
     let type = 'performance'; // default
     const labelLower = legacy.label.toLowerCase();
-    
+
     if (labelLower.includes('user') || labelLower.includes('scale')) {
       type = 'scale';
     } else if (labelLower.includes('cost') || labelLower.includes('revenue') || labelLower.includes('$')) {
@@ -255,7 +255,7 @@ export const upgradeLegacyMetric = (legacy) => {
     } else if (labelLower.includes('time') || labelLower.includes('fast') || timeMatch) {
       type = 'time';
     }
-    
+
     return {
       type,
       primary: {
@@ -280,11 +280,11 @@ export const upgradeLegacyMetric = (legacy) => {
  */
 export const validateStandardizedMetric = (metric) => {
   const errors = [];
-  
+
   if (!metric.type || !['performance', 'scale', 'business', 'quality', 'time'].includes(metric.type)) {
     errors.push('Invalid or missing metric type');
   }
-  
+
   if (!metric.primary || typeof metric.primary !== 'object') {
     errors.push('Primary metric value is required');
   } else {
@@ -298,16 +298,15 @@ export const validateStandardizedMetric = (metric) => {
       errors.push('Primary label is required');
     }
   }
-  
+
   if (metric.comparison) {
     if (!metric.comparison.before || !metric.comparison.after) {
       errors.push('Comparison must include both before and after values');
     }
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
   };
 };
-

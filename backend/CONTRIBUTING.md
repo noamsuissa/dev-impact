@@ -75,7 +75,7 @@ class ExampleService:
     async def create_example(user_id: str, data: dict):
         # Implementation
         pass
-    
+
     @staticmethod
     async def get_example(example_id: str):
         # Implementation
@@ -88,7 +88,7 @@ class ExampleService:
 class ExampleService:
     def __init__(self):
         self.client = get_supabase_client()  # ❌ No instance state
-    
+
     async def create_example(self, user_id: str):  # ❌ Instance method
         pass
 
@@ -414,15 +414,15 @@ async def create_profile(
 ) -> ProfileResponse:
     """
     Create a new user profile.
-    
+
     Args:
         user_id: The user's ID
         profile_data: Profile data dictionary
         access_token: User's access token
-        
+
     Returns:
         ProfileResponse containing created profile
-        
+
     Raises:
         HTTPException: If profile creation fails
     """
@@ -452,16 +452,16 @@ async def publish_profile(
 ) -> PublishProfileResponse:
     """
     Publish or update a user profile in Supabase.
-    
+
     Args:
         username: The user's username
         profile_id: The profile ID to publish
         user_id: The authenticated user's ID
         token: The user's auth token
-        
+
     Returns:
         PublishProfileResponse with success status, username, profile_slug, and URL
-        
+
     Raises:
         HTTPException: If username is invalid, profile not found, or publish fails
     """
@@ -511,16 +511,16 @@ from schemas.[domain] import ResponseModel
 
 class DomainService:
     """Service for handling [domain] operations."""
-    
+
     @staticmethod
     async def create_resource(user_id: str, data: dict) -> ResponseModel:
         """
         Create a new resource.
-        
+
         Args:
             user_id: User's ID
             data: Resource data
-            
+
         Returns:
             ResponseModel containing created resource
         """
@@ -582,7 +582,7 @@ class TestExampleService:
     async def test_create_example_success(self):
         # Test successful creation
         pass
-    
+
     @pytest.mark.asyncio
     async def test_create_example_invalid_data(self):
         # Test error handling

@@ -136,13 +136,13 @@ const Onboarding = ({ onComplete }) => {
         {steps.slice(0, step + 1).map((s, i) => (
           <div key={i} className="fade-in mb-5">
             <div className="mb-2.5">{s.prompt}</div>
-            
+
             {/* Name input */}
             {i === step && s.input === 'name' && (
-              <TerminalInput 
-                value={name} 
-                onChange={setName} 
-                placeholder="John Doe" 
+              <TerminalInput
+                value={name}
+                onChange={setName}
+                placeholder="John Doe"
                 autoFocus
               />
             )}
@@ -153,13 +153,13 @@ const Onboarding = ({ onComplete }) => {
             {/* Username input */}
             {i === step && s.input === 'username' && (
               <div>
-                <TerminalInput 
-                  value={username} 
+                <TerminalInput
+                  value={username}
                   onChange={(val) => {
                     setUsername(val.toLowerCase());
                     setUsernameError(null);
-                  }} 
-                  placeholder="johndoe" 
+                  }}
+                  placeholder="johndoe"
                   autoFocus
                 />
                 <div className="mt-2 text-sm text-terminal-gray">
@@ -210,7 +210,7 @@ const Onboarding = ({ onComplete }) => {
                       </div>
                       <div className="mb-3">
                         <span className="text-terminal-gray">Visit: </span>
-                        <a 
+                        <a
                           href={deviceCode.verificationUri}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -232,8 +232,8 @@ const Onboarding = ({ onComplete }) => {
                       ✓ Successfully connected to GitHub
                     </div>
                     <div className="flex items-center gap-3 bg-[#1e1e1e] p-3 rounded border border-terminal-green/30">
-                      <img 
-                        src={githubData.avatar_url} 
+                      <img
+                        src={githubData.avatar_url}
                         alt={githubData.username}
                         className="w-10 h-10 rounded-full"
                       />
@@ -268,7 +268,7 @@ const Onboarding = ({ onComplete }) => {
                 )}
               </div>
             )}
-            
+
             {i < step && s.input === 'github' && (
               <div className="text-terminal-orange">
                 {githubData ? `@${githubData.username}` : '(skipped)'}

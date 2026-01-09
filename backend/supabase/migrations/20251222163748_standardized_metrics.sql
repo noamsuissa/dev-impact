@@ -6,11 +6,11 @@
 -- ============================================
 
 -- Add metric_type column for categorization
-ALTER TABLE project_metrics 
+ALTER TABLE project_metrics
 ADD COLUMN IF NOT EXISTS metric_type TEXT;
 
 -- Add metric_data column for storing full structured metric as JSONB
-ALTER TABLE project_metrics 
+ALTER TABLE project_metrics
 ADD COLUMN IF NOT EXISTS metric_data JSONB;
 
 -- ============================================
@@ -30,7 +30,7 @@ ADD CONSTRAINT metric_format_check CHECK (
 -- Add check constraint for metric_type values
 ALTER TABLE project_metrics
 ADD CONSTRAINT metric_type_valid CHECK (
-    metric_type IS NULL OR 
+    metric_type IS NULL OR
     metric_type IN ('performance', 'scale', 'business', 'quality', 'time')
 );
 
@@ -39,7 +39,7 @@ ADD CONSTRAINT metric_type_valid CHECK (
 -- ============================================
 
 -- Index for filtering/grouping by metric type (useful for future badge/leaderboard features)
-CREATE INDEX IF NOT EXISTS idx_project_metrics_type ON project_metrics(metric_type) 
+CREATE INDEX IF NOT EXISTS idx_project_metrics_type ON project_metrics(metric_type)
 WHERE metric_type IS NOT NULL;
 
 -- ============================================
@@ -51,4 +51,3 @@ COMMENT ON COLUMN project_metrics.metric_data IS 'Structured metric data in JSON
 COMMENT ON COLUMN project_metrics.primary_value IS 'Legacy: Simple metric value (kept for backward compatibility)';
 COMMENT ON COLUMN project_metrics.label IS 'Legacy: Simple metric label (kept for backward compatibility)';
 COMMENT ON COLUMN project_metrics.detail IS 'Legacy: Simple metric detail (kept for backward compatibility)';
-

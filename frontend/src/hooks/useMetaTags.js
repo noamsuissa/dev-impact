@@ -41,7 +41,7 @@ export const useMetaTags = ({ title, description, image, url, type = 'website', 
     // Helper function to update or create meta tag
     const updateMetaTag = (selector, attributeName, attributeValue, value) => {
       if (!value) return;
-      
+
       let element = document.querySelector(selector);
       if (!element) {
         element = document.createElement('meta');
@@ -86,7 +86,7 @@ export const useMetaTags = ({ title, description, image, url, type = 'website', 
     // Cleanup function to restore original values
     return () => {
       document.title = originalTitle;
-      
+
       if (originalTags.description) {
         updateMetaTag('meta[name="description"]', 'name', 'description', originalTags.description);
       }
@@ -135,4 +135,3 @@ export const useMetaTags = ({ title, description, image, url, type = 'website', 
     };
   }, [title, description, image, url, type, author, siteName, imageSecureUrl]);
 };
-

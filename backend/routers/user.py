@@ -1,11 +1,16 @@
-"""
-User Router - Handle user profile endpoints
-"""
+"""User Router - Handle user profile endpoints"""
+
 from fastapi import APIRouter, Depends
-from backend.schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest, CheckUsernameResponse
-from backend.schemas.auth import MessageResponse
-from backend.utils import auth_utils
+
 from backend.core.container import ServiceDBClient, UserServiceDep
+from backend.schemas.auth import MessageResponse
+from backend.schemas.user import (
+    CheckUsernameResponse,
+    OnboardingRequest,
+    UpdateProfileRequest,
+    UserProfile,
+)
+from backend.utils import auth_utils
 
 router = APIRouter(
     prefix="/api/user",
@@ -17,10 +22,9 @@ router = APIRouter(
 async def get_profile(
     client: ServiceDBClient,
     user_service: UserServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Get current user's profile
+    """Get current user's profile
 
     Returns the authenticated user's profile data.
     """
@@ -35,10 +39,9 @@ async def update_profile(
     request: UpdateProfileRequest,
     client: ServiceDBClient,
     user_service: UserServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Update current user's profile
+    """Update current user's profile
 
     Updates the authenticated user's profile data.
     Note: Setting a field to null will clear that field (e.g., disconnecting GitHub).
@@ -58,10 +61,9 @@ async def complete_onboarding(
     request: OnboardingRequest,
     client: ServiceDBClient,
     user_service: UserServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Complete user onboarding
+    """Complete user onboarding
 
     Creates or updates user profile with onboarding data.
     """
@@ -80,13 +82,8 @@ async def complete_onboarding(
 
 
 @router.get("/check-username/{username}", response_model=CheckUsernameResponse)
-async def check_username(
-    username: str,
-    client: ServiceDBClient,
-    user_service: UserServiceDep
-):
-    """
-    Check if a username is available for publishing portfolios
+async def check_username(username: str, client: ServiceDBClient, user_service: UserServiceDep):
+    """Check if a username is available for publishing portfolios
 
     Returns whether the username is available and valid.
     This is a public endpoint that doesn't require authentication.
@@ -99,10 +96,9 @@ async def check_username(
 async def delete_account(
     client: ServiceDBClient,
     user_service: UserServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Delete current user's account
+    """Delete current user's account
 
     Permanently deletes the user's profile and authentication account.
     This action cannot be undone.

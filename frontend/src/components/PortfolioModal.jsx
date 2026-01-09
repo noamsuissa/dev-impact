@@ -119,4 +119,3 @@ const PortfolioModal = ({ isOpen, onClose, onSubmit, portfolio = null }) => {
 };
 
 export default PortfolioModal;
-

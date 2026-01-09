@@ -171,4 +171,3 @@ const WaitlistModal = ({ isOpen, onClose }) => {
 };
 
 export default WaitlistModal;
-

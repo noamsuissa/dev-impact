@@ -115,4 +115,3 @@ const DeletePortfolioModal = ({ isOpen, onClose, portfolio, onDelete, projectCou
 };
 
 export default DeletePortfolioModal;
-

@@ -62,17 +62,17 @@ const AboutPage = () => {
           <div className="text-xl mb-4 text-terminal-orange">&gt; Our Philosophy</div>
           <div className="space-y-4 text-terminal-text">
             <p>
-              Traditional resumes fail developers. They force you to compress years of technical work into 
-              generic bullet points that say nothing about your actual impact. Recruiters skim past them. 
+              Traditional resumes fail developers. They force you to compress years of technical work into
+              generic bullet points that say nothing about your actual impact. Recruiters skim past them.
               Hiring managers can't tell the difference between you and the next candidate.
             </p>
             <p>
-              <span className="text-terminal-orange">dev-impact</span> changes that. We believe your resume 
+              <span className="text-terminal-orange">dev-impact</span> changes that. We believe your resume
               should tell a story—not just what you did, but <span className="text-terminal-green">why it mattered</span>.
             </p>
             <p>
-              Every line of code you write, every system you design, every bug you fix has a measurable impact. 
-              Maybe you reduced API response times by 60%. Maybe you scaled a service to handle 10x traffic. 
+              Every line of code you write, every system you design, every bug you fix has a measurable impact.
+              Maybe you reduced API response times by 60%. Maybe you scaled a service to handle 10x traffic.
               Maybe you refactored legacy code that saved your team 20 hours per week.
             </p>
             <p>
@@ -113,14 +113,14 @@ const AboutPage = () => {
           <div className="text-xl mb-4 text-terminal-orange">&gt; Our Mission</div>
           <div className="text-terminal-text space-y-3">
             <p>
-              We're building an open source platform where developers can showcase their work in a way that truly represents 
-              their skills and impact. No more one-page constraints. No more ATS-friendly keyword stuffing. 
+              We're building an open source platform where developers can showcase their work in a way that truly represents
+              their skills and impact. No more one-page constraints. No more ATS-friendly keyword stuffing.
               No more hiding your best work.
             </p>
             <p>
-              With <span className="text-terminal-orange">dev-impact</span>, you create a living portfolio that 
-              demonstrates not just what you've built, but the measurable difference you've made. Whether you're 
-              looking for your next role, building your personal brand, or simply documenting your journey — we give 
+              With <span className="text-terminal-orange">dev-impact</span>, you create a living portfolio that
+              demonstrates not just what you've built, but the measurable difference you've made. Whether you're
+              looking for your next role, building your personal brand, or simply documenting your journey — we give
               you the tools to tell your story.
             </p>
             <p className="text-terminal-green">
@@ -159,4 +159,3 @@ const AboutPage = () => {
 };
 
 export default AboutPage;
-

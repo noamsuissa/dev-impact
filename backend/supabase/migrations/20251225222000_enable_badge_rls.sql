@@ -18,4 +18,3 @@ ALTER TABLE badge_progress ENABLE ROW LEVEL SECURITY;
 
 -- Enable RLS on badge_audit_log
 ALTER TABLE badge_audit_log ENABLE ROW LEVEL SECURITY;
-

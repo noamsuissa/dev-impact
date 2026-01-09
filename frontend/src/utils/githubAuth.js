@@ -46,7 +46,7 @@ export async function pollForToken(deviceCode) {
   }
 
   const data = await response.json();
-  
+
   if (data.status === 'pending') {
     return { status: 'pending' };
   }
@@ -91,22 +91,22 @@ export async function completeGitHubAuth(onCodeReady, onProgress = () => {}) {
   // Step 1: Initiate device flow
   onProgress('Initiating device flow...');
   const { deviceCode, userCode, verificationUri, interval } = await initiateDeviceFlow();
-  
+
   // Step 2: Show code to user
   onCodeReady({ userCode, verificationUri });
-  
+
   // Step 3: Poll for authorization
   onProgress('Waiting for authorization...');
   let accessToken = null;
   const maxAttempts = 60; // 5 minutes max (60 * 5 seconds)
   let attempts = 0;
-  
+
   while (!accessToken && attempts < maxAttempts) {
     await new Promise(resolve => setTimeout(resolve, interval * 1000));
-    
+
     try {
       const result = await pollForToken(deviceCode);
-      
+
       if (result.status === 'success') {
         accessToken = result.accessToken;
         break;
@@ -118,18 +118,18 @@ export async function completeGitHubAuth(onCodeReady, onProgress = () => {}) {
       }
       // Otherwise, continue polling
     }
-    
+
     attempts++;
   }
-  
+
   if (!accessToken) {
     throw new Error('Authorization timeout');
   }
-  
+
   // Step 4: Get user profile
   onProgress('Fetching user profile...');
   const profile = await getUserProfile(accessToken);
-  
+
   return {
     token: accessToken,
     username: profile.login,
@@ -137,4 +137,3 @@ export async function completeGitHubAuth(onCodeReady, onProgress = () => {}) {
     name: profile.name,
   };
 }
-

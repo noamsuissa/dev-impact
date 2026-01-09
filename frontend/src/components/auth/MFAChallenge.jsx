@@ -11,7 +11,7 @@ const MFAChallenge = ({ challengeId, onSuccess, onCancel }) => {
   const handleVerify = async (e) => {
     e.preventDefault();
     setError(null);
-    
+
     if (!code || code.length !== 6) {
       setError('Please enter a valid 6-digit code');
       return;
@@ -24,18 +24,18 @@ const MFAChallenge = ({ challengeId, onSuccess, onCancel }) => {
       const email = sessionStorage.getItem('mfa_email');
       const password = sessionStorage.getItem('mfa_password');
       const factorId = sessionStorage.getItem('mfa_factor_id');
-      
+
       if (!email || !password || !factorId) {
         throw new Error('Session expired. Please sign in again.');
       }
 
       const data = await authClient.signIn(email, password, challengeId, code, factorId);
-      
+
       // Clear stored credentials
       sessionStorage.removeItem('mfa_email');
       sessionStorage.removeItem('mfa_password');
       sessionStorage.removeItem('mfa_factor_id');
-      
+
       if (data.session) {
         onSuccess(data);
       } else {
@@ -91,14 +91,14 @@ const MFAChallenge = ({ challengeId, onSuccess, onCancel }) => {
         )}
 
         <div className="flex gap-5 pt-5">
-          <TerminalButton 
-            type="submit" 
+          <TerminalButton
+            type="submit"
             disabled={loading || code.length !== 6}
           >
             {loading ? '[Verifying...]' : '[Verify]'}
           </TerminalButton>
           {onCancel && (
-            <TerminalButton 
+            <TerminalButton
               type="button"
               onClick={onCancel}
               disabled={loading}
@@ -118,4 +118,3 @@ const MFAChallenge = ({ challengeId, onSuccess, onCancel }) => {
 };
 
 export default MFAChallenge;
-

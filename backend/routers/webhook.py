@@ -1,7 +1,7 @@
-"""
-Stripe Webhook Router
-"""
-from fastapi import APIRouter, Header, Request, HTTPException
+"""Stripe Webhook Router"""
+
+from fastapi import APIRouter, Header, HTTPException, Request
+
 from backend.core.container import ServiceDBClient, StripeClientDep
 
 router = APIRouter(
@@ -9,16 +9,15 @@ router = APIRouter(
     tags=["webhooks"],
 )
 
+
 @router.post("/stripe")
 async def stripe_webhook(
     request: Request,
     client: ServiceDBClient,
     stripe_client: StripeClientDep,
-    stripe_signature: str = Header(None)
+    stripe_signature: str = Header(None),
 ):
-    """
-    Handle incoming Stripe webhooks
-    """
+    """Handle incoming Stripe webhooks"""
     if not stripe_signature:
         raise HTTPException(status_code=400, detail="Missing Stripe signature")
 

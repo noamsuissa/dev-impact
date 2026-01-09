@@ -15,24 +15,24 @@ BEGIN
     SELECT subscription_type INTO user_subscription
     FROM profiles
     WHERE id = user_uuid;
-    
+
     -- Default to 'free' if not set
     IF user_subscription IS NULL THEN
         user_subscription := 'free';
     END IF;
-    
+
     -- Set max projects based on subscription
     IF user_subscription = 'pro' THEN
         max_projects := 1000; -- Unlimited for pro
     ELSE
         max_projects := 10; -- Free/hobby users limited to 10
     END IF;
-    
+
     -- Count existing projects
     SELECT COUNT(*) INTO project_count
     FROM impact_projects
     WHERE user_id = user_uuid;
-    
+
     -- Return true if under limit
     RETURN project_count < max_projects;
 END;
@@ -74,36 +74,36 @@ BEGIN
     SELECT subscription_type INTO user_subscription
     FROM profiles
     WHERE id = user_uuid;
-    
+
     -- Default to 'free' if not set
     IF user_subscription IS NULL THEN
         user_subscription := 'free';
     END IF;
-    
+
     -- Set max portfolios based on subscription
     IF user_subscription = 'pro' THEN
         max_portfolios := 1000; -- Unlimited for pro
     ELSE
         max_portfolios := 1; -- Free/hobby users limited to 1
     END IF;
-    
+
     -- Set max projects based on subscription
     IF user_subscription = 'pro' THEN
         max_projects := 1000; -- Unlimited for pro
     ELSE
         max_projects := 10; -- Free/hobby users limited to 10
     END IF;
-    
+
     -- Count existing portfolios
     SELECT COUNT(*) INTO portfolio_count
     FROM portfolios
     WHERE user_id = user_uuid;
-    
+
     -- Count existing projects
     SELECT COUNT(*) INTO project_count
     FROM impact_projects
     WHERE user_id = user_uuid;
-    
+
     -- Build result JSON with portfolio and project info
     result := json_build_object(
         'subscription_type', user_subscription,
@@ -114,7 +114,7 @@ BEGIN
         'max_projects', max_projects,
         'can_add_project', project_count < max_projects
     );
-    
+
     RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -124,4 +124,3 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ============================================
 COMMENT ON FUNCTION public.check_project_limit(UUID) IS 'Checks if user can add more projects based on subscription';
 COMMENT ON FUNCTION public.enforce_project_limit() IS 'Trigger function to enforce project limits on insert';
-

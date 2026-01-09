@@ -1,36 +1,38 @@
-"""
-Dependency Injection container for FastAPI.
+"""Dependency Injection container for FastAPI.
 Centralizes all dependency providers and configuration.
 """
-from typing import Annotated
-from fastapi import Depends
-from supabase import Client
 
+from typing import Annotated
+
+from fastapi import Depends
+
+from backend.core.config import EmailConfig, GitHubConfig, LLMConfig, StripeConfig
 from backend.db import client as db_client
-from backend.core.config import StripeConfig, EmailConfig, GitHubConfig, LLMConfig
-from backend.integrations.stripe_client import StripeClient
 from backend.integrations.email_client import EmailClient
 from backend.integrations.github_client import GitHubClient
 from backend.integrations.llm_client import LLMClient
-from backend.services.user_service import UserService
-from backend.services.subscription_service import SubscriptionService
-from backend.services.waitlist_service import WaitlistService
-from backend.services.portfolio_service import PortfolioService
-from backend.services.project_service import ProjectService
+from backend.integrations.stripe_client import StripeClient
 from backend.services.auth.auth_service import AuthService
 from backend.services.auth.mfa_service import MFAService
+from backend.services.portfolio_service import PortfolioService
+from backend.services.project_service import ProjectService
+from backend.services.subscription_service import SubscriptionService
+from backend.services.user_service import UserService
+from backend.services.waitlist_service import WaitlistService
+from supabase import Client
 
 
 # Database Client Provider
 def get_service_db_client() -> Client:
-    """
-    Provides service-level Supabase client.
+    """Provides service-level Supabase client.
 
     This client uses the service role key and bypasses RLS policies.
     Used for all database operations in the service layer.
 
-    Returns:
+    Returns
+    -------
         Supabase client configured with service role credentials
+
     """
     return db_client.get_service_client()
 
@@ -58,50 +60,48 @@ def get_llm_config() -> LLMConfig:
 
 # Integration Client Providers
 def get_stripe_client(
-    config: Annotated[StripeConfig, Depends(get_stripe_config)]
+    config: Annotated[StripeConfig, Depends(get_stripe_config)],
 ) -> StripeClient:
     """Provides Stripe client instance with injected configuration."""
     return StripeClient(config)
 
 
 def get_email_client(
-    config: Annotated[EmailConfig, Depends(get_email_config)]
+    config: Annotated[EmailConfig, Depends(get_email_config)],
 ) -> EmailClient:
     """Provides Email client instance with injected configuration."""
     return EmailClient(config)
 
 
 def get_github_client(
-    config: Annotated[GitHubConfig, Depends(get_github_config)]
+    config: Annotated[GitHubConfig, Depends(get_github_config)],
 ) -> GitHubClient:
     """Provides GitHub client instance with injected configuration."""
     return GitHubClient(config)
 
 
-def get_llm_client(
-    config: Annotated[LLMConfig, Depends(get_llm_config)]
-) -> LLMClient:
+def get_llm_client(config: Annotated[LLMConfig, Depends(get_llm_config)]) -> LLMClient:
     """Provides LLM client instance with injected configuration."""
     return LLMClient(config)
 
 
 # Business Service Providers
 def get_user_service(
-    stripe_client: Annotated[StripeClient, Depends(get_stripe_client)]
+    stripe_client: Annotated[StripeClient, Depends(get_stripe_client)],
 ) -> UserService:
     """Provides UserService instance with injected dependencies."""
     return UserService(stripe_client=stripe_client)
 
 
 def get_subscription_service(
-    stripe_client: Annotated[StripeClient, Depends(get_stripe_client)]
+    stripe_client: Annotated[StripeClient, Depends(get_stripe_client)],
 ) -> SubscriptionService:
     """Provides SubscriptionService instance with injected dependencies."""
     return SubscriptionService(stripe_client=stripe_client)
 
 
 def get_waitlist_service(
-    email_client: Annotated[EmailClient, Depends(get_email_client)]
+    email_client: Annotated[EmailClient, Depends(get_email_client)],
 ) -> WaitlistService:
     """Provides WaitlistService instance with injected dependencies."""
     return WaitlistService(email_client=email_client)

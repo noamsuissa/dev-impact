@@ -17,7 +17,7 @@ INSERT INTO badge_categories (name, display_name, description, display_order) VA
 
 -- PERFORMANCE & OPTIMIZATION (25 badges)
 INSERT INTO badge_definitions (badge_key, name, description, category, metric_type, calculation_type, bronze_threshold, silver_threshold, gold_threshold, data_source) VALUES
-('speed_demon', 'Speed Demon', 'Achieved significant performance improvements across multiple projects', 'performance', 'performance', 'aggregate', 
+('speed_demon', 'Speed Demon', 'Achieved significant performance improvements across multiple projects', 'performance', 'performance', 'aggregate',
     '{"min_projects": 1, "min_improvement": 50}'::jsonb,
     '{"min_projects": 3, "min_improvement": 50}'::jsonb,
     '{"min_projects": 5, "min_improvement": 50}'::jsonb, 'project_metrics'),

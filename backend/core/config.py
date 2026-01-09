@@ -1,15 +1,15 @@
-"""
-Centralized configuration classes for all services.
+"""Centralized configuration classes for all services.
 All configuration is loaded from environment variables.
 """
-from dataclasses import dataclass
+
 import os
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass
 class StripeConfig:
     """Stripe payment configuration"""
+
     secret_key: str
     publishable_key: str
     price_id_monthly: str
@@ -35,6 +35,7 @@ class StripeConfig:
 @dataclass
 class EmailConfig:
     """SMTP email configuration"""
+
     host: str
     port: int
     user: str
@@ -59,6 +60,7 @@ class EmailConfig:
 @dataclass
 class GitHubConfig:
     """GitHub OAuth configuration"""
+
     client_id: str
     device_auth_url: str
     token_url: str
@@ -69,24 +71,16 @@ class GitHubConfig:
         """Load GitHub configuration from environment variables."""
         return cls(
             client_id=os.getenv("GITHUB_CLIENT_ID", ""),
-            device_auth_url=os.getenv(
-                "GITHUB_DEVICE_AUTH_URL",
-                "https://github.com/login/device/code"
-            ),
-            token_url=os.getenv(
-                "GITHUB_TOKEN_URL",
-                "https://github.com/login/oauth/access_token"
-            ),
-            user_api_url=os.getenv(
-                "GITHUB_USER_API_URL",
-                "https://api.github.com/user"
-            ),
+            device_auth_url=os.getenv("GITHUB_DEVICE_AUTH_URL", "https://github.com/login/device/code"),
+            token_url=os.getenv("GITHUB_TOKEN_URL", "https://github.com/login/oauth/access_token"),
+            user_api_url=os.getenv("GITHUB_USER_API_URL", "https://api.github.com/user"),
         )
 
 
 @dataclass
 class LLMConfig:
     """LLM provider configuration"""
+
     openrouter_api_key: str
     openrouter_model: str
     groq_api_key: str

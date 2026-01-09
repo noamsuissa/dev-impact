@@ -110,7 +110,7 @@ const LocationAutocomplete = ({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex((prev) => 
+        setSelectedIndex((prev) =>
           prev < suggestions.length - 1 ? prev + 1 : prev
         );
         break;
@@ -198,4 +198,3 @@ const LocationAutocomplete = ({
 };
 
 export default LocationAutocomplete;
-

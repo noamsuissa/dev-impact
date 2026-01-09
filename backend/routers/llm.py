@@ -1,10 +1,10 @@
-"""
-LLM Router - API endpoints for LLM operations
-"""
-from fastapi import APIRouter, HTTPException, Depends
+"""LLM Router - API endpoints for LLM operations"""
+
+from fastapi import APIRouter, Depends, HTTPException
+
+from backend.core.container import LLMClientDep
 from backend.schemas.llm import CompletionRequest, CompletionResponse
 from backend.utils import auth_utils
-from backend.core.container import LLMClientDep
 
 router = APIRouter(prefix="/llm", tags=["llm"])
 
@@ -13,10 +13,9 @@ router = APIRouter(prefix="/llm", tags=["llm"])
 async def generate_completion(
     request: CompletionRequest,
     llm_client: LLMClientDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Generate a completion using the specified LLM provider
+    """Generate a completion using the specified LLM provider
 
     This endpoint uses LiteLLM with Helicone observability to generate
     completions from OpenRouter or Groq providers.
@@ -24,10 +23,7 @@ async def generate_completion(
     user_id = auth_utils.get_user_id_from_authorization(authorization)
 
     if request.provider not in ["openrouter", "groq"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Provider must be 'openrouter' or 'groq'"
-        )
+        raise HTTPException(status_code=400, detail="Provider must be 'openrouter' or 'groq'")
 
     response = await llm_client.generate_completion(
         provider=request.provider,
@@ -35,7 +31,7 @@ async def generate_completion(
         model=request.model,
         temperature=request.temperature,
         max_tokens=request.max_tokens,
-        user_id=user_id
+        user_id=user_id,
     )
 
     return CompletionResponse(**response)
@@ -43,8 +39,7 @@ async def generate_completion(
 
 @router.get("/models")
 async def get_available_models(llm_client: LLMClientDep):
-    """
-    Get available models for each configured provider
+    """Get available models for each configured provider
 
     Returns a dictionary with provider names as keys and lists of
     available models as values.
@@ -54,8 +49,7 @@ async def get_available_models(llm_client: LLMClientDep):
 
 @router.get("/providers")
 async def get_providers_status(llm_client: LLMClientDep):
-    """
-    Get status of configured providers
+    """Get status of configured providers
 
     Returns information about which providers are configured and available.
     """

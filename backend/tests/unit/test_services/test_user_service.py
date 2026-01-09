@@ -1,12 +1,14 @@
-"""
-Unit tests for UserService
+"""Unit tests for UserService
 Tests business logic with mocked dependencies
 """
+
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import Mock, AsyncMock
 from fastapi import HTTPException
-from backend.services.user_service import UserService
+
 from backend.schemas.user import UserProfile
+from backend.services.user_service import UserService
 
 
 class TestUserService:
@@ -33,7 +35,7 @@ class TestUserService:
                 "country": "USA",
                 "is_published": False,
                 "created_at": "2024-01-01T00:00:00",
-                "updated_at": "2024-01-01T00:00:00"
+                "updated_at": "2024-01-01T00:00:00",
             }
         )
 
@@ -66,31 +68,29 @@ class TestUserService:
         """Test updating user profile"""
         # Setup mock
         mock_supabase_client.table.return_value.update.return_value.eq.return_value.execute.return_value = Mock(
-            data=[{
-                "id": "user_123",
-                "username": "updateduser",
-                "full_name": "Updated Name",
-                "github_username": None,
-                "github_avatar_url": None,
-                "city": "San Francisco",
-                "country": "USA",
-                "is_published": True,
-                "created_at": "2024-01-01T00:00:00",
-                "updated_at": "2024-01-02T00:00:00"
-            }]
+            data=[
+                {
+                    "id": "user_123",
+                    "username": "updateduser",
+                    "full_name": "Updated Name",
+                    "github_username": None,
+                    "github_avatar_url": None,
+                    "city": "San Francisco",
+                    "country": "USA",
+                    "is_published": True,
+                    "created_at": "2024-01-01T00:00:00",
+                    "updated_at": "2024-01-02T00:00:00",
+                }
+            ]
         )
 
         # Execute
         update_data = {
             "full_name": "Updated Name",
             "city": "San Francisco",
-            "is_published": True
+            "is_published": True,
         }
-        result = await user_service.update_profile(
-            mock_supabase_client,
-            "user_123",
-            update_data
-        )
+        result = await user_service.update_profile(mock_supabase_client, "user_123", update_data)
 
         # Assert
         assert isinstance(result, UserProfile)
@@ -107,20 +107,14 @@ class TestUserService:
         mock_supabase_client.auth.admin.delete_user = Mock()
 
         # Execute
-        result = await user_service.delete_account(
-            mock_supabase_client,
-            "user_123"
-        )
+        result = await user_service.delete_account(mock_supabase_client, "user_123")
 
         # Assert
         assert result.success is True
         assert "deleted successfully" in result.message
 
         # Verify Stripe cancellation was called
-        mock_stripe_client.cancel_subscription.assert_called_once_with(
-            mock_supabase_client,
-            "user_123"
-        )
+        mock_stripe_client.cancel_subscription.assert_called_once_with(mock_supabase_client, "user_123")
 
         # Verify database deletion was called
         mock_supabase_client.table.assert_called()
@@ -135,10 +129,7 @@ class TestUserService:
         mock_supabase_client.auth.admin.delete_user = Mock()
 
         # Execute - should still succeed
-        result = await user_service.delete_account(
-            mock_supabase_client,
-            "user_123"
-        )
+        result = await user_service.delete_account(mock_supabase_client, "user_123")
 
         # Assert
         assert result.success is True

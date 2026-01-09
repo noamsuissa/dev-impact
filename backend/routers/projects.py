@@ -1,18 +1,21 @@
-"""
-Projects Router - Handle project CRUD endpoints
-"""
-from fastapi import APIRouter, Query, Depends, UploadFile, File, Header
-from typing import Optional, List
+"""Projects Router - Handle project CRUD endpoints"""
+
+from fastapi import APIRouter, Depends, File, Query, UploadFile
+
+from backend.core.container import (
+    ProjectServiceDep,
+    ServiceDBClient,
+    SubscriptionServiceDep,
+)
+from backend.schemas.auth import MessageResponse
 from backend.schemas.project import (
-    Project,
     CreateProjectRequest,
-    UpdateProjectRequest,
-    ProjectEvidence,
     EvidenceStatsResponse,
+    Project,
+    ProjectEvidence,
+    UpdateProjectRequest,
 )
 from backend.utils import auth_utils
-from backend.schemas.auth import MessageResponse
-from backend.core.container import ServiceDBClient, ProjectServiceDep, SubscriptionServiceDep
 
 router = APIRouter(
     prefix="/api/projects",
@@ -20,15 +23,14 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=List[Project])
+@router.get("", response_model=list[Project])
 async def list_projects(
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
-    portfolio_id: Optional[str] = Query(None, description="Filter projects by portfolio ID")
+    portfolio_id: str | None = Query(None, description="Filter projects by portfolio ID"),
 ):
-    """
-    List all projects for current user
+    """List all projects for current user
 
     Returns all projects owned by the authenticated user, optionally filtered by portfolio.
     """
@@ -43,10 +45,9 @@ async def get_project(
     project_id: str,
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Get a single project by ID
+    """Get a single project by ID
 
     Returns project data if owned by the authenticated user.
     """
@@ -62,10 +63,9 @@ async def create_project(
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
     subscription_service: SubscriptionServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Create a new project
+    """Create a new project
 
     Creates a new project for the authenticated user.
     """
@@ -80,7 +80,7 @@ async def create_project(
         client=client,
         subscription_info=subscription_info,
         user_id=user_id,
-        project_data=project_data
+        project_data=project_data,
     )
     return project
 
@@ -91,10 +91,9 @@ async def update_project(
     request: UpdateProjectRequest,
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Update a project
+    """Update a project
 
     Updates project data if owned by the authenticated user.
     """
@@ -110,10 +109,9 @@ async def delete_project(
     project_id: str,
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Delete a project
+    """Delete a project
 
     Deletes project if owned by the authenticated user.
     """
@@ -123,15 +121,14 @@ async def delete_project(
     return result
 
 
-@router.get("/{project_id}/evidence", response_model=List[ProjectEvidence])
+@router.get("/{project_id}/evidence", response_model=list[ProjectEvidence])
 async def list_project_evidence(
     project_id: str,
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    List all evidence for a project.
+    """List all evidence for a project.
     Publicly accessible for published profiles.
     Owners can always see their own evidence.
     """
@@ -140,7 +137,7 @@ async def list_project_evidence(
         # Try to extract user ID, but don't fail if token is invalid
         try:
             user_id = auth_utils.get_user_id_from_token(authorization.replace("Bearer ", ""))
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             pass  # keep user_id as None for public access
 
     evidence = await project_service.list_project_evidence(client, project_id, user_id)
@@ -155,8 +152,7 @@ async def upload_project_evidence(
     file: UploadFile = File(...),
     authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Upload a screenshot for a project and create an evidence record.
+    """Upload a screenshot for a project and create an evidence record.
 
     Accepts an image file upload, validates it, uploads to Supabase storage,
     and creates the evidence record in a single step.
@@ -183,10 +179,9 @@ async def upload_project_evidence(
 async def get_evidence_stats(
     client: ServiceDBClient,
     project_service: ProjectServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Get user's evidence storage statistics
+    """Get user's evidence storage statistics
 
     Returns total evidence size across all projects, limit, and usage percentage.
     """
@@ -203,8 +198,7 @@ async def delete_evidence(
     project_service: ProjectServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Delete evidence record and file
+    """Delete evidence record and file
 
     Deletes evidence record and associated file from storage if owned by the authenticated user.
     """
@@ -212,4 +206,3 @@ async def delete_evidence(
 
     result = await project_service.delete_evidence(client, evidence_id, user_id)
     return result
-
