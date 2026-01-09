@@ -2,28 +2,20 @@
 Tests for PortfolioService
 """
 
-import pytest
 from unittest.mock import MagicMock
 from fastapi import HTTPException
-from backend.services.portfolio_service import PortfolioService
+import pytest
 from backend.schemas.portfolio import (
     PortfolioStatsResponse,
-    PortfolioViewStats,
     PortfolioResponse,
 )
-
-
-@pytest.fixture
-def mock_supabase_client():
-    """Mock Supabase client for testing."""
-    return MagicMock()
 
 
 class TestGetPublishedPortfolioStats:
     """Tests for get_published_portfolio_stats method"""
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_stats_success(self, mock_supabase_client):
+    async def test_get_published_portfolio_stats_success(self, portfolio_service, mock_supabase_client):
         """Test successful retrieval of portfolio stats"""
         # Arrange
         user_id = "user-123"
@@ -38,7 +30,7 @@ class TestGetPublishedPortfolioStats:
         )
 
         # Act
-        result = await PortfolioService.get_published_portfolio_stats(
+        result = await portfolio_service.get_published_portfolio_stats(
             mock_supabase_client, user_id
         )
 
@@ -60,7 +52,7 @@ class TestGetPublishedPortfolioStats:
         )
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_stats_empty(self, mock_supabase_client):
+    async def test_get_published_portfolio_stats_empty(self, portfolio_service, mock_supabase_client):
         """Test retrieval when user has no published portfolios"""
         # Arrange
         user_id = "user-123"
@@ -72,7 +64,7 @@ class TestGetPublishedPortfolioStats:
         )
 
         # Act
-        result = await PortfolioService.get_published_portfolio_stats(
+        result = await portfolio_service.get_published_portfolio_stats(
             mock_supabase_client, user_id
         )
 
@@ -82,7 +74,7 @@ class TestGetPublishedPortfolioStats:
 
     @pytest.mark.asyncio
     async def test_get_published_portfolio_stats_missing_slug(
-        self, mock_supabase_client
+        self, portfolio_service, mock_supabase_client
     ):
         """Test handling of missing profile_slug (should default to empty string)"""
         # Arrange
@@ -97,7 +89,7 @@ class TestGetPublishedPortfolioStats:
         )
 
         # Act
-        result = await PortfolioService.get_published_portfolio_stats(
+        result = await portfolio_service.get_published_portfolio_stats(
             mock_supabase_client, user_id
         )
 
@@ -106,7 +98,7 @@ class TestGetPublishedPortfolioStats:
         assert result.stats[0].portfolio_slug == ""
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_stats_exception(self, mock_supabase_client):
+    async def test_get_published_portfolio_stats_exception(self, portfolio_service, mock_supabase_client):
         """Test exception handling"""
         # Arrange
         user_id = "user-123"
@@ -116,7 +108,7 @@ class TestGetPublishedPortfolioStats:
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
-            await PortfolioService.get_published_portfolio_stats(
+            await portfolio_service.get_published_portfolio_stats(
                 mock_supabase_client, user_id
             )
         assert exc_info.value.status_code == 500
@@ -129,7 +121,7 @@ class TestGetPublishedPortfolio:
     """Tests for get_published_portfolio method with increment flag"""
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_increment_true(self, mock_supabase_client):
+    async def test_get_published_portfolio_increment_true(self, portfolio_service, mock_supabase_client):
         """Test that view count increments when increment_view_count=True"""
         # Arrange
         username = "testuser"
@@ -189,7 +181,7 @@ class TestGetPublishedPortfolio:
         mock_table.update.return_value = mock_update_query
 
         # Act
-        result = await PortfolioService.get_published_portfolio(
+        result = await portfolio_service.get_published_portfolio(
             mock_supabase_client, username, portfolio_slug, increment_view_count=True
         )
 
@@ -202,7 +194,7 @@ class TestGetPublishedPortfolio:
         mock_table.update.assert_called_with({"view_count": initial_view_count + 1})
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_increment_false(self, mock_supabase_client):
+    async def test_get_published_portfolio_increment_false(self, portfolio_service, mock_supabase_client):
         """Test that view count does NOT increment when increment_view_count=False"""
         # Arrange
         username = "testuser"
@@ -251,7 +243,7 @@ class TestGetPublishedPortfolio:
         mock_supabase_client.table.return_value = mock_table
 
         # Act
-        result = await PortfolioService.get_published_portfolio(
+        result = await portfolio_service.get_published_portfolio(
             mock_supabase_client, username, portfolio_slug, increment_view_count=False
         )
 
@@ -265,7 +257,7 @@ class TestGetPublishedPortfolio:
 
     @pytest.mark.asyncio
     async def test_get_published_portfolio_increment_default_true(
-        self, mock_supabase_client
+        self, portfolio_service, mock_supabase_client
     ):
         """Test that increment_view_count defaults to True"""
         # Arrange
@@ -316,7 +308,7 @@ class TestGetPublishedPortfolio:
         mock_supabase_client.table.return_value = mock_table
 
         # Act (no increment_view_count parameter, should default to True)
-        result = await PortfolioService.get_published_portfolio(
+        result = await portfolio_service.get_published_portfolio(
             mock_supabase_client, username, portfolio_slug
         )
 
@@ -325,7 +317,7 @@ class TestGetPublishedPortfolio:
         mock_table.update.assert_called()
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_not_found(self, mock_supabase_client):
+    async def test_get_published_portfolio_not_found(self, portfolio_service, mock_supabase_client):
         """Test error when portfolio not found"""
         # Arrange
         username = "testuser"
@@ -346,7 +338,7 @@ class TestGetPublishedPortfolio:
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
-            await PortfolioService.get_published_portfolio(
+            await portfolio_service.get_published_portfolio(
                 mock_supabase_client,
                 username,
                 portfolio_slug,
@@ -357,7 +349,7 @@ class TestGetPublishedPortfolio:
 
     @pytest.mark.asyncio
     async def test_get_published_portfolio_increment_exception_handled(
-        self, mock_supabase_client
+        self, portfolio_service, mock_supabase_client
     ):
         """Test that exception during increment doesn't break the response"""
         # Arrange
@@ -409,7 +401,7 @@ class TestGetPublishedPortfolio:
         mock_supabase_client.table.return_value = mock_table
 
         # Act
-        result = await PortfolioService.get_published_portfolio(
+        result = await portfolio_service.get_published_portfolio(
             mock_supabase_client, username, portfolio_slug, increment_view_count=True
         )
 

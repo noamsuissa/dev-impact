@@ -3,10 +3,9 @@ Unit tests for EmailClient integration
 Tests SMTP email sending with mocked SMTP library
 """
 
+from unittest.mock import patch, AsyncMock
 import pytest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from backend.integrations.email_client import EmailClient
-from backend.core.config import EmailConfig
 
 
 class TestEmailClient:
@@ -35,7 +34,7 @@ class TestEmailClient:
             to_email="recipient@example.com",
             subject="Test Email",
             template_name="waitlist_confirmation.html",
-            context={"name": "Test User"},
+            template_vars={"name": "Test User"},
         )
 
         # Assert SMTP methods were called
@@ -59,14 +58,14 @@ class TestEmailClient:
 
         client = EmailClient(email_config)
 
-        # Execute with context
-        context = {"name": "John Doe", "custom_message": "Welcome to the waitlist!"}
+        # Execute with template_vars
+        template_vars = {"name": "John Doe", "custom_message": "Welcome to the waitlist!"}
 
         await client.send_email(
             to_email="john@example.com",
             subject="Welcome",
             template_name="waitlist_confirmation.html",
-            context=context,
+            template_vars=template_vars,
         )
 
         # Assert send_message was called (template was rendered)
@@ -89,7 +88,7 @@ class TestEmailClient:
                 to_email="test@example.com",
                 subject="Test",
                 template_name="test.html",
-                context={},
+                template_vars={},
             )
 
         assert "Connection failed" in str(exc_info.value)
@@ -111,7 +110,7 @@ class TestEmailClient:
                 to_email="test@example.com",
                 subject="Test",
                 template_name="test.html",
-                context={},
+                template_vars={},
             )
 
         assert "Authentication failed" in str(exc_info.value)
@@ -135,7 +134,7 @@ class TestEmailClient:
                 to_email="test@example.com",
                 subject="Test",
                 template_name="test.html",
-                context={},
+                template_vars={},
             )
 
         # Assert quit was still called to close connection

@@ -58,10 +58,10 @@ class GitHubClient:
                 )
         except HTTPException:
             raise
-        except Exception:
+        except Exception as e:
             raise HTTPException(
                 status_code=500, detail="Failed to initiate GitHub device flow"
-            )
+            ) from e
 
     async def poll_for_token(self, device_code: str) -> Optional[TokenResponse]:
         """
@@ -102,11 +102,11 @@ class GitHubClient:
                         # Should increase polling interval (handled by frontend)
                         return None
                     elif error == "expired_token":
-                        raise Exception("Device code expired")
+                        raise HTTPException(status_code=400, detail="Device code expired")
                     elif error == "access_denied":
-                        raise Exception("User denied authorization")
+                        raise HTTPException(status_code=403, detail="User denied authorization")
                     else:
-                        raise Exception(f"GitHub OAuth error: {error}")
+                        raise HTTPException(status_code=400, detail="GitHub OAuth error")
 
                 # Success
                 return TokenResponse(
@@ -119,8 +119,8 @@ class GitHubClient:
             raise
         except Exception as e:
             raise HTTPException(
-                status_code=500, detail=f"Failed to poll for GitHub token: {e}"
-            )
+                status_code=500, detail="Failed to poll for GitHub token"
+            ) from e
 
     async def get_user_profile(self, access_token: str) -> GitHubUser:
         """
@@ -157,5 +157,5 @@ class GitHubClient:
             raise
         except Exception as e:
             raise HTTPException(
-                status_code=500, detail=f"Failed to get GitHub user profile: {e}"
-            )
+                status_code=500, detail="Failed to get GitHub user profile"
+            ) from e

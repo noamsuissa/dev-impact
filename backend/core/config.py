@@ -5,7 +5,6 @@ All configuration is loaded from environment variables.
 
 from dataclasses import dataclass
 import os
-from typing import Optional
 
 
 @dataclass

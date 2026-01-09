@@ -4,6 +4,8 @@ Traceloop middleware for observability of LLM calls through LiteLLM.
 
 import os
 import logging
+from traceloop.sdk import Traceloop
+import litellm
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +24,6 @@ def setup_traceloop() -> bool:
         return False
 
     try:
-        from traceloop.sdk import Traceloop
-        import litellm
 
         # Initialize Traceloop
         Traceloop.init(

@@ -20,23 +20,19 @@ class IStripeClient(Protocol):
         billing_period: str,
     ) -> Dict[str, Any]:
         """Create a Stripe checkout session."""
-        ...
 
     async def cancel_subscription(self, client: Client, user_id: str) -> None:
         """Cancel a user's Stripe subscription."""
-        ...
 
     async def handle_webhook_event(
         self, client: Client, payload: bytes, signature: str
     ) -> Dict[str, Any]:
         """Handle and process a Stripe webhook event."""
-        ...
 
     async def get_subscription_info(
         self, client: Client, user_id: str
     ) -> Dict[str, Any]:
         """Get subscription information for a user."""
-        ...
 
 
 class IEmailClient(Protocol):
@@ -46,7 +42,6 @@ class IEmailClient(Protocol):
         self, to_email: str, subject: str, template_name: str, context: Dict[str, Any]
     ) -> None:
         """Send an email using a template."""
-        ...
 
 
 class IGitHubClient(Protocol):
@@ -54,15 +49,12 @@ class IGitHubClient(Protocol):
 
     async def initiate_device_flow(self) -> Dict[str, Any]:
         """Initiate GitHub OAuth device flow."""
-        ...
 
     async def poll_for_token(self, device_code: str) -> Optional[str]:
         """Poll for OAuth token from device code."""
-        ...
 
     async def get_user_profile(self, access_token: str) -> Dict[str, Any]:
         """Get GitHub user profile information."""
-        ...
 
 
 class ILLMClient(Protocol):
@@ -72,11 +64,9 @@ class ILLMClient(Protocol):
         self, messages: List[Dict[str, str]], model: Optional[str] = None
     ) -> str:
         """Generate LLM completion from messages."""
-        ...
 
     def get_available_models(self) -> List[Dict[str, str]]:
         """Get list of available LLM models."""
-        ...
 
 
 # Business Service Protocols
@@ -85,27 +75,22 @@ class IUserService(Protocol):
 
     async def get_profile(self, client: Client, user_id: str) -> Dict[str, Any]:
         """Get user profile."""
-        ...
 
     async def update_profile(
         self, client: Client, user_id: str, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Update user profile."""
-        ...
 
     async def create_or_update_profile(
         self, client: Client, user_id: str, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Create or update user profile."""
-        ...
 
     async def check_username(self, client: Client, username: str) -> Dict[str, Any]:
         """Check if username is available."""
-        ...
 
     async def delete_account(self, client: Client, user_id: str) -> Dict[str, Any]:
         """Delete user account."""
-        ...
 
 
 class ISubscriptionService(Protocol):
@@ -115,11 +100,9 @@ class ISubscriptionService(Protocol):
         self, client: Client, user_id: str
     ) -> Dict[str, Any]:
         """Get subscription information."""
-        ...
 
     async def cancel_subscription(self, client: Client, user_id: str) -> Dict[str, Any]:
         """Cancel user subscription."""
-        ...
 
 
 class IWaitlistService(Protocol):
@@ -129,7 +112,6 @@ class IWaitlistService(Protocol):
         self, client: Client, email: str, name: Optional[str]
     ) -> Dict[str, Any]:
         """Sign up for waitlist."""
-        ...
 
 
 class IPortfolioService(Protocol):
@@ -144,19 +126,16 @@ class IPortfolioService(Protocol):
         description: Optional[str],
     ) -> Dict[str, Any]:
         """Create a new portfolio."""
-        ...
 
     async def list_portfolios(
         self, client: Client, user_id: str
     ) -> List[Dict[str, Any]]:
         """List user's portfolios."""
-        ...
 
     async def get_portfolio(
         self, client: Client, portfolio_id: str, user_id: str
     ) -> Dict[str, Any]:
         """Get a specific portfolio."""
-        ...
 
 
 class IProjectService(Protocol):
@@ -166,13 +145,11 @@ class IProjectService(Protocol):
         self, client: Client, user_id: str, data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Create a new project."""
-        ...
 
     async def list_projects(
         self, client: Client, user_id: str, portfolio_id: Optional[str]
     ) -> List[Dict[str, Any]]:
         """List user's projects."""
-        ...
 
 
 class IAuthService(Protocol):
@@ -182,13 +159,11 @@ class IAuthService(Protocol):
         self, client: Client, email: str, password: str
     ) -> Dict[str, Any]:
         """Sign up a new user."""
-        ...
 
     async def sign_in(
         self, client: Client, email: str, password: str
     ) -> Dict[str, Any]:
         """Sign in a user."""
-        ...
 
 
 class IMFAService(Protocol):
@@ -196,10 +171,8 @@ class IMFAService(Protocol):
 
     async def mfa_enroll(self, client: Client, user_id: str) -> Dict[str, Any]:
         """Enroll user in MFA."""
-        ...
 
     async def mfa_verify(
         self, client: Client, user_id: str, code: str
     ) -> Dict[str, Any]:
         """Verify MFA code."""
-        ...

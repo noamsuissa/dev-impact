@@ -96,9 +96,9 @@ class EmailClient:
                 await smtp.login(self.config.user, self.config.password)
                 await smtp.send_message(message)
 
-            logger.info(f"Email sent successfully to {to_email}")
+            logger.info("Email sent successfully to %s", to_email)
             return True
 
         except Exception as e:
-            logger.error(f"Failed to send email to {to_email}: {e}")
+            logger.error("Failed to send email to %s: %s", to_email, e)
             return False

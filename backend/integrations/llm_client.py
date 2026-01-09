@@ -123,7 +123,7 @@ class LLMClient:
 
             response: Any = await acompletion(**completion_params)
 
-            logger.info(f"LLM completion successful for provider: {provider}")
+            logger.info("LLM completion successful for provider: %s", provider)
 
             return {
                 "content": response.choices[0].message.content,
@@ -135,21 +135,21 @@ class LLMClient:
         except HTTPException:
             raise
         except AuthenticationError as e:
-            logger.error(f"Authentication error for {provider}: {e}")
+            logger.error("Authentication error for %s: %s", provider, e)
             raise HTTPException(
                 status_code=401, detail=f"Invalid API key for {provider}"
-            )
+            ) from e
         except RateLimitError as e:
-            logger.error(f"Rate limit exceeded for {provider}: {e}")
+            logger.error("Rate limit exceeded for %s: %s", provider, e)
             raise HTTPException(
                 status_code=429, detail=f"Rate limit exceeded for {provider}"
-            )
+            ) from e
         except APIError as e:
-            logger.error(f"API error for {provider}: {e}")
-            raise HTTPException(status_code=502, detail=f"API error from {provider}")
+            logger.error("API error for %s: %s", provider, e)
+            raise HTTPException(status_code=502, detail=f"API error from {provider}") from e
         except Exception as e:
-            logger.error(f"Unexpected error in LLM completion for {provider}: {e}")
-            raise HTTPException(status_code=500, detail="An unexpected error occurred")
+            logger.error("Unexpected error in LLM completion for %s: %s", provider, e)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred") from e
 
     def generate_completion_sync(
         self,
@@ -196,7 +196,7 @@ class LLMClient:
 
             response: Any = completion(**completion_params)
 
-            logger.info(f"LLM completion successful for provider: {provider}")
+            logger.info("LLM completion successful for provider: %s", provider)
             return {
                 "content": response.choices[0].message.content,
                 "usage": response.usage.model_dump() if response.usage else None,
@@ -207,21 +207,21 @@ class LLMClient:
         except HTTPException:
             raise
         except AuthenticationError as e:
-            logger.error(f"Authentication error for {provider}: {e}")
+            logger.error("Authentication error for %s: %s", provider, e)
             raise HTTPException(
                 status_code=401, detail=f"Invalid API key for {provider}"
-            )
+            ) from e
         except RateLimitError as e:
-            logger.error(f"Rate limit exceeded for {provider}: {e}")
+            logger.error("Rate limit exceeded for %s: %s", provider, e)
             raise HTTPException(
                 status_code=429, detail=f"Rate limit exceeded for {provider}"
-            )
+            ) from e
         except APIError as e:
-            logger.error(f"API error for {provider}: {e}")
-            raise HTTPException(status_code=502, detail=f"API error from {provider}")
+            logger.error("API error for %s: %s", provider, e)
+            raise HTTPException(status_code=502, detail=f"API error from {provider}") from e
         except Exception as e:
-            logger.error(f"Unexpected error in LLM completion for {provider}: {e}")
-            raise HTTPException(status_code=500, detail="An unexpected error occurred")
+            logger.error("Unexpected error in LLM completion for %s: %s", provider, e)
+            raise HTTPException(status_code=500, detail="An unexpected error occurred") from e
 
     def get_available_models(self) -> Dict[str, List[str]]:
         """
