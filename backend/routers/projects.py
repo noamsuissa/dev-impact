@@ -155,7 +155,7 @@ async def list_project_evidence(
             user_id = auth_utils.get_user_id_from_token(
                 authorization.replace("Bearer ", "")
             )
-        except Exception:
+        except Exception: # pylint: disable=broad-exception-caught
             pass  # keep user_id as None for public access
 
     evidence = await project_service.list_project_evidence(client, project_id, user_id)

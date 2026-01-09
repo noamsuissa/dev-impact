@@ -4,12 +4,12 @@ Auth Service - Handle authentication operations with Supabase
 
 import os
 from typing import Optional
+import traceback
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from supabase import create_client
+from supabase import create_client, Client
 import jwt
 import httpx
-import traceback
 from backend.schemas.auth import (
     AuthResponse,
     UserResponse,
@@ -17,7 +17,6 @@ from backend.schemas.auth import (
     MessageResponse,
     MFAFactorResponse,
 )
-from supabase import Client
 
 # Load environment variables
 load_dotenv()
@@ -75,7 +74,7 @@ class AuthService:
             raise
         except Exception as e:
             print(f"Sign up error: {e}")
-            raise HTTPException(status_code=400, detail=f"Sign up error: {e}")
+            raise HTTPException(status_code=400, detail="Sign up error") from e
 
     async def sign_in(
         self,
@@ -183,7 +182,7 @@ class AuthService:
                 except Exception as verify_err:
                     print(f"MFA verify error: {verify_err}")
                     traceback.print_exc()
-                    raise HTTPException(status_code=401, detail="Invalid MFA code")
+                    raise HTTPException(status_code=401, detail="Invalid MFA code") from verify_err
 
             # Initial sign in with password
             response = client.auth.sign_in_with_password(
@@ -299,7 +298,7 @@ class AuthService:
                                                         print(
                                                             f"User API challenge error: {challenge_response.status_code} - {challenge_response.text}"
                                                         )
-                                            except Exception as challenge_err:
+                                            except Exception as challenge_err: # pylint: disable=broad-exception-caught
                                                 print(
                                                     f"Failed to create MFA challenge: {challenge_err}"
                                                 )
@@ -308,7 +307,7 @@ class AuthService:
                                             print(
                                                 "Missing anon key or session token for MFA challenge"
                                             )
-                    except Exception as mfa_check_err:
+                    except Exception as mfa_check_err: # pylint: disable=broad-exception-caught
                         print(f"Error checking MFA factors: {mfa_check_err}")
 
             # Check if MFA is required (user exists but no session) - fallback check
@@ -382,7 +381,7 @@ class AuthService:
                                         for f in factors
                                     ],
                                 )
-                except Exception as mfa_error:
+                except Exception as mfa_error: # pylint: disable=broad-exception-caught
                     print(f"MFA setup error: {mfa_error}")
                     # If we can't get factors, still return MFA required
                     # The frontend will need to handle this case
@@ -420,8 +419,8 @@ class AuthService:
             print(f"Sign in error: {e}")
             error_str = str(e).lower()
             if "mfa" in error_str or "challenge" in error_str:
-                raise HTTPException(status_code=401, detail="Invalid MFA code")
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+                raise HTTPException(status_code=401, detail="Invalid MFA code") from e
+            raise HTTPException(status_code=401, detail="Invalid email or password") from e
 
     async def sign_out(self, client: Client, access_token: str) -> MessageResponse:
         """
@@ -440,7 +439,7 @@ class AuthService:
             client.auth.sign_out()
 
             return MessageResponse(success=True, message="Signed out successfully")
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-exception-caught
             print(f"Sign out error: {e}")
             # Even if sign out fails, we still return success as the client will clear local tokens
             return MessageResponse(success=True, message="Signed out")
@@ -465,7 +464,7 @@ class AuthService:
             )
 
             return MessageResponse(success=True, message="Password reset email sent")
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-exception-caught
             print(f"Reset password email error: {e}")
             # Return success even on error to prevent email enumeration
             return MessageResponse(
@@ -526,4 +525,4 @@ class AuthService:
             )
         except Exception as e:
             print(f"Update password error: {e}")
-            raise HTTPException(status_code=400, detail="Failed to update password")
+            raise HTTPException(status_code=400, detail="Failed to update password") from e

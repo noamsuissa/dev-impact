@@ -3,14 +3,13 @@ Email integration client.
 Handles email sending with Jinja templates via SMTP.
 """
 
-import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 from typing import Dict, Any, Optional
 from pathlib import Path
 import logging
-
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+import aiosmtplib
 from backend.core.config import EmailConfig
 
 logger = logging.getLogger(__name__)
@@ -99,6 +98,6 @@ class EmailClient:
             logger.info("Email sent successfully to %s", to_email)
             return True
 
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-exception-caught
             logger.error("Failed to send email to %s: %s", to_email, e)
             return False

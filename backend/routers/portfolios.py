@@ -3,8 +3,8 @@ Portfolios Router - Unified router for portfolio CRUD and publishing operations
 Merges endpoints from user_profile.py and profile.py
 """
 
-from fastapi import APIRouter, Header, Depends, HTTPException
-from typing import List, Optional
+from typing import List
+from fastapi import APIRouter, Depends
 from backend.schemas.portfolio import (
     Portfolio,
     CreatePortfolioRequest,

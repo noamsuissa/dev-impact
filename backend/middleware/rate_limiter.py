@@ -34,7 +34,7 @@ def validate_rate_limit_string(rate_limit_str: str) -> list:
         # Validate format: number/unit
         parts = limit.split("/")
         if len(parts) != 2:
-            logger.warning(f"Invalid rate limit format: {limit}, skipping")
+            logger.warning("Invalid rate limit format: %s, skipping", limit)
             continue
 
         try:
@@ -45,20 +45,20 @@ def validate_rate_limit_string(rate_limit_str: str) -> list:
             valid_units = ["second", "minute", "hour", "day"]
             if unit not in valid_units and unit not in [u + "s" for u in valid_units]:
                 logger.warning(
-                    f"Invalid rate limit unit: {unit}, skipping limit: {limit}"
+                    "Invalid rate limit unit: %s, skipping limit: %s", unit, limit
                 )
                 continue
 
             if count <= 0:
                 logger.warning(
-                    f"Rate limit count must be positive: {count}, skipping limit: {limit}"
+                    "Rate limit count must be positive: %s, skipping limit: %s", count, limit
                 )
                 continue
 
             limits.append(limit)
         except ValueError:
             logger.warning(
-                f"Invalid rate limit count: {parts[0]}, skipping limit: {limit}"
+                "Invalid rate limit count: %s, skipping limit: %s", parts[0], limit
             )
             continue
 
@@ -87,13 +87,13 @@ def handle_threading_exception(args):
     # OverflowError from slowapi timers are expected and can be safely ignored
     if exc_type == OverflowError and "timestamp out of range" in str(exc_value):
         logger.debug(
-            f"Ignoring slowapi threading OverflowError in thread {thread.name}: {exc_value}"
+            "Ignoring slowapi threading OverflowError in thread %s: %s", thread.name, exc_value
         )
         return
 
     # Log other threading errors
     logger.error(
-        f"Unhandled exception in thread {thread.name}: {exc_type.__name__}: {exc_value}",
+        "Unhandled exception in thread %s: %s: %s", thread.name, exc_type.__name__, exc_value,
         exc_info=(exc_type, exc_value, exc_traceback),
     )
 
@@ -107,13 +107,13 @@ def setup_rate_limiter() -> Optional[Limiter]:
     """
     rate_limit_str = os.getenv("RATE_LIMIT_DEFAULT_LIMITS", "100/minute,1000/hour")
     validated_limits = validate_rate_limit_string(rate_limit_str)
-    logger.info(f"Rate limiter configured with limits: {validated_limits}")
+    logger.info("Rate limiter configured with limits: %s", validated_limits)
 
     try:
         limiter = Limiter(key_func=get_remote_address, default_limits=validated_limits)
         return limiter
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-exception-caught
         logger.error(
-            f"Failed to initialize rate limiter: {e}, continuing without rate limiting"
+            "Failed to initialize rate limiter: %s, continuing without rate limiting", e
         )
         return None

@@ -49,6 +49,6 @@ def setup_traceloop() -> bool:
             "Traceloop SDK not installed. Install it with: pip install traceloop-sdk"
         )
         return False
-    except Exception as e:
-        logger.error(f"Failed to initialize Traceloop: {e}", exc_info=True)
+    except Exception as e: # pylint: disable=broad-exception-caught
+        logger.error("Failed to initialize Traceloop: %s", e, exc_info=True)
         return False
