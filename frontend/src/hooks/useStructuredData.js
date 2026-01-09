@@ -31,4 +31,3 @@ export const useStructuredData = (structuredData, id = 'structured-data') => {
     };
   }, [structuredData, id]);
 };
-

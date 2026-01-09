@@ -35,7 +35,7 @@ const SignIn = () => {
         if (data.mfa_factor_id) {
           sessionStorage.setItem('mfa_factor_id', data.mfa_factor_id);
         }
-        
+
         setMfaChallengeId(data.mfa_challenge_id);
         setLoading(false);
         return;
@@ -172,8 +172,8 @@ const SignIn = () => {
 
           {/* Submit Button */}
           <div className="fade-in flex gap-5 pt-5" style={{ animationDelay: '0.2s' }}>
-            <TerminalButton 
-              type="submit" 
+            <TerminalButton
+              type="submit"
               disabled={loading || !email || !password}
             >
               {loading ? '[Processing...]' : '[Sign In]'}
@@ -207,4 +207,3 @@ const SignIn = () => {
 };
 
 export default SignIn;
-

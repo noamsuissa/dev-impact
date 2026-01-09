@@ -35,22 +35,22 @@ const MFASetup = ({ onComplete, onCancel }) => {
 
     try {
       const data = await authClient.mfaEnroll(friendlyName);
-      
+
       // Handle different response structures
       const qrCodeValue = data.qr_code || data.totp?.qr_code || data.qrCode;
       const secretValue = data.secret || data.totp?.secret;
       const factorIdValue = data.id || data.factor_id;
-      
+
       // QR code is optional, but secret and factorId are required
       if (!secretValue || !factorIdValue) {
         console.error('Missing required MFA data:', { qrCodeValue, secretValue, factorIdValue, fullData: data });
         throw new Error('MFA enrollment response missing required data (secret or factor ID)');
       }
-      
+
       // Set QR code if available (it's optional)
       if (qrCodeValue) {
         setQrCode(qrCodeValue);
-        
+
         // Handle different QR code formats
         try {
           if (qrCodeValue.startsWith('data:image/')) {
@@ -92,7 +92,7 @@ const MFASetup = ({ onComplete, onCancel }) => {
           }
         }
       }
-      
+
       setSecret(secretValue);
       setFactorId(factorIdValue);
       setStep('verify');
@@ -175,9 +175,9 @@ const MFASetup = ({ onComplete, onCancel }) => {
           {(qrCode || qrCodeBlobUrl) && (
             <div className="flex justify-center">
               <div className="border border-terminal-border p-4 bg-white rounded">
-                <img 
-                  src={qrCodeBlobUrl || qrCode} 
-                  alt="MFA QR Code" 
+                <img
+                  src={qrCodeBlobUrl || qrCode}
+                  alt="MFA QR Code"
                   className="w-64 h-64"
                   onError={(e) => {
                     console.error('QR code image failed to load:', qrCodeBlobUrl || qrCode);
@@ -192,7 +192,7 @@ const MFASetup = ({ onComplete, onCancel }) => {
               </div>
             </div>
           )}
-          
+
           {!qrCode && !qrCodeBlobUrl && (
             <div className="text-yellow-400 bg-yellow-400/10 border border-yellow-400/30 p-3 rounded text-sm">
               ⚠ QR code not available. Please use the secret key below to manually add to your authenticator app.
@@ -250,14 +250,14 @@ const MFASetup = ({ onComplete, onCancel }) => {
             )}
 
             <div className="flex gap-5 pt-5">
-              <TerminalButton 
-                type="submit" 
+              <TerminalButton
+                type="submit"
                 disabled={loading || verificationCode.length !== 6}
               >
                 {loading ? '[Verifying...]' : '[Verify & Enable]'}
               </TerminalButton>
               {onCancel && (
-                <TerminalButton 
+                <TerminalButton
                   type="button"
                   onClick={handleCancel}
                   disabled={loading}
@@ -280,4 +280,3 @@ const MFASetup = ({ onComplete, onCancel }) => {
 };
 
 export default MFASetup;
-

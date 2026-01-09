@@ -389,4 +389,3 @@ const ProjectModal = ({ isOpen, onClose, project, onEdit, onDelete, readOnly = f
 };
 
 export default ProjectModal;
-

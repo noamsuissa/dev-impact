@@ -26,11 +26,11 @@ const DeleteAccountModal = ({ onConfirm, onCancel, isDeleting }) => {
               Delete Account
             </h2>
           </div>
-          
+
           <p className="text-terminal-text mb-4">
             Are you absolutely sure you want to delete your account? This action cannot be undone.
           </p>
-          
+
           <div className="bg-red-500/10 border border-red-500/30 p-4 rounded mb-4">
             <p className="text-red-400 text-sm">
               This will permanently delete:
@@ -93,4 +93,3 @@ const DeleteAccountModal = ({ onConfirm, onCancel, isDeleting }) => {
 };
 
 export default DeleteAccountModal;
-

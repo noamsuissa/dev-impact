@@ -138,36 +138,36 @@ const ExportPage = ({ user, projects }) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${user.name} - Developer Profile</title>
   <style>
-    body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      max-width: 900px; 
-      margin: 40px auto; 
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
       padding: 20px;
       background: #2d2d2d;
       color: #e8e6e3;
     }
     h1 { color: #ff8c42; margin-bottom: 10px; }
     h2 { color: #ff8c42; border-bottom: 2px solid #5a5a5a; padding-bottom: 10px; }
-    .project { 
-      background: #3a3a3a; 
-      padding: 20px; 
-      margin: 20px 0; 
+    .project {
+      background: #3a3a3a;
+      padding: 20px;
+      margin: 20px 0;
       border: 1px solid #5a5a5a;
       border-radius: 8px;
     }
     .metrics { display: flex; gap: 15px; flex-wrap: wrap; margin: 15px 0; }
-    .metric { 
-      background: #2d2d2d; 
-      padding: 15px; 
+    .metric {
+      background: #2d2d2d;
+      padding: 15px;
       border: 1px solid #5a5a5a;
       border-radius: 4px;
       text-align: center;
     }
     .metric-value { font-size: 24px; font-weight: bold; color: #ff8c42; }
     .tech-stack { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-    .tech { 
-      background: #2d2d2d; 
-      padding: 5px 12px; 
+    .tech {
+      background: #2d2d2d;
+      padding: 5px 12px;
       border: 1px solid #ff8c42;
       border-radius: 4px;
       font-size: 14px;
@@ -225,13 +225,13 @@ const ExportPage = ({ user, projects }) => {
     const githubUsername = user.github?.username || '';
     const width = 80;
     const contentWidth = width - 4; // Width for content inside borders (│ ... │)
-    
+
     // Helper function to format a line within borders
     const formatLine = (content) => {
       const padded = content.padEnd(contentWidth);
       return `│ ${padded} │`;
     };
-    
+
     let text = `${'='.repeat(width)}\n`;
     text += `  ${user.name.toUpperCase()}\n`;
     if (githubUsername) {
@@ -242,30 +242,30 @@ const ExportPage = ({ user, projects }) => {
     projects.forEach(project => {
       // Top border
       text += `┌${'─'.repeat(width - 2)}┐\n`;
-      
+
       // Project name (wrapped if needed)
       const projectNameLines = wrapText(project.projectName || 'Untitled Project', contentWidth);
       projectNameLines.forEach(line => {
         text += formatLine(line) + '\n';
       });
-      
+
       // Company (wrapped if needed)
       const companyLines = wrapText(project.company || '', contentWidth);
       companyLines.forEach(line => {
         text += formatLine(line) + '\n';
       });
-      
+
       // Role and team size
       const roleText = `${project.role || ''} • Team of ${project.teamSize || 1}`;
       const roleLines = wrapText(roleText, contentWidth);
       roleLines.forEach(line => {
         text += formatLine(line) + '\n';
       });
-      
+
       // Divider
       text += `├${'─'.repeat(width - 2)}┤\n`;
       text += formatLine('') + '\n';
-      
+
       // Problem
       text += formatLine('Problem:') + '\n';
       const problemLines = wrapText(project.problem || '', contentWidth);
@@ -273,7 +273,7 @@ const ExportPage = ({ user, projects }) => {
         text += formatLine(line) + '\n';
       });
       text += formatLine('') + '\n';
-      
+
       // Solution
       text += formatLine('Solution:') + '\n';
       if (project.contributions && project.contributions.length > 0) {
@@ -286,7 +286,7 @@ const ExportPage = ({ user, projects }) => {
         });
       }
       text += formatLine('') + '\n';
-      
+
       // Impact
       text += formatLine('Impact:') + '\n';
       if (project.metrics && project.metrics.length > 0) {
@@ -322,10 +322,10 @@ const ExportPage = ({ user, projects }) => {
         });
       }
       text += formatLine('') + '\n';
-      
+
       // Tech Stack
-      const techStackText = project.techStack && project.techStack.length > 0 
-        ? project.techStack.join(' • ') 
+      const techStackText = project.techStack && project.techStack.length > 0
+        ? project.techStack.join(' • ')
         : '';
       if (techStackText) {
         const techStackLines = wrapText(techStackText, contentWidth);
@@ -333,7 +333,7 @@ const ExportPage = ({ user, projects }) => {
           text += formatLine(line) + '\n';
         });
       }
-      
+
       // Bottom border
       text += `└${'─'.repeat(width - 2)}┘\n\n`;
     });
@@ -358,7 +358,7 @@ const ExportPage = ({ user, projects }) => {
   const exportPDF = (selectedPortfolio) => {
     try {
       setExportStatus('Generating PDF...');
-      
+
       // Filter projects for the selected portfolio
       const portfolioProjects = projects.filter(p => {
         const pid = p.portfolio_id;
@@ -390,7 +390,7 @@ const ExportPage = ({ user, projects }) => {
         } else {
           doc.setFont(undefined, 'normal');
         }
-        
+
         const lines = doc.splitTextToSize(text, maxWidth);
         lines.forEach((line) => {
           checkPageBreak(10);
@@ -448,7 +448,7 @@ const ExportPage = ({ user, projects }) => {
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
         doc.setFont(undefined, 'normal');
-        
+
         if (selectedPortfolio.name) {
           checkPageBreak(10);
           doc.text(`Portfolio Name: ${selectedPortfolio.name}`, margin, yPosition);
@@ -493,7 +493,7 @@ const ExportPage = ({ user, projects }) => {
             project.role && `Role: ${project.role}`,
             project.teamSize && `Team Size: ${project.teamSize}`
           ].filter(Boolean).join(' | ');
-          
+
           if (projectMeta) {
             checkPageBreak(10);
             doc.text(projectMeta, margin, yPosition);
@@ -613,7 +613,7 @@ const ExportPage = ({ user, projects }) => {
       // Save the PDF
       const filename = `${(user.name || 'portfolio').replace(/\s+/g, '-')}-${(selectedPortfolio?.name || 'export').replace(/\s+/g, '-')}.pdf`;
       doc.save(filename);
-      
+
       setExportStatus('✓ PDF exported successfully!');
       setTimeout(() => setExportStatus(''), 2000);
     } catch (error) {
@@ -705,4 +705,3 @@ const ExportPage = ({ user, projects }) => {
 };
 
 export default ExportPage;
-

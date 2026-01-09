@@ -77,8 +77,8 @@ const ForgotPassword = () => {
 
           {/* Submit Button */}
           <div className="fade-in flex gap-5 pt-5" style={{ animationDelay: '0.2s' }}>
-            <TerminalButton 
-              type="submit" 
+            <TerminalButton
+              type="submit"
               disabled={loading || !email}
             >
               {loading ? '[Processing...]' : '[Send Reset Link]'}
@@ -111,4 +111,3 @@ const ForgotPassword = () => {
 };
 
 export default ForgotPassword;
-

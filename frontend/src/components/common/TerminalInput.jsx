@@ -1,16 +1,16 @@
 import React from 'react';
 
-const TerminalInput = ({ 
-  value, 
-  onChange, 
-  placeholder, 
+const TerminalInput = ({
+  value,
+  onChange,
+  placeholder,
   type = 'text',
   disabled = false,
   required = false,
   autoComplete,
   name,
   id,
-  className = '' 
+  className = ''
 }) => (
   <input
     type={type}
@@ -27,4 +27,3 @@ const TerminalInput = ({
 );
 
 export default TerminalInput;
-

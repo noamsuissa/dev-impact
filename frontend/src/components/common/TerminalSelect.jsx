@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-const TerminalSelect = ({ 
-  value, 
-  onChange, 
-  options = [], 
+const TerminalSelect = ({
+  value,
+  onChange,
+  options = [],
   placeholder = '-- Select --',
   disabled = false,
   className = ''
@@ -47,8 +47,8 @@ const TerminalSelect = ({
         <span className={selectedOption ? 'text-terminal-text' : 'text-terminal-gray'}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown 
-          size={16} 
+        <ChevronDown
+          size={16}
           className={`text-terminal-orange transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
@@ -77,4 +77,3 @@ const TerminalSelect = ({
 };
 
 export default TerminalSelect;
-

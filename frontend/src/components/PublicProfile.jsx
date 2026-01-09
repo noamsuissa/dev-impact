@@ -16,22 +16,22 @@ const PublicProfile = () => {
   const [error, setError] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-  
+
   // Extract username and profile slug from subdomain/path
   const getUsernameAndSlug = () => {
     const hostname = window.location.hostname;
     const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
     let username = null;
     let portfolioSlug = null;
-    
+
     // Check if we're on a subdomain (production)
-    if (hostname !== 'localhost' && 
-        !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) && 
+    if (hostname !== 'localhost' &&
+        !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) &&
         hostname.includes('.')) {
       const parts = hostname.split('.');
       const domainParts = baseDomain.split('.');
       const isSubdomain = parts.length > domainParts.length;
-      
+
       if (isSubdomain && parts[0] && parts[0] !== 'www') {
         username = parts[0];
         // Extract profile slug from pathname (e.g., /profile-slug)
@@ -45,32 +45,32 @@ const PublicProfile = () => {
       username = usernameFromPath;
       portfolioSlug = portfolioSlugFromPath;
     }
-    
+
     return { username, portfolioSlug };
   };
-  
+
   const { username, portfolioSlug } = getUsernameAndSlug();
 
   // Get home URL - navigate to main domain if on subdomain
   const getHomeUrl = () => {
     const hostname = window.location.hostname;
     const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
-    
+
     // Check if we're on a subdomain
-    if (hostname !== 'localhost' && 
-        !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) && 
+    if (hostname !== 'localhost' &&
+        !hostname.match(/^\d+\.\d+\.\d+\.\d+$/) &&
         hostname.includes('.')) {
       const parts = hostname.split('.');
       const domainParts = baseDomain.split('.');
       const isSubdomain = parts.length > domainParts.length;
-      
+
       if (isSubdomain && parts[0] && parts[0] !== 'www') {
         // We're on a subdomain, redirect to main domain
         const protocol = window.location.protocol;
         return `${protocol}//${baseDomain}/`;
       }
     }
-    
+
     // Not on subdomain, use regular navigation
     return user ? "/dashboard" : "/";
   };
@@ -88,17 +88,17 @@ const PublicProfile = () => {
   // Dynamic meta tags for SEO and OpenGraph
   const profileUrl = username ? generatePortfolioUrl(username, portfolioSlug) : (() => {
     const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
-    return typeof window !== 'undefined' && window.location.hostname === 'localhost' 
+    return typeof window !== 'undefined' && window.location.hostname === 'localhost'
       ? `http://localhost:${window.location.port || '5173'}/`
       : `https://${baseDomain}/`;
   })();
-  const profileTitle = profile 
-    ? `${profile.user.name}${profile.portfolio ? ` - ${profile.portfolio.name}` : ''} - Developer Profile | dev-impact` 
+  const profileTitle = profile
+    ? `${profile.user.name}${profile.portfolio ? ` - ${profile.portfolio.name}` : ''} - Developer Profile | dev-impact`
     : 'Developer Profile | dev-impact';
-  const profileDescription = profile 
+  const profileDescription = profile
     ? `View ${profile.user.name}'s${profile.portfolio ? ` ${profile.portfolio.name}` : ''} developer profile on dev-impact. ${profile.projects.length} projects with ${profile.projects.reduce((sum, p) => sum + (p.metrics?.length || 0), 0)} achievements.`
     : 'View developer profile on dev-impact';
-  
+
   // Use static OG image for all profiles
   const baseDomain = import.meta.env.VITE_BASE_DOMAIN || 'dev-impact.io';
   const profileImage = typeof window !== 'undefined' && window.location.hostname === 'localhost'
@@ -143,17 +143,17 @@ const PublicProfile = () => {
         setError(null);
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        
+
         // Check if we should increment view count
         // Don't increment if:
         // 1. Already viewed in this session (sessionStorage)
         // 2. Viewed within last 30 minutes (localStorage with timestamp)
         const sessionKey = `portfolio_viewed_${username}_${portfolioSlug}`;
         const timeKey = `portfolio_viewed_time_${username}_${portfolioSlug}`;
-        
+
         const viewedInSession = sessionStorage.getItem(sessionKey);
         const lastViewedTime = localStorage.getItem(timeKey);
-        
+
         let shouldIncrement = true;
         if (viewedInSession) {
           shouldIncrement = false;
@@ -161,18 +161,18 @@ const PublicProfile = () => {
           const lastViewed = parseInt(lastViewedTime, 10);
           const now = Date.now();
           const thirtyMinutes = 30 * 60 * 1000; // 30 minutes in milliseconds
-          
+
           if (now - lastViewed < thirtyMinutes) {
             shouldIncrement = false;
           }
         }
-        
+
         // Build URL with increment parameter
         let url = `${apiUrl}/api/portfolios/${username}/${portfolioSlug}`;
         if (!shouldIncrement) {
           url += '?increment=false';
         }
-        
+
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -184,7 +184,7 @@ const PublicProfile = () => {
 
         const data = await response.json();
         setProfile(data);
-        
+
         // Store view tracking if we incremented
         if (shouldIncrement) {
           sessionStorage.setItem(sessionKey, 'true');
@@ -227,7 +227,7 @@ const PublicProfile = () => {
       <div className="p-10 max-w-[1200px] mx-auto">
         {/* Navigation */}
         <header className="mb-10 flex items-center justify-between">
-          <Link 
+          <Link
             to={user ? "/dashboard" : "/"}
             onClick={handleLogoClick}
             className="text-terminal-orange font-mono text-xl font-semibold hover:text-terminal-orange/80 transition-colors"
@@ -296,8 +296,8 @@ const PublicProfile = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start auto-rows-fr">
                 {profile.projects.map(project => (
                   <div key={project.id} className="min-w-0 h-full">
-                    <ProjectCard 
-                      project={project} 
+                    <ProjectCard
+                      project={project}
                       compact
                       onClick={(p) => {
                         setSelectedProject(p);
@@ -345,4 +345,3 @@ const PublicProfile = () => {
 };
 
 export default PublicProfile;
-

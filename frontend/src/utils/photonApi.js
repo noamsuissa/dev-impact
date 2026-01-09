@@ -57,10 +57,10 @@ export async function searchLocation(query, options = {}) {
     return data.features
       .map((feature) => {
         const props = feature.properties || {};
-        
+
         // Extract city - prefer 'city' property, fallback to 'name'
         const city = props.city || props.name || null;
-        
+
         // Extract country
         const country = props.country || null;
 
@@ -97,7 +97,7 @@ export function formatLocation(location) {
   }
 
   const { city, country } = location;
-  
+
   if (city && country) {
     return `${city}, ${country}`;
   } else if (city) {
@@ -105,7 +105,6 @@ export function formatLocation(location) {
   } else if (country) {
     return country;
   }
-  
+
   return '';
 }
-
