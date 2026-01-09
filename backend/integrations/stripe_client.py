@@ -113,6 +113,7 @@ class StripeClient:
                     stripe_customer_id = profile_response.data.get("stripe_customer_id")
             except Exception as e:
                 print(f"Error fetching profile for Stripe customer ID: {e}")
+                raise HTTPException(status_code=500, detail="Failed to fetch profile for Stripe customer ID") from e
 
             # Prepare session arguments
             session_args = {
@@ -159,6 +160,7 @@ class StripeClient:
                         ).eq("id", user_id).execute()
                     except Exception as db_error:
                         print(f"Error clearing invalid customer ID: {db_error}")
+                        raise HTTPException(status_code=500, detail="Failed to clear invalid customer ID") from db_error
                     # Retry without customer ID
                     session_args.pop("customer", None)
                     session_args["customer_email"] = user_email
@@ -173,19 +175,19 @@ class StripeClient:
             raise HTTPException(
                 status_code=500,
                 detail="Payment system configuration error. Please contact support.",
-            )
+            ) from e
         except stripe.InvalidRequestError as e:
             print(f"Stripe invalid request error: {e}")
             raise HTTPException(
                 status_code=500,
                 detail="Payment configuration error. Please contact support.",
-            )
+            ) from e
         except stripe.StripeError as e:
             print(f"Stripe error: {e}")
             raise HTTPException(
                 status_code=500,
                 detail="Payment system temporarily unavailable. Please try again later.",
-            )
+            ) from e
         except HTTPException:
             raise
         except Exception as e:
@@ -193,7 +195,7 @@ class StripeClient:
             raise HTTPException(
                 status_code=500,
                 detail="Unable to process payment request. Please try again later.",
-            )
+            ) from e
 
     async def handle_webhook_event(
         self, client: Client, payload: bytes, sig_header: str
@@ -218,10 +220,10 @@ class StripeClient:
                 event = stripe.Webhook.construct_event(
                     payload, sig_header, self.config.webhook_secret
                 )
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid payload")
-            except stripe.SignatureVerificationError:
-                raise HTTPException(status_code=400, detail="Invalid signature")
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail="Invalid payload") from e
+            except stripe.SignatureVerificationError as e:
+                raise HTTPException(status_code=400, detail="Invalid signature") from e
 
             # Handle the event
             if event["type"] == "checkout.session.completed":
@@ -238,7 +240,7 @@ class StripeClient:
             raise
         except Exception as e:
             print(f"Error handling webhook event: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
+            raise HTTPException(status_code=500, detail="Internal server error") from e
 
     async def _handle_checkout_completed(
         self, client: Client, session: Dict[str, Any]
@@ -277,6 +279,7 @@ class StripeClient:
 
         except Exception as e:
             print(f"Failed to update Stripe customer ID: {e}")
+            raise HTTPException(status_code=500, detail="Failed to update Stripe customer ID") from e
 
     async def _update_subscription_type(
         self, client: Client, user_id: str, subscription_type: str
@@ -298,6 +301,7 @@ class StripeClient:
 
         except Exception as e:
             print(f"Failed to update subscription type: {e}")
+            raise HTTPException(status_code=500, detail="Failed to update subscription type") from e
 
     async def _handle_subscription_updated(
         self, client: Client, subscription: Dict[str, Any]
@@ -356,6 +360,7 @@ class StripeClient:
 
         except Exception as e:
             print(f"Error handling subscription update: {e}")
+            raise HTTPException(status_code=500, detail="Failed to handle subscription update") from e
 
     async def cancel_subscription(self, client: Client, user_id: str) -> None:
         """
@@ -430,10 +435,10 @@ class StripeClient:
             raise
         except stripe.StripeError as e:
             print(f"Stripe error canceling subscription: {e}")
-            raise HTTPException(status_code=500, detail="Failed to cancel subscription")
+            raise HTTPException(status_code=500, detail="Failed to cancel subscription") from e
         except Exception as e:
             print(f"Error canceling subscription: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
+            raise HTTPException(status_code=500, detail="Internal server error") from e
 
     async def get_subscription_info(
         self, client: Client, user_id: str
@@ -477,4 +482,4 @@ class StripeClient:
             raise
         except Exception as e:
             print(f"Error getting subscription info: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
+            raise HTTPException(status_code=500, detail="Internal server error") from e
