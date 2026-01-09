@@ -1,9 +1,13 @@
+"""
+MFA Service - Handle MFA operations with Supabase
+"""
+
 import os
-from dotenv import load_dotenv
+import traceback
 from typing import Optional
+from dotenv import load_dotenv
 from fastapi import HTTPException
 import httpx
-import traceback
 from backend.schemas.auth import (
     MessageResponse,
     MFAEnrollResponse,
@@ -109,7 +113,7 @@ class MFAService:
         except Exception as e:
             print(f"MFA enroll error: {e}")
             traceback.print_exc()
-            raise HTTPException(status_code=400, detail=f"Failed to enroll in MFA")
+            raise HTTPException(status_code=400, detail="Failed to enroll in MFA") from e
 
     async def mfa_verify_enrollment(
         self, access_token: str, factor_id: str, code: str
@@ -189,7 +193,7 @@ class MFAService:
         except Exception as e:
             print(f"MFA verify enrollment error: {e}")
             traceback.print_exc()
-            raise HTTPException(status_code=400, detail=f"Invalid verification code")
+            raise HTTPException(status_code=400, detail="Invalid verification code") from e
 
     async def mfa_list_factors(self, user_id: str | None = None) -> MFAListResponse:
         """
@@ -257,8 +261,8 @@ class MFAService:
             print(f"MFA list factors error: {e}")
             traceback.print_exc()
             raise HTTPException(
-                status_code=400, detail=f"Failed to list MFA factors: {e}"
-            )
+                status_code=400, detail="Failed to list MFA factors"
+            ) from e
 
     async def mfa_unenroll(
         self, user_id: str | None = None, factor_id: str | None = None
@@ -310,5 +314,5 @@ class MFAService:
         except Exception as e:
             print(f"MFA unenroll error: {e}")
             raise HTTPException(
-                status_code=400, detail=f"Failed to remove MFA factor: {e}"
-            )
+                status_code=400, detail="Failed to remove MFA factor"
+            ) from e

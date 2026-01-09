@@ -174,7 +174,7 @@ class PortfolioService:
             raise
         except Exception as e:
             print(f"Create portfolio error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to create portfolio")
+            raise HTTPException(status_code=500, detail="Failed to create portfolio") from e
 
     async def list_portfolios(self, client: Client, user_id: str) -> List[Portfolio]:
         """
@@ -216,7 +216,7 @@ class PortfolioService:
             raise
         except Exception as e:
             print(f"List portfolios error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to list portfolios")
+            raise HTTPException(status_code=500, detail="Failed to list portfolios") from e
 
     async def get_portfolio(
         self, client: Client, portfolio_id: str, user_id: str
@@ -259,7 +259,7 @@ class PortfolioService:
             raise
         except Exception as e:
             print(f"Get portfolio error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to get portfolio")
+            raise HTTPException(status_code=500, detail="Failed to get portfolio") from e
 
     async def update_portfolio(
         self,
@@ -371,7 +371,7 @@ class PortfolioService:
             raise
         except Exception as e:
             print(f"Update portfolio error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to update portfolio")
+            raise HTTPException(status_code=500, detail="Failed to update portfolio") from e
 
     async def delete_portfolio(
         self, client: Client, portfolio_id: str, user_id: str
@@ -411,7 +411,7 @@ class PortfolioService:
             ).eq("user_id", user_id).execute()
 
             # Delete portfolio
-            result = (
+            (
                 client.table("portfolios")
                 .delete()
                 .eq("id", portfolio_id)
@@ -427,7 +427,7 @@ class PortfolioService:
             raise
         except Exception as e:
             print(f"Delete portfolio error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to delete portfolio")
+            raise HTTPException(status_code=500, detail="Failed to delete portfolio") from e
 
     # ============================================
     # PUBLISHING OPERATIONS
@@ -598,7 +598,7 @@ class PortfolioService:
             raise HTTPException(
                 status_code=500,
                 detail="An unexpected error occurred while publishing the portfolio",
-            )
+            ) from e
 
     async def unpublish_portfolio(
         self, client: Client, username: str, portfolio_slug: str, user_id: str
@@ -657,8 +657,8 @@ class PortfolioService:
             raise
         except Exception as e:
             raise HTTPException(
-                status_code=500, detail=f"Failed to unpublish portfolio: {e}"
-            )
+                status_code=500, detail="Failed to unpublish portfolio"
+            ) from e
 
     # ============================================
     # PUBLIC PORTFOLIO VIEWING
@@ -728,7 +728,7 @@ class PortfolioService:
 
                     update_query.execute()
                     current_view_count += 1
-                except Exception as e:
+                except Exception as e: # pylint: disable=broad-exception-caught
                     print(f"Failed to increment view count: {e}")
 
             # Return portfolio data
@@ -750,7 +750,7 @@ class PortfolioService:
             raise HTTPException(
                 status_code=500,
                 detail="An unexpected error occurred while fetching the portfolio",
-            )
+            ) from e
 
     async def get_published_portfolio_stats(
         self, client: Client, user_id: str
@@ -791,7 +791,7 @@ class PortfolioService:
             raise HTTPException(
                 status_code=500,
                 detail="An unexpected error occurred while fetching portfolio stats",
-            )
+            ) from e
 
     async def list_published_portfolios(
         self, client: Client, limit: int = 50, offset: int = 0
@@ -864,4 +864,4 @@ class PortfolioService:
             raise HTTPException(
                 status_code=500,
                 detail="An unexpected error occurred while listing the portfolios",
-            )
+            ) from e
