@@ -164,6 +164,7 @@ class TestProjectService:
         mock_response = Mock()
         mock_response.data = {
             "id": "project_123",
+            "user_id": "user_123",  # Required for access check
             "company": "Company 1",
             "project_name": "Project 1",
             "role": "Developer",
@@ -180,17 +181,21 @@ class TestProjectService:
         mock_query.single.return_value = mock_query
         mock_query.execute.return_value = mock_response
 
-        # Mock evidence list
+        # Mock evidence list - data must be iterable (list)
+        # Code does: .select("*").eq("project_id", project_id).order("display_order").execute()
+        # No .single() in the chain
+        mock_evidence_result = Mock()
+        mock_evidence_result.data = []  # Empty list, not None or Mock
         mock_evidence_query = Mock()
         mock_evidence_query.eq.return_value = mock_evidence_query
-        mock_evidence_query.single.return_value = mock_evidence_query
-        mock_evidence_query.execute.return_value = Mock(data=None)
+        mock_evidence_query.order.return_value = mock_evidence_query  # .order(), not .single()
+        mock_evidence_query.execute.return_value = mock_evidence_result
 
         def table_side_effect(table_name):
             mock_table = Mock()
             if table_name == "impact_projects":
                 mock_table.select.return_value = mock_query
-            else:
+            elif table_name == "project_evidence":
                 mock_table.select.return_value = mock_evidence_query
             return mock_table
 
@@ -420,8 +425,8 @@ class TestProjectService:
             lambda name: mock_table if name == "impact_projects" else Mock(insert=Mock(return_value=mock_metrics_insert))
         )  # noqa: E501
 
-        # Execute with legacy metric
-        metric = ProjectMetric(primary="50%", label="Performance improvement", detail="Reduced load time")
+        # Execute with legacy metric - use dict format, not ProjectMetric object
+        metric = {"primary": "50%", "label": "Performance improvement", "detail": "Reduced load time"}
 
         project_data = {
             "company": "Company 1",
@@ -467,6 +472,7 @@ class TestProjectService:
         mock_get = Mock()
         mock_get.data = {
             "id": "project_123",
+            "user_id": "user_123",  # Required for access check
             "company": "Updated Company",
             "project_name": "Updated Project",
             "role": "Developer",
@@ -483,11 +489,15 @@ class TestProjectService:
         mock_get_query.single.return_value = mock_get_query
         mock_get_query.execute.return_value = mock_get
 
-        # Mock evidence query
+        # Mock evidence query - data must be iterable (list)
+        # Code does: .select("*").eq("project_id", project_id).order("display_order").execute()
+        # No .single() in the chain
+        mock_evidence_result = Mock()
+        mock_evidence_result.data = []  # Empty list, not None or Mock
         mock_evidence_query = Mock()
         mock_evidence_query.eq.return_value = mock_evidence_query
-        mock_evidence_query.single.return_value = mock_evidence_query
-        mock_evidence_query.execute.return_value = Mock(data=None)
+        mock_evidence_query.order.return_value = mock_evidence_query  # .order(), not .single()
+        mock_evidence_query.execute.return_value = mock_evidence_result
 
         def table_side_effect(table_name):
             mock_table = Mock()
@@ -605,16 +615,32 @@ class TestProjectService:
         mock_storage = Mock()
         mock_storage.from_.return_value = mock_storage_bucket
 
+        # Track calls to return correct query
+        call_count = {"impact_projects": 0, "profiles": 0, "project_evidence": 0}
+
         def table_side_effect(table_name):
             mock_table = Mock()
             if table_name == "impact_projects":
-                mock_table.select.return_value = mock_project_query
+                call_count["impact_projects"] += 1
+                if call_count["impact_projects"] == 1:
+                    # First call: project ownership check
+                    mock_table.select.return_value = mock_project_query
+                else:
+                    # Second call: get user projects for size calculation
+                    mock_table.select.return_value = mock_projects_query
             elif table_name == "profiles":
                 mock_table.select.return_value = mock_profile_query
             elif table_name == "project_evidence":
-                if hasattr(mock_table, "select"):
+                call_count["project_evidence"] += 1
+                if call_count["project_evidence"] == 1:
+                    # First call: get evidence sizes
                     mock_table.select.return_value = mock_evidence_query
-                mock_table.insert.return_value = mock_evidence_insert_query
+                elif call_count["project_evidence"] == 2:
+                    # Second call: check existing evidence
+                    mock_table.select.return_value = mock_existing_query
+                else:
+                    # Third call: insert evidence
+                    mock_table.insert.return_value = mock_evidence_insert_query
             return mock_table
 
         mock_supabase_client.table.side_effect = table_side_effect
@@ -668,10 +694,19 @@ class TestProjectService:
         mock_evidence_query.in_.return_value = mock_evidence_query
         mock_evidence_query.execute.return_value = mock_evidence_size
 
+        # Track calls to return correct query
+        call_count = {"impact_projects": 0}
+
         def table_side_effect(table_name):
             mock_table = Mock()
             if table_name == "impact_projects":
-                mock_table.select.return_value = mock_project_query
+                call_count["impact_projects"] += 1
+                if call_count["impact_projects"] == 1:
+                    # First call: project ownership check
+                    mock_table.select.return_value = mock_project_query
+                else:
+                    # Second call: get user projects for size calculation
+                    mock_table.select.return_value = mock_projects_query
             elif table_name == "profiles":
                 mock_table.select.return_value = mock_profile_query
             elif table_name == "project_evidence":

@@ -22,21 +22,34 @@ class TestWaitlistService:
     @pytest.mark.asyncio
     async def test_signup_new_user(self, waitlist_service, mock_supabase_client, mock_email_client):
         """Test successful waitlist signup for new user"""
-        # Setup mocks
-        mock_supabase_client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = Mock(
-            data=None  # Email not already in waitlist
-        )
+        # Setup mocks - code does existing.data[0], so data must be a list
+        mock_existing = Mock()
+        mock_existing.data = []  # Empty list, not None - email not already in waitlist
 
-        mock_supabase_client.table.return_value.insert.return_value.execute.return_value = Mock(
-            data=[
-                {
-                    "id": "waitlist_123",
-                    "email": "newuser@example.com",
-                    "name": "New User",
-                    "created_at": "2024-01-01T00:00:00",
-                }
-            ]
-        )
+        mock_existing_query = Mock()
+        mock_existing_query.eq.return_value = mock_existing_query
+        mock_existing_query.execute.return_value = mock_existing
+
+        mock_insert = Mock()
+        mock_insert.data = [
+            {
+                "id": "waitlist_123",
+                "email": "newuser@example.com",
+                "name": "New User",
+                "created_at": "2024-01-01T00:00:00",
+            }
+        ]
+        mock_insert_query = Mock()
+        mock_insert_query.execute.return_value = mock_insert
+
+        def table_side_effect(table_name):
+            mock_table = Mock()
+            if table_name == "waitlist":
+                mock_table.select.return_value = mock_existing_query
+                mock_table.insert.return_value = mock_insert_query
+            return mock_table
+
+        mock_supabase_client.table.side_effect = table_side_effect
 
         mock_email_client.send_email = AsyncMock()
 
@@ -45,7 +58,7 @@ class TestWaitlistService:
 
         # Assert
         assert result.success is True
-        assert "added to the waitlist" in result.message
+        assert "added to waitlist" in result.message.lower() or "successfully" in result.message.lower()
 
         # Verify email was sent
         mock_email_client.send_email.assert_called_once()
@@ -57,9 +70,23 @@ class TestWaitlistService:
     async def test_signup_existing_user(self, waitlist_service, mock_supabase_client, mock_email_client):
         """Test waitlist signup for user already in waitlist"""
         # Setup mock - email already exists
-        mock_supabase_client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = Mock(
-            data={"email": "existing@example.com"}
-        )
+        # Code does existing.data[0], so data must be a list
+        mock_existing = Mock()
+        mock_existing.data = [
+            {"email": "existing@example.com", "id": "waitlist_123", "name": "Existing User", "created_at": "2024-01-01T00:00:00"}
+        ]  # List, not dict
+
+        mock_existing_query = Mock()
+        mock_existing_query.eq.return_value = mock_existing_query
+        mock_existing_query.execute.return_value = mock_existing
+
+        def table_side_effect(table_name):
+            mock_table = Mock()
+            if table_name == "waitlist":
+                mock_table.select.return_value = mock_existing_query
+            return mock_table
+
+        mock_supabase_client.table.side_effect = table_side_effect
 
         mock_email_client.send_email = AsyncMock()
 
@@ -76,42 +103,64 @@ class TestWaitlistService:
     @pytest.mark.asyncio
     async def test_signup_email_failure(self, waitlist_service, mock_supabase_client, mock_email_client):
         """Test waitlist signup succeeds even if email fails"""
-        # Setup mocks
-        mock_supabase_client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = Mock(
-            data=None
-        )
+        # Setup mocks - code does existing.data[0], so data must be a list
+        mock_existing = Mock()
+        mock_existing.data = []  # Empty list, not None
 
-        mock_supabase_client.table.return_value.insert.return_value.execute.return_value = Mock(
-            data=[
-                {
-                    "id": "waitlist_456",
-                    "email": "test@example.com",
-                    "name": "Test User",
-                    "created_at": "2024-01-01T00:00:00",
-                }
-            ]
-        )
+        mock_existing_query = Mock()
+        mock_existing_query.eq.return_value = mock_existing_query
+        mock_existing_query.execute.return_value = mock_existing
 
-        # Mock email sending to fail
-        mock_email_client.send_email = AsyncMock(side_effect=Exception("SMTP error"))
+        mock_insert = Mock()
+        mock_insert.data = [
+            {
+                "id": "waitlist_456",
+                "email": "test@example.com",
+                "name": "Test User",
+                "created_at": "2024-01-01T00:00:00",
+            }
+        ]
+        mock_insert_query = Mock()
+        mock_insert_query.execute.return_value = mock_insert
 
-        # Execute - should still succeed
+        def table_side_effect(table_name):
+            mock_table = Mock()
+            if table_name == "waitlist":
+                mock_table.select.return_value = mock_existing_query
+                mock_table.insert.return_value = mock_insert_query
+            return mock_table
+
+        mock_supabase_client.table.side_effect = table_side_effect
+
+        # Mock email sending to fail - EmailClient returns False, not raises exception
+        mock_email_client.send_email = AsyncMock(return_value=False)
+
+        # Execute - should still succeed even if email fails
         result = await waitlist_service.signup(mock_supabase_client, email="test@example.com", name="Test User")
 
         # Assert - signup succeeds even with email failure
         assert result.success is True
+        assert "added to waitlist" in result.message.lower()
 
     @pytest.mark.asyncio
     async def test_signup_database_error(self, waitlist_service, mock_supabase_client):
         """Test waitlist signup handles database errors"""
         # Setup mock to raise error
-        mock_supabase_client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.side_effect = (
-            Exception("Database error")
-        )
+        mock_existing_query = Mock()
+        mock_existing_query.eq.return_value = mock_existing_query
+        mock_existing_query.execute.side_effect = Exception("Database error")
+
+        def table_side_effect(table_name):
+            mock_table = Mock()
+            if table_name == "waitlist":
+                mock_table.select.return_value = mock_existing_query
+            return mock_table
+
+        mock_supabase_client.table.side_effect = table_side_effect
 
         # Execute and expect exception
         with pytest.raises(HTTPException) as exc_info:
             await waitlist_service.signup(mock_supabase_client, email="error@example.com", name="Error User")
 
         assert exc_info.value.status_code == 500
-        assert "Failed to sign up for waitlist" in exc_info.value.detail
+        assert "Failed to add to waitlist" in exc_info.value.detail

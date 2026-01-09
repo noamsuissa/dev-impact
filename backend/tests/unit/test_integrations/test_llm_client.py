@@ -3,7 +3,7 @@ Unit tests for LLMClient integration
 Tests LLM completion generation with mocked LiteLLM calls
 """
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
@@ -85,7 +85,12 @@ class TestLLMClient:
     async def test_generate_completion_rate_limit(self, mock_acompletion, llm_config):
         """Test handling rate limit errors"""
         # Setup mock to raise RateLimitError
-        mock_acompletion.side_effect = RateLimitError(message="Rate limit exceeded", response=Mock(status_code=429))
+        # LiteLLM exceptions require llm_provider and model parameters
+        mock_acompletion.side_effect = RateLimitError(
+            message="Rate limit exceeded",
+            llm_provider="openrouter",
+            model="test-model",
+        )
 
         client = LLMClient(llm_config)
 
@@ -101,7 +106,12 @@ class TestLLMClient:
     async def test_generate_completion_authentication_error(self, mock_acompletion, llm_config):
         """Test handling authentication errors"""
         # Setup mock to raise AuthenticationError
-        mock_acompletion.side_effect = AuthenticationError(message="Invalid API key", response=Mock(status_code=401))
+        # LiteLLM exceptions require llm_provider and model parameters
+        mock_acompletion.side_effect = AuthenticationError(
+            message="Invalid API key",
+            llm_provider="openrouter",
+            model="test-model",
+        )
 
         client = LLMClient(llm_config)
 
@@ -117,7 +127,13 @@ class TestLLMClient:
     async def test_generate_completion_api_error(self, mock_acompletion, llm_config):
         """Test handling API errors"""
         # Setup mock to raise APIError
-        mock_acompletion.side_effect = APIError(message="API error", response=Mock(status_code=502))
+        # APIError requires status_code, llm_provider, and model parameters
+        mock_acompletion.side_effect = APIError(
+            message="API error",
+            status_code=502,
+            llm_provider="openrouter",
+            model="test-model",
+        )
 
         client = LLMClient(llm_config)
 

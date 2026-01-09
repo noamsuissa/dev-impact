@@ -5,6 +5,7 @@ Tests the Stripe SDK wrapper with mocked Stripe calls
 from unittest.mock import Mock, patch
 
 import pytest
+from fastapi import HTTPException
 
 from backend.integrations.stripe_client import StripeClient
 
@@ -74,13 +75,18 @@ class TestStripeClient:
         assert call_kwargs["line_items"][0]["price"] == stripe_config.price_id_yearly
 
     @pytest.mark.asyncio
+    @patch("backend.integrations.stripe_client.stripe.Subscription.list")
     @patch("backend.integrations.stripe_client.stripe.Subscription.modify")
-    async def test_cancel_subscription(self, mock_stripe_modify, stripe_config, mock_supabase_client):
+    async def test_cancel_subscription(self, mock_stripe_modify, mock_stripe_list, stripe_config, mock_supabase_client):
         """Test canceling subscription at period end"""
         # Setup mocks
         mock_supabase_client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = Mock(
             data={"stripe_subscription_id": "sub_test_123"}
         )
+
+        # Mock stripe.Subscription.list to return a subscription
+        mock_subscription = Mock(id="sub_test_123", status="active")
+        mock_stripe_list.return_value = Mock(data=[mock_subscription])
 
         client = StripeClient(stripe_config)
 
@@ -91,38 +97,38 @@ class TestStripeClient:
         mock_stripe_modify.assert_called_once_with("sub_test_123", cancel_at_period_end=True)
 
     @pytest.mark.asyncio
-    async def test_cancel_subscription_no_subscription(self, stripe_config, mock_supabase_client):
+    @patch("backend.integrations.stripe_client.stripe.Subscription.list")
+    async def test_cancel_subscription_no_subscription(self, mock_stripe_list, stripe_config, mock_supabase_client):
         """Test canceling when user has no subscription"""
-        # Setup mock - no subscription found
-        mock_supabase_client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = Mock(
-            data=None
+        # Setup mock - no subscription found in database
+        mock_supabase_client.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = Mock(
+            data={"stripe_customer_id": "cus_test_123"}
         )
+
+        # Mock stripe.Subscription.list to return empty list (no active subscriptions)
+        mock_stripe_list.return_value = Mock(data=[])
 
         client = StripeClient(stripe_config)
 
-        # Execute - should not raise error
-        await client.cancel_subscription(client=mock_supabase_client, user_id="user_no_sub")
+        # Execute - should raise HTTPException when no active subscription found
+        with pytest.raises(HTTPException) as exc_info:
+            await client.cancel_subscription(client=mock_supabase_client, user_id="user_no_sub")
 
-        # No exception means success
+        assert exc_info.value.status_code == 400
+        assert "No active subscription found" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    @patch("backend.integrations.stripe_client.stripe.Subscription.retrieve")
-    async def test_get_subscription_info(self, mock_stripe_retrieve, stripe_config, mock_supabase_client):
+    async def test_get_subscription_info(self, stripe_config, mock_supabase_client):
         """Test retrieving subscription info"""
-        # Setup mocks
-        mock_supabase_client.table.return_value.select.return_value.eq.return_value.maybe_single.return_value.execute.return_value = Mock(
+        # Setup mocks - get_subscription_info reads from profiles table
+        mock_supabase_client.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = Mock(
             data={
-                "stripe_subscription_id": "sub_test_123",
+                "subscription_type": "pro",
+                "subscription_status": "active",
+                "cancel_at_period_end": False,
+                "current_period_end": "2024-01-01T00:00:00",
                 "stripe_customer_id": "cus_test_123",
             }
-        )
-
-        mock_stripe_retrieve.return_value = Mock(
-            id="sub_test_123",
-            status="active",
-            current_period_end=1704067200,
-            cancel_at_period_end=False,
-            items=Mock(data=[Mock(price=Mock(id="price_monthly", recurring=Mock(interval="month")))]),
         )
 
         client = StripeClient(stripe_config)
@@ -130,8 +136,8 @@ class TestStripeClient:
         # Execute
         result = await client.get_subscription_info(client=mock_supabase_client, user_id="user_123")
 
-        # Assert
-        assert result["subscription_id"] == "sub_test_123"
-        assert result["status"] == "active"
-        assert result["billing_period"] == "monthly"
+        # Assert - matches actual return structure
+        assert result["subscription_type"] == "pro"
+        assert result["subscription_status"] == "active"
         assert result["cancel_at_period_end"] is False
+        assert result["has_stripe_customer"] is True

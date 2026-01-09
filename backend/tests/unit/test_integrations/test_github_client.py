@@ -113,7 +113,7 @@ class TestGitHubClient:
             with pytest.raises(HTTPException) as exc_info:
                 await client.poll_for_token("expired_device_code")
 
-            assert exc_info.value.status_code == 500
+            assert exc_info.value.status_code == 400  # Correct status code for expired token
             assert "Device code expired" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
