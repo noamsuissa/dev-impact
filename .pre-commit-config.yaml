@@ -45,10 +45,10 @@ repos:
   # Note: Pylint is intentionally excluded - it's too slow for pre-commit hooks.
   # Run pylint manually or in CI: pylint backend/ --rcfile=backend/.pylintrc
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.15
+    rev: v0.6.9
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-        files: ^backend/
+        files: ^backend/.*\.py$
       - id: ruff-format
-        files: ^backend/
+        files: ^backend/.*\.py$
