@@ -6,7 +6,7 @@
 -- Recreate user_badges_with_details view with security_invoker
 CREATE OR REPLACE VIEW user_badges_with_details
 WITH (security_invoker=true) AS
-SELECT 
+SELECT
     ub.*,
     bd.badge_key,
     bd.name,
@@ -21,7 +21,7 @@ WHERE bd.is_active = true;
 -- Recreate user_badge_stats view with security_invoker
 CREATE OR REPLACE VIEW user_badge_stats
 WITH (security_invoker=true) AS
-SELECT 
+SELECT
     ub.user_id,
     COUNT(*) as total_badges,
     COUNT(*) FILTER (WHERE ub.tier = 'bronze') as bronze_count,
@@ -41,4 +41,3 @@ SELECT
     ) as badges_by_category
 FROM user_badges ub
 GROUP BY ub.user_id;
-

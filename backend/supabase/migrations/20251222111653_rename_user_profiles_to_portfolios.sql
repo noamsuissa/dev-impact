@@ -60,8 +60,8 @@ CREATE POLICY "Users can publish their own portfolios"
     ON published_profiles FOR INSERT
     WITH CHECK (
         EXISTS (
-            SELECT 1 FROM portfolios 
-            WHERE portfolios.id = published_profiles.profile_id 
+            SELECT 1 FROM portfolios
+            WHERE portfolios.id = published_profiles.profile_id
             AND portfolios.user_id = auth.uid()
         )
     );
@@ -70,8 +70,8 @@ CREATE POLICY "Users can update their own published portfolios"
     ON published_profiles FOR UPDATE
     USING (
         EXISTS (
-            SELECT 1 FROM portfolios 
-            WHERE portfolios.id = published_profiles.profile_id 
+            SELECT 1 FROM portfolios
+            WHERE portfolios.id = published_profiles.profile_id
             AND portfolios.user_id = auth.uid()
         )
     );
@@ -80,8 +80,8 @@ CREATE POLICY "Users can delete their own published portfolios"
     ON published_profiles FOR DELETE
     USING (
         EXISTS (
-            SELECT 1 FROM portfolios 
-            WHERE portfolios.id = published_profiles.profile_id 
+            SELECT 1 FROM portfolios
+            WHERE portfolios.id = published_profiles.profile_id
             AND portfolios.user_id = auth.uid()
         )
     );
@@ -112,4 +112,3 @@ COMMENT ON COLUMN impact_projects.profile_id IS 'Links project to a specific por
 
 -- Note: Foreign key constraints in impact_projects and published_profiles remain unchanged
 -- as they reference the table by OID, not by name. The references are automatically updated.
-

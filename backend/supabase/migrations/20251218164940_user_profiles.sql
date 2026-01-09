@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     display_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Constraints
     CONSTRAINT user_profiles_name_not_empty CHECK (length(trim(name)) > 0),
     CONSTRAINT user_profiles_slug_format CHECK (slug ~ '^[a-z0-9-]+$'),
@@ -30,7 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_user_profiles_display_order ON user_profiles(user
 -- 2. UPDATE IMPACT_PROJECTS TABLE
 -- ============================================
 -- Add profile_id column to link projects to profiles
-ALTER TABLE impact_projects 
+ALTER TABLE impact_projects
 ADD COLUMN IF NOT EXISTS profile_id UUID REFERENCES user_profiles(id) ON DELETE SET NULL;
 
 -- Create index for profile_id
@@ -40,44 +40,44 @@ CREATE INDEX IF NOT EXISTS idx_impact_projects_profile_id ON impact_projects(pro
 -- 3. UPDATE PUBLISHED_PROFILES TABLE
 -- ============================================
 -- Add profile_id and profile_slug columns
-ALTER TABLE published_profiles 
+ALTER TABLE published_profiles
 ADD COLUMN IF NOT EXISTS profile_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE;
 
-ALTER TABLE published_profiles 
+ALTER TABLE published_profiles
 ADD COLUMN IF NOT EXISTS profile_slug TEXT;
 
 -- Update unique constraint to allow multiple profiles per user
 -- Drop old unique constraint on username if it exists
-ALTER TABLE published_profiles 
+ALTER TABLE published_profiles
 DROP CONSTRAINT IF EXISTS published_profiles_username_key;
 
 -- Create new unique constraint on (username, profile_slug)
 -- This allows username.dev-impact.io/profile-slug format
 -- First, drop existing constraint if it exists
-DO $$ 
+DO $$
 BEGIN
     IF EXISTS (
-        SELECT 1 FROM pg_constraint 
+        SELECT 1 FROM pg_constraint
         WHERE conname = 'published_profiles_username_profile_slug_unique'
     ) THEN
-        ALTER TABLE published_profiles 
+        ALTER TABLE published_profiles
         DROP CONSTRAINT published_profiles_username_profile_slug_unique;
     END IF;
 END $$;
 
 -- Add unique constraint
-ALTER TABLE published_profiles 
-ADD CONSTRAINT published_profiles_username_profile_slug_unique 
+ALTER TABLE published_profiles
+ADD CONSTRAINT published_profiles_username_profile_slug_unique
 UNIQUE (username, profile_slug);
 
 -- Create index for faster lookups
-CREATE INDEX IF NOT EXISTS idx_published_profiles_username_profile_slug 
+CREATE INDEX IF NOT EXISTS idx_published_profiles_username_profile_slug
 ON published_profiles(username, profile_slug);
 
 -- Keep unique constraint on username for backward compatibility (when profile_slug is NULL)
 -- This is handled by a partial unique index
-CREATE UNIQUE INDEX IF NOT EXISTS idx_published_profiles_username_unique 
-ON published_profiles(username) 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_published_profiles_username_unique
+ON published_profiles(username)
 WHERE profile_slug IS NULL;
 
 -- Create index for profile_id
@@ -134,8 +134,8 @@ CREATE POLICY "Users can publish their own profiles"
     ON published_profiles FOR INSERT
     WITH CHECK (
         EXISTS (
-            SELECT 1 FROM user_profiles 
-            WHERE user_profiles.id = published_profiles.profile_id 
+            SELECT 1 FROM user_profiles
+            WHERE user_profiles.id = published_profiles.profile_id
             AND user_profiles.user_id = auth.uid()
         )
     );
@@ -145,8 +145,8 @@ CREATE POLICY "Users can update their own published profiles"
     ON published_profiles FOR UPDATE
     USING (
         EXISTS (
-            SELECT 1 FROM user_profiles 
-            WHERE user_profiles.id = published_profiles.profile_id 
+            SELECT 1 FROM user_profiles
+            WHERE user_profiles.id = published_profiles.profile_id
             AND user_profiles.user_id = auth.uid()
         )
     );
@@ -156,8 +156,8 @@ CREATE POLICY "Users can delete their own published profiles"
     ON published_profiles FOR DELETE
     USING (
         EXISTS (
-            SELECT 1 FROM user_profiles 
-            WHERE user_profiles.id = published_profiles.profile_id 
+            SELECT 1 FROM user_profiles
+            WHERE user_profiles.id = published_profiles.profile_id
             AND user_profiles.user_id = auth.uid()
         )
     );
@@ -191,4 +191,3 @@ COMMENT ON COLUMN user_profiles.display_order IS 'Order in which profiles are di
 COMMENT ON COLUMN impact_projects.profile_id IS 'Links project to a specific user profile (nullable for backward compatibility)';
 COMMENT ON COLUMN published_profiles.profile_id IS 'References the user_profile that is published';
 COMMENT ON COLUMN published_profiles.profile_slug IS 'URL slug for the profile (e.g., username.dev-impact.io/profile-slug)';
-

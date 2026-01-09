@@ -4,7 +4,7 @@
 -- ============================================
 -- 1. ADD SUBSCRIPTION TYPE TO PROFILES
 -- ============================================
-ALTER TABLE profiles 
+ALTER TABLE profiles
 ADD COLUMN IF NOT EXISTS subscription_type TEXT DEFAULT 'free' CHECK (subscription_type IN ('free', 'pro'));
 
 -- Create index for subscription queries
@@ -24,24 +24,24 @@ BEGIN
     SELECT subscription_type INTO user_subscription
     FROM profiles
     WHERE id = user_uuid;
-    
+
     -- Default to 'free' if not set
     IF user_subscription IS NULL THEN
         user_subscription := 'free';
     END IF;
-    
+
     -- Set max profiles based on subscription
     IF user_subscription = 'pro' THEN
         max_profiles := 1000; -- Unlimited for pro
     ELSE
         max_profiles := 3; -- Free users limited to 3
     END IF;
-    
+
     -- Count existing profiles
     SELECT COUNT(*) INTO profile_count
     FROM user_profiles
     WHERE user_id = user_uuid;
-    
+
     -- Return true if under limit
     RETURN profile_count < max_profiles;
 END;
@@ -84,24 +84,24 @@ BEGIN
     SELECT subscription_type INTO user_subscription
     FROM profiles
     WHERE id = user_uuid;
-    
+
     -- Default to 'free' if not set
     IF user_subscription IS NULL THEN
         user_subscription := 'free';
     END IF;
-    
+
     -- Set max profiles based on subscription
     IF user_subscription = 'pro' THEN
         max_profiles := 1000; -- Unlimited for pro
     ELSE
         max_profiles := 3; -- Free users limited to 3
     END IF;
-    
+
     -- Count existing profiles
     SELECT COUNT(*) INTO profile_count
     FROM user_profiles
     WHERE user_id = user_uuid;
-    
+
     -- Build result JSON
     result := json_build_object(
         'subscription_type', user_subscription,
@@ -109,8 +109,7 @@ BEGIN
         'max_profiles', max_profiles,
         'can_add_profile', profile_count < max_profiles
     );
-    
+
     RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-

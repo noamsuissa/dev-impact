@@ -20,4 +20,3 @@ COMMENT ON COLUMN published_profiles.portfolio_id IS 'References the portfolio t
 
 -- Note: Foreign key constraints remain functional as they reference tables by OID, not by column name
 -- The constraints automatically work with the renamed columns
-
