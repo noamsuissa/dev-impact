@@ -18,4 +18,3 @@ Allow: /*/*/$
 
 # Sitemap location
 Sitemap: https://www.dev-impact.io/sitemap.xml
-

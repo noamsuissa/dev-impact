@@ -3,7 +3,7 @@
  * This function fetches published portfolios and generates a sitemap including:
  * - Static pages (/, /pricing, /about, etc.)
  * - Dynamic user profile pages
- * 
+ *
  * Environment variables needed:
  * - VITE_API_URL or API_URL: Backend API URL
  * - VITE_BASE_DOMAIN: Base domain for portfolio subdomains (default: dev-impact.io)
@@ -16,7 +16,7 @@ function generateSitemapUrl(loc, lastmod = null, changefreq = 'weekly', priority
   const baseUrl = 'https://www.dev-impact.io';
   const fullUrl = loc.startsWith('http') ? loc : `${baseUrl}${loc}`;
   const lastmodStr = lastmod ? `    <lastmod>${lastmod}</lastmod>\n` : '';
-  
+
   return `  <url>
     <loc>${fullUrl}</loc>
 ${lastmodStr}    <changefreq>${changefreq}</changefreq>
@@ -27,7 +27,7 @@ ${lastmodStr}    <changefreq>${changefreq}</changefreq>
 // Get static pages for sitemap
 function getStaticPages() {
   const now = new Date().toISOString().split('T')[0];
-  
+
   return [
     {
       loc: '/',
@@ -109,7 +109,7 @@ async function fetchPublishedPortfolios() {
         }
 
         const data = await response.json();
-        
+
         if (data.portfolios && data.portfolios.length > 0) {
           portfolios.push(...data.portfolios);
           offset += limit;
@@ -151,7 +151,7 @@ function generateSitemap(staticPages, portfolios) {
     // portfolio_slug can be null for default portfolios
     const portfolioSlug = portfolio.portfolio_slug || null;
     const updatedAt = portfolio.updated_at ? new Date(portfolio.updated_at).toISOString().split('T')[0] : null;
-    
+
     // Generate URL (handles both with and without portfolio slug)
     const portfolioUrl = generatePortfolioUrl(username, portfolioSlug);
     urlEntries.push(generateSitemapUrl(
@@ -188,11 +188,10 @@ export default async function handler(req, res) {
     res.status(200).send(sitemap);
   } catch (error) {
     console.error('Error generating sitemap:', error);
-    
+
     // Fallback to static pages only if there's an error
     const staticPages = getStaticPages();
     const fallbackSitemap = generateSitemap(staticPages, []);
     res.status(200).send(fallbackSitemap);
   }
 }
-
