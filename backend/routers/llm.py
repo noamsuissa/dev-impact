@@ -1,5 +1,4 @@
-"""LLM Router - API endpoints for LLM operations
-"""
+"""LLM Router - API endpoints for LLM operations"""
 
 from fastapi import APIRouter, Depends, HTTPException
 

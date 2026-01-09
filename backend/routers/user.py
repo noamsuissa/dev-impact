@@ -1,5 +1,4 @@
-"""User Router - Handle user profile endpoints
-"""
+"""User Router - Handle user profile endpoints"""
 
 from fastapi import APIRouter, Depends
 

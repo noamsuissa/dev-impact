@@ -1,5 +1,4 @@
-"""Waitlist Schemas - Pydantic models for waitlist operations
-"""
+"""Waitlist Schemas - Pydantic models for waitlist operations"""
 
 from datetime import datetime
 

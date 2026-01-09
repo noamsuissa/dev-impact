@@ -1,5 +1,4 @@
-"""Waitlist Router - Handle waitlist endpoints
-"""
+"""Waitlist Router - Handle waitlist endpoints"""
 
 from fastapi import APIRouter
 

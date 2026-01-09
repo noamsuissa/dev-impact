@@ -1,5 +1,4 @@
-"""Project Service - Handle project operations with Supabase
-"""
+"""Project Service - Handle project operations with Supabase"""
 
 import json
 import os

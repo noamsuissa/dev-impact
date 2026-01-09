@@ -1,5 +1,4 @@
-"""Tests for PortfolioService
-"""
+"""Tests for PortfolioService"""
 
 from unittest.mock import MagicMock
 

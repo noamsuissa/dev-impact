@@ -1,5 +1,4 @@
-"""Traceloop middleware for observability of LLM calls through LiteLLM.
-"""
+"""Traceloop middleware for observability of LLM calls through LiteLLM."""
 
 import logging
 import os

@@ -1,5 +1,4 @@
-"""MFA Service - Handle MFA operations with Supabase
-"""
+"""MFA Service - Handle MFA operations with Supabase"""
 
 import os
 import traceback

@@ -1,5 +1,4 @@
-"""Subscription Router - Handle subscription and payment endpoints
-"""
+"""Subscription Router - Handle subscription and payment endpoints"""
 
 from fastapi import APIRouter, Depends
 

@@ -1,5 +1,4 @@
-"""Auth Router - Handle authentication endpoints
-"""
+"""Auth Router - Handle authentication endpoints"""
 
 from fastapi import APIRouter, Depends
 

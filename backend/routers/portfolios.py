@@ -2,7 +2,6 @@
 Merges endpoints from user_profile.py and profile.py
 """
 
-
 from fastapi import APIRouter, Depends
 
 from backend.core.container import (

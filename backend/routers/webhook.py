@@ -1,5 +1,4 @@
-"""Stripe Webhook Router
-"""
+"""Stripe Webhook Router"""
 
 from fastapi import APIRouter, Header, HTTPException, Request
 

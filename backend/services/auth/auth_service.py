@@ -1,5 +1,4 @@
-"""Auth Service - Handle authentication operations with Supabase
-"""
+"""Auth Service - Handle authentication operations with Supabase"""
 
 import os
 import traceback

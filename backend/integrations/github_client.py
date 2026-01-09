@@ -2,7 +2,6 @@
 Handles GitHub OAuth Device Flow and API calls.
 """
 
-
 import httpx
 from fastapi import HTTPException
 
