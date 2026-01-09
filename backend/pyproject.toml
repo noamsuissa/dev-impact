@@ -43,3 +43,19 @@ line-ending = "lf"
 [tool.isort]
 profile = "black"
 line_length = 140
+
+[tool.pytest.ini_options]
+# Pytest configuration
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]
+markers = [
+    "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')",
+]

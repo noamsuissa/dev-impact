@@ -205,3 +205,69 @@ def mfa_service():
     from backend.services.auth.mfa_service import MFAService
 
     return MFAService()
+
+
+# ============================================
+# Test Data Fixtures
+# ============================================
+
+
+@pytest.fixture
+def subscription_info():
+    """Mock SubscriptionInfoResponse for testing"""
+    from datetime import datetime, timedelta
+
+    from backend.schemas.subscription import SubscriptionInfoResponse
+
+    return SubscriptionInfoResponse(
+        subscription_type="pro",
+        subscription_status="active",
+        cancel_at_period_end=False,
+        current_period_end=datetime.now() + timedelta(days=30),
+        portfolio_count=0,
+        max_portfolios=10,
+        can_add_portfolio=True,
+        project_count=0,
+        max_projects=100,
+        can_add_project=True,
+    )
+
+
+@pytest.fixture
+def mock_user_profile():
+    """Mock UserProfile for testing"""
+    from backend.schemas.user import UserProfile
+
+    return UserProfile(
+        id="user_123",
+        username="testuser",
+        full_name="Test User",
+        github_username="testgh",
+        github_avatar_url="https://github.com/avatar.jpg",
+        city="New York",
+        country="USA",
+        is_published=False,
+        created_at="2024-01-01T00:00:00",
+        updated_at="2024-01-01T00:00:00",
+    )
+
+
+@pytest.fixture
+def mock_projects():
+    """Mock list of projects for testing"""
+    from backend.schemas.project import Project, ProjectMetric
+
+    return [
+        Project(
+            id="project_1",
+            company="Test Company",
+            projectName="Test Project",
+            role="Developer",
+            teamSize=5,
+            problem="Test problem",
+            contributions=["Contribution 1", "Contribution 2"],
+            techStack=["Python", "FastAPI"],
+            metrics=[ProjectMetric(primary="50%", label="Performance improvement", detail="Reduced load time")],
+            portfolio_id="portfolio_123",
+        )
+    ]
