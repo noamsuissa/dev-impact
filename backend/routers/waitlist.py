@@ -1,10 +1,10 @@
-"""
-Waitlist Router - Handle waitlist endpoints
+"""Waitlist Router - Handle waitlist endpoints
 """
 
 from fastapi import APIRouter
-from backend.schemas.waitlist import WaitlistSignupRequest, WaitlistResponse
+
 from backend.core.container import ServiceDBClient, WaitlistServiceDep
+from backend.schemas.waitlist import WaitlistResponse, WaitlistSignupRequest
 
 router = APIRouter(
     prefix="/api/waitlist",
@@ -18,12 +18,9 @@ async def signup_waitlist(
     client: ServiceDBClient,
     waitlist_service: WaitlistServiceDep,
 ):
-    """
-    Sign up for the waitlist.
+    """Sign up for the waitlist.
 
     Adds a user's email to the waitlist and sends a confirmation email.
     """
-    result = await waitlist_service.signup(
-        client, email=request.email, name=request.name
-    )
+    result = await waitlist_service.signup(client, email=request.email, name=request.name)
     return result

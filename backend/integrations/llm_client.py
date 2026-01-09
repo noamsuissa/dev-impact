@@ -1,14 +1,14 @@
-"""
-LLM integration client.
+"""LLM integration client.
 Unified interface for LLM providers through LiteLLM.
 """
 
-import os
 import logging
-from typing import Dict, Any, Optional, List
-from litellm import completion, acompletion
-from litellm.exceptions import APIError, RateLimitError, AuthenticationError
+import os
+from typing import Any
+
 from fastapi import HTTPException
+from litellm import acompletion, completion
+from litellm.exceptions import APIError, AuthenticationError, RateLimitError
 
 from backend.core.config import LLMConfig
 
@@ -19,11 +19,12 @@ class LLMClient:
     """Client for interacting with LLMs through LiteLLM."""
 
     def __init__(self, config: LLMConfig):
-        """
-        Initialize LLM client with configuration.
+        """Initialize LLM client with configuration.
 
         Args:
+        ----
             config: LLM configuration object
+
         """
         self.config = config
 
@@ -34,27 +35,26 @@ class LLMClient:
         if self.config.groq_api_key:
             os.environ["GROQ_API_KEY"] = self.config.groq_api_key
 
-    def _get_completion_params(
-        self, provider: str, model: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Get provider-specific completion parameters.
+    def _get_completion_params(self, provider: str, model: str | None = None) -> dict[str, Any]:
+        """Get provider-specific completion parameters.
 
         Args:
+        ----
             provider: The LLM provider ('openrouter' or 'groq')
             model: Optional specific model name, otherwise uses default
 
         Returns:
+        -------
             Dict of parameters for litellm completion call
 
         Raises:
+        ------
             HTTPException: If provider is not supported or API key missing
+
         """
         if provider == "openrouter":
             if not self.config.openrouter_api_key:
-                raise HTTPException(
-                    status_code=500, detail="OpenRouter API key not configured"
-                )
+                raise HTTPException(status_code=500, detail="OpenRouter API key not configured")
 
             model_name = model or self.config.openrouter_model
 
@@ -62,33 +62,29 @@ class LLMClient:
 
         elif provider == "groq":
             if not self.config.groq_api_key:
-                raise HTTPException(
-                    status_code=500, detail="Groq API key not configured"
-                )
+                raise HTTPException(status_code=500, detail="Groq API key not configured")
 
             model_name = model or self.config.groq_model
 
             return {"model": f"groq/{model_name}"}
 
         else:
-            raise HTTPException(
-                status_code=400, detail=f"Unsupported provider: {provider}"
-            )
+            raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
 
     async def generate_completion(
         self,
         provider: str,
-        messages: List[Dict[str, str]],
-        model: Optional[str] = None,
+        messages: list[dict[str, str]],
+        model: str | None = None,
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        user_id: Optional[str] = None,
+        max_tokens: int | None = None,
+        user_id: str | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
-        """
-        Generate a completion using the specified provider through LiteLLM.
+    ) -> dict[str, Any]:
+        """Generate a completion using the specified provider through LiteLLM.
 
         Args:
+        ----
             provider: LLM provider ('openrouter' or 'groq')
             messages: List of message dictionaries with 'role' and 'content'
             model: Optional model name, uses default if not provided
@@ -98,10 +94,13 @@ class LLMClient:
             **kwargs: Additional parameters to pass to the model
 
         Returns:
+        -------
             Completion response dict with 'content', 'usage', 'model', 'finish_reason'
 
         Raises:
+        ------
             HTTPException: For configuration errors, API errors, rate limits, etc.
+
         """
         try:
             params = self._get_completion_params(provider, model)
@@ -136,14 +135,10 @@ class LLMClient:
             raise
         except AuthenticationError as e:
             logger.error("Authentication error for %s: %s", provider, e)
-            raise HTTPException(
-                status_code=401, detail=f"Invalid API key for {provider}"
-            ) from e
+            raise HTTPException(status_code=401, detail=f"Invalid API key for {provider}") from e
         except RateLimitError as e:
             logger.error("Rate limit exceeded for %s: %s", provider, e)
-            raise HTTPException(
-                status_code=429, detail=f"Rate limit exceeded for {provider}"
-            ) from e
+            raise HTTPException(status_code=429, detail=f"Rate limit exceeded for {provider}") from e
         except APIError as e:
             logger.error("API error for %s: %s", provider, e)
             raise HTTPException(status_code=502, detail=f"API error from {provider}") from e
@@ -154,16 +149,16 @@ class LLMClient:
     def generate_completion_sync(
         self,
         provider: str,
-        messages: List[Dict[str, str]],
-        model: Optional[str] = None,
+        messages: list[dict[str, str]],
+        model: str | None = None,
         temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
-        """
-        Synchronous version of generate_completion.
+    ) -> dict[str, Any]:
+        """Synchronous version of generate_completion.
 
         Args:
+        ----
             provider: LLM provider ('openrouter' or 'groq')
             messages: List of message dictionaries with 'role' and 'content'
             model: Optional model name, uses default if not provided
@@ -172,10 +167,13 @@ class LLMClient:
             **kwargs: Additional parameters to pass to the model
 
         Returns:
+        -------
             Completion response dict with 'content', 'usage', 'model', 'finish_reason'
 
         Raises:
+        ------
             HTTPException: For configuration errors, API errors, rate limits, etc.
+
         """
         try:
             params = self._get_completion_params(provider, model)
@@ -208,14 +206,10 @@ class LLMClient:
             raise
         except AuthenticationError as e:
             logger.error("Authentication error for %s: %s", provider, e)
-            raise HTTPException(
-                status_code=401, detail=f"Invalid API key for {provider}"
-            ) from e
+            raise HTTPException(status_code=401, detail=f"Invalid API key for {provider}") from e
         except RateLimitError as e:
             logger.error("Rate limit exceeded for %s: %s", provider, e)
-            raise HTTPException(
-                status_code=429, detail=f"Rate limit exceeded for {provider}"
-            ) from e
+            raise HTTPException(status_code=429, detail=f"Rate limit exceeded for {provider}") from e
         except APIError as e:
             logger.error("API error for %s: %s", provider, e)
             raise HTTPException(status_code=502, detail=f"API error from {provider}") from e
@@ -223,12 +217,13 @@ class LLMClient:
             logger.error("Unexpected error in LLM completion for %s: %s", provider, e)
             raise HTTPException(status_code=500, detail="An unexpected error occurred") from e
 
-    def get_available_models(self) -> Dict[str, List[str]]:
-        """
-        Get available models for each configured provider.
+    def get_available_models(self) -> dict[str, list[str]]:
+        """Get available models for each configured provider.
 
-        Returns:
+        Returns
+        -------
             Dictionary with provider names as keys and lists of available models as values
+
         """
         models = {}
 
@@ -257,12 +252,13 @@ class LLMClient:
 
         return models
 
-    def get_providers_status(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Get status of configured providers.
+    def get_providers_status(self) -> dict[str, dict[str, Any]]:
+        """Get status of configured providers.
 
-        Returns:
+        Returns
+        -------
             Dictionary with provider configuration status
+
         """
         return {
             "openrouter": {

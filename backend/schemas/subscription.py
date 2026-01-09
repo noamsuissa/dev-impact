@@ -2,9 +2,9 @@
 Subscription Schemas - Pydantic models for subscription operations
 """
 
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class CheckoutSessionRequest(BaseModel):
@@ -23,10 +23,12 @@ class CheckoutSessionResponse(BaseModel):
 
 
 class SubscriptionInfoResponse(BaseModel):
+    """Subscription info response schema"""
+
     subscription_type: str
-    subscription_status: Optional[str] = None
+    subscription_status: str | None = None
     cancel_at_period_end: bool = False
-    current_period_end: Optional[datetime] = None
+    current_period_end: datetime | None = None
     portfolio_count: int
     max_portfolios: int
     can_add_portfolio: bool

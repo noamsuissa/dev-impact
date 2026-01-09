@@ -1,15 +1,19 @@
+"""Dev Impact Backend API"""
+
+import logging
+import os
+import re
+import threading
+
+import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-import os
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-import uvicorn
-import re
-import logging
-import threading
+
+from .middleware.rate_limiter import handle_threading_exception, setup_rate_limiter
 from .middleware.traceloop import setup_traceloop
-from .middleware.rate_limiter import setup_rate_limiter, handle_threading_exception
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,16 +30,16 @@ setup_traceloop()
 limiter = setup_rate_limiter()
 
 # Import routers AFTER middleware initialization
-from .routers import (
-    github_auth,
+from .routers import (  # noqa: E402
     auth,
-    user,
-    projects,
-    portfolios,
-    waitlist,
-    subscription,
-    webhook,
+    github_auth,
     llm,
+    portfolios,
+    projects,
+    subscription,
+    user,
+    waitlist,
+    webhook,
 )
 
 # Check if we're in production (disable API docs)
@@ -66,15 +70,11 @@ cors_origins = [o.strip() for o in cors_origins_str.split(",") if o.strip()]
 
 # Validate and log CORS configuration
 if not cors_origins:
-    print(
-        "WARNING: No CORS origins configured! Set CORS_ALLOWED_ORIGINS environment variable."
-    )
+    print("WARNING: No CORS origins configured! Set CORS_ALLOWED_ORIGINS environment variable.")
     # Default to localhost for development
     cors_origins = ["http://localhost:5173"]
 elif "*" in cors_origins:
-    raise RuntimeError(
-        "Wildcard '*' for allowed CORS origins is not permitted. Please specify allowed origins explicitly."
-    )
+    raise RuntimeError(detail="Wildcard '*' for allowed CORS origins is not permitted. Please specify allowed origins explicitly.")
 
 print(f"INFO: CORS allowed origins: {cors_origins}")
 

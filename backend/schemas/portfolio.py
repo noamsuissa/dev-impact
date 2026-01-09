@@ -3,9 +3,8 @@ Portfolio Schemas - For managing portfolios (project organization tabs that can 
 """
 
 from pydantic import BaseModel, Field
-from typing import List, Optional
-from backend.schemas.project import Project
 
+from backend.schemas.project import Project
 
 # ============================================
 # PORTFOLIO CRUD SCHEMAS (from user_profile.py)
@@ -17,7 +16,7 @@ class Portfolio(BaseModel):
 
     id: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     slug: str
     display_order: int
     created_at: str
@@ -28,14 +27,14 @@ class CreatePortfolioRequest(BaseModel):
     """Create portfolio request"""
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class UpdatePortfolioRequest(BaseModel):
     """Update portfolio request"""
 
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
 
 
 # ============================================
@@ -44,16 +43,22 @@ class UpdatePortfolioRequest(BaseModel):
 
 
 class GitHubData(BaseModel):
-    username: Optional[str] = None
-    avatar_url: Optional[str] = Field(None, alias="avatar_url")
+    """GitHub data schema"""
+
+    username: str | None = None
+    avatar_url: str | None = Field(None, alias="avatar_url")
 
     class Config:
-        populate_by_name = True
+        """Config for GitHub data schema"""
+
+        populate_by_name: bool = True
 
 
 class UserData(BaseModel):
+    """User data schema"""
+
     name: str
-    github: Optional[GitHubData] = None
+    github: GitHubData | None = None
 
 
 class PublishPortfolioRequest(BaseModel):
@@ -77,32 +82,34 @@ class PortfolioData(BaseModel):
     """Published portfolio metadata"""
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 class PortfolioResponse(BaseModel):
     """Public portfolio response (for viewing published portfolios)"""
 
     username: str
-    portfolio_slug: Optional[str] = Field(None, alias="portfolio_slug")
+    portfolio_slug: str | None = Field(None, alias="portfolio_slug")
     user: UserData
-    portfolio: Optional[PortfolioData] = Field(None, alias="portfolio")
-    projects: List[Project]
+    portfolio: PortfolioData | None = Field(None, alias="portfolio")
+    projects: list[Project]
     view_count: int
     published_at: str
     updated_at: str
 
     class Config:
-        populate_by_name = True
+        """Config for public portfolio response"""
+
+        populate_by_name: bool = True
 
 
 class ListPortfoliosResponse(BaseModel):
     """Response for listing published portfolios"""
 
-    portfolios: Optional[List[PortfolioResponse]] = None
-    total: Optional[int] = None
-    limit: Optional[int] = None
-    offset: Optional[int] = None
+    portfolios: list[PortfolioResponse] | None = None
+    total: int | None = None
+    limit: int | None = None
+    offset: int | None = None
 
 
 class PortfolioViewStats(BaseModel):
@@ -116,4 +123,4 @@ class PortfolioViewStats(BaseModel):
 class PortfolioStatsResponse(BaseModel):
     """Response containing portfolio view statistics"""
 
-    stats: List[PortfolioViewStats]
+    stats: list[PortfolioViewStats]

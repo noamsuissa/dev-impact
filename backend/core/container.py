@@ -1,37 +1,38 @@
-"""
-Dependency Injection container for FastAPI.
+"""Dependency Injection container for FastAPI.
 Centralizes all dependency providers and configuration.
 """
 
 from typing import Annotated
-from fastapi import Depends
-from supabase import Client
 
+from fastapi import Depends
+
+from backend.core.config import EmailConfig, GitHubConfig, LLMConfig, StripeConfig
 from backend.db import client as db_client
-from backend.core.config import StripeConfig, EmailConfig, GitHubConfig, LLMConfig
-from backend.integrations.stripe_client import StripeClient
 from backend.integrations.email_client import EmailClient
 from backend.integrations.github_client import GitHubClient
 from backend.integrations.llm_client import LLMClient
-from backend.services.user_service import UserService
-from backend.services.subscription_service import SubscriptionService
-from backend.services.waitlist_service import WaitlistService
-from backend.services.portfolio_service import PortfolioService
-from backend.services.project_service import ProjectService
+from backend.integrations.stripe_client import StripeClient
 from backend.services.auth.auth_service import AuthService
 from backend.services.auth.mfa_service import MFAService
+from backend.services.portfolio_service import PortfolioService
+from backend.services.project_service import ProjectService
+from backend.services.subscription_service import SubscriptionService
+from backend.services.user_service import UserService
+from backend.services.waitlist_service import WaitlistService
+from supabase import Client
 
 
 # Database Client Provider
 def get_service_db_client() -> Client:
-    """
-    Provides service-level Supabase client.
+    """Provides service-level Supabase client.
 
     This client uses the service role key and bypasses RLS policies.
     Used for all database operations in the service layer.
 
-    Returns:
+    Returns
+    -------
         Supabase client configured with service role credentials
+
     """
     return db_client.get_service_client()
 
@@ -140,9 +141,7 @@ LLMClientDep = Annotated[LLMClient, Depends(get_llm_client)]
 
 # Business Services
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
-SubscriptionServiceDep = Annotated[
-    SubscriptionService, Depends(get_subscription_service)
-]
+SubscriptionServiceDep = Annotated[SubscriptionService, Depends(get_subscription_service)]
 WaitlistServiceDep = Annotated[WaitlistService, Depends(get_waitlist_service)]
 PortfolioServiceDep = Annotated[PortfolioService, Depends(get_portfolio_service)]
 ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]

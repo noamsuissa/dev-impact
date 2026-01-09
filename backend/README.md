@@ -356,7 +356,7 @@ See `.env.example` for all required variables:
 
 ## Database Migrations
 
-Migrations are SQL files in `supabase/migrations/` directory. 
+Migrations are SQL files in `supabase/migrations/` directory.
 
 Use the Supabase CLI with `supabase db reset` to apply the migrations or copy and paste them in the SQL Editor by increasing order of timestamp.
 

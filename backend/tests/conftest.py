@@ -1,11 +1,16 @@
-"""
-Pytest configuration and fixtures for backend tests
-"""
+"""Pytest configuration and fixtures for backend tests"""
 
 import sys
 from pathlib import Path
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
+
 import pytest
+
+from backend.core.config import EmailConfig, GitHubConfig, LLMConfig, StripeConfig
+from backend.integrations.email_client import EmailClient
+from backend.integrations.github_client import GitHubClient
+from backend.integrations.llm_client import LLMClient
+from backend.integrations.stripe_client import StripeClient
 from supabase import Client
 
 # Add the parent directory to Python path so we can import 'backend'
@@ -13,13 +18,6 @@ backend_dir = Path(__file__).parent.parent
 parent_dir = backend_dir.parent
 if str(parent_dir) not in sys.path:
     sys.path.insert(0, str(parent_dir))
-
-from backend.core.config import StripeConfig, EmailConfig, GitHubConfig, LLMConfig
-from backend.integrations.stripe_client import StripeClient
-from backend.integrations.email_client import EmailClient
-from backend.integrations.github_client import GitHubClient
-from backend.integrations.llm_client import LLMClient
-
 
 # ============================================
 # Configuration Fixtures

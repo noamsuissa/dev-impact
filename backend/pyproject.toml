@@ -9,15 +9,28 @@ select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
     "F",   # pyflakes
-    "I",   # isort
+    "I",   # isort (import sorting)
     "B",   # flake8-bugbear
     "C4",  # flake8-comprehensions
     "UP",  # pyupgrade
+    "EM",  # Exception message rules (EM101, EM102, EM103)
+    "B904", # Use `raise from` to specify exception cause
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public class
+    "D102", # Missing docstring in public method
+    "D103", # Missing docstring in public function
+    "D104", # Missing docstring in public package
+    "D105", # Missing docstring in magic method
+    "D106", # Missing docstring in public nested class
 ]
 ignore = [
-    "E501",  # line too long (handled by formatter)
     "B008",  # do not perform function calls in argument defaults
 ]
+# Note: E501 (line too long) is not ignored - ruff will check and format will fix
+
+[tool.ruff.lint.isort]
+# Configure isort for import sorting
+known-first-party = ["backend"]
 
 [tool.ruff.format]
 # Use double quotes

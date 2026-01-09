@@ -1,35 +1,33 @@
-"""
-User Schemas - Pydantic models for user profile operations
-"""
+"""User Schemas - Pydantic models for user profile operations"""
+
+from datetime import datetime
 
 from pydantic import BaseModel, field_serializer
-from typing import Optional, Union
-from datetime import datetime
 
 
 class GitHubInfo(BaseModel):
     """GitHub information"""
 
-    username: Optional[str] = None
-    avatar_url: Optional[str] = None
+    username: str | None = None
+    avatar_url: str | None = None
 
 
 class UserProfile(BaseModel):
     """User profile schema"""
 
     id: str
-    username: Optional[str] = None
-    full_name: Optional[str] = None
-    github_username: Optional[str] = None
-    github_avatar_url: Optional[str] = None
-    city: Optional[str] = None
-    country: Optional[str] = None
+    username: str | None = None
+    full_name: str | None = None
+    github_username: str | None = None
+    github_avatar_url: str | None = None
+    city: str | None = None
+    country: str | None = None
     is_published: bool = False
-    created_at: Union[str, datetime]
-    updated_at: Union[str, datetime]
+    created_at: str | datetime
+    updated_at: str | datetime
 
     @field_serializer("created_at", "updated_at")
-    def serialize_datetime(self, value: Union[str, datetime]) -> str:
+    def serialize_datetime(self, value: str | datetime) -> str:
         """Convert datetime to ISO format string"""
         if isinstance(value, datetime):
             return value.isoformat()
@@ -39,11 +37,11 @@ class UserProfile(BaseModel):
 class UpdateProfileRequest(BaseModel):
     """Update profile request"""
 
-    full_name: Optional[str] = None
-    github_username: Optional[str] = None
-    github_avatar_url: Optional[str] = None
-    city: Optional[str] = None
-    country: Optional[str] = None
+    full_name: str | None = None
+    github_username: str | None = None
+    github_avatar_url: str | None = None
+    city: str | None = None
+    country: str | None = None
 
 
 class OnboardingRequest(BaseModel):
@@ -51,9 +49,9 @@ class OnboardingRequest(BaseModel):
 
     username: str
     name: str
-    github: Optional[GitHubInfo] = None
-    city: Optional[str] = None
-    country: Optional[str] = None
+    github: GitHubInfo | None = None
+    city: str | None = None
+    country: str | None = None
 
 
 class CheckUsernameResponse(BaseModel):
@@ -61,4 +59,4 @@ class CheckUsernameResponse(BaseModel):
 
     available: bool
     valid: bool
-    message: Optional[str] = None
+    message: str | None = None

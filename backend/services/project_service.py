@@ -1,22 +1,23 @@
-"""
-Project Service - Handle project operations with Supabase
+"""Project Service - Handle project operations with Supabase
 """
 
-import os
 import json
-from typing import List, Dict, Any, Optional, Union
+import os
+import uuid
+from typing import Any
+
 from dotenv import load_dotenv
 from fastapi import HTTPException
+
+from backend.schemas.auth import MessageResponse
 from backend.schemas.project import (
     Project,
+    ProjectEvidence,
     ProjectMetric,
     StandardizedProjectMetric,
-    ProjectEvidence,
 )
-from backend.schemas.auth import MessageResponse
 from backend.schemas.subscription import SubscriptionInfoResponse
 from supabase import Client
-import uuid
 
 # Load environment variables
 load_dotenv()
@@ -25,9 +26,7 @@ load_dotenv()
 class ProjectService:
     """Service for handling project operations."""
 
-    def _is_standardized_metric(
-        self, metric: Union[Dict[str, Any], ProjectMetric, StandardizedProjectMetric]
-    ) -> bool:
+    def _is_standardized_metric(self, metric: dict[str, Any] | ProjectMetric | StandardizedProjectMetric) -> bool:
         """Check if a metric is in standardized format"""
         if isinstance(metric, StandardizedProjectMetric):
             return True
@@ -35,24 +34,16 @@ class ProjectService:
             return False
         if isinstance(metric, dict):
             # Check for standardized fields
-            return (
-                "type" in metric
-                and "primary" in metric
-                and isinstance(metric.get("primary"), dict)
-            )
+            return "type" in metric and "primary" in metric and isinstance(metric.get("primary"), dict)
         return False
 
-    def _serialize_standardized_metric(
-        self, metric: Union[StandardizedProjectMetric, Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def _serialize_standardized_metric(self, metric: StandardizedProjectMetric | dict[str, Any]) -> dict[str, Any]:
         """Convert standardized metric to JSONB-compatible dict"""
         if isinstance(metric, StandardizedProjectMetric):
             return metric.model_dump(exclude_none=True)
         return metric
 
-    def _deserialize_metric(
-        self, db_metric: Dict[str, Any]
-    ) -> Union[ProjectMetric, StandardizedProjectMetric]:
+    def _deserialize_metric(self, db_metric: dict[str, Any]) -> ProjectMetric | StandardizedProjectMetric:
         """Convert database metric to Pydantic model"""
         # Check if it's a standardized metric
         if db_metric.get("metric_data") and db_metric.get("metric_type"):
@@ -78,30 +69,28 @@ class ProjectService:
         self,
         client: Client,
         user_id: str | None = None,
-        portfolio_id: Optional[str] = None,
+        portfolio_id: str | None = None,
         include_evidence: bool = False,
-    ) -> List[Project]:
-        """
-        List all projects for a user, optionally filtered by profile
+    ) -> list[Project]:
+        """List all projects for a user, optionally filtered by profile
 
         Args:
+        ----
             client: Supabase client (injected from router)
             user_id: User's ID
             portfolio_id: Optional profile ID to filter projects
             include_evidence: Whether to include evidence data
 
         Returns:
+        -------
             List of projects with metrics and optional evidence
+
         """
         if not user_id:
             raise HTTPException(status_code=400, detail="User ID is required")
 
         try:
-            query = (
-                client.table("impact_projects")
-                .select("*, metrics:project_metrics(*)")
-                .eq("user_id", user_id)
-            )
+            query = client.table("impact_projects").select("*, metrics:project_metrics(*)").eq("user_id", user_id)
 
             # Filter by portfolio_id if provided
             if portfolio_id:
@@ -114,11 +103,7 @@ class ProjectService:
             if include_evidence and result.data:
                 project_ids = [p["id"] for p in result.data]
                 evidence_result = (
-                    client.table("project_evidence")
-                    .select("*")
-                    .in_("project_id", project_ids)
-                    .order("display_order")
-                    .execute()
+                    client.table("project_evidence").select("*").in_("project_id", project_ids).order("display_order").execute()
                 )
 
                 if evidence_result.data:
@@ -155,9 +140,7 @@ class ProjectService:
                 # Transform to frontend format
                 metrics = []
                 if project.get("metrics"):
-                    metrics = sorted(
-                        project["metrics"], key=lambda m: m.get("display_order", 0)
-                    )
+                    metrics = sorted(project["metrics"], key=lambda m: m.get("display_order", 0))
                     metrics = [self._deserialize_metric(metric) for metric in metrics]
 
                 project_data = Project(
@@ -167,19 +150,11 @@ class ProjectService:
                     role=project["role"],
                     teamSize=project["team_size"],
                     problem=project["problem"],
-                    contributions=(
-                        project["contributions"]
-                        if isinstance(project["contributions"], list)
-                        else [project["contributions"]]
-                    ),
+                    contributions=(project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]]),
                     techStack=project["tech_stack"],
                     metrics=metrics,
-                    portfolio_id=(
-                        project["portfolio_id"] if "portfolio_id" in project else None
-                    ),
-                    evidence=(
-                        evidence_map.get(project["id"]) if include_evidence else None
-                    ),
+                    portfolio_id=(project["portfolio_id"] if "portfolio_id" in project else None),
+                    evidence=(evidence_map.get(project["id"]) if include_evidence else None),
                 )
 
                 projects.append(project_data)
@@ -189,21 +164,21 @@ class ProjectService:
             raise
         except Exception as e:
             print(f"List projects error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to fetch projects")
+            raise HTTPException(status_code=500, detail="Failed to fetch projects") from e
 
-    async def get_project(
-        self, client: Client, project_id: str, user_id: str
-    ) -> Project:
-        """
-        Get a single project
+    async def get_project(self, client: Client, project_id: str, user_id: str) -> Project:
+        """Get a single project
 
         Args:
+        ----
             client: Supabase client (injected from router)
             project_id: Project ID
             user_id: User's ID (for authorization)
 
         Returns:
+        -------
             Project data with metrics
+
         """
         try:
             result = (
@@ -223,15 +198,11 @@ class ProjectService:
             # Transform metrics
             metrics = []
             if project.get("metrics"):
-                metrics = sorted(
-                    project["metrics"], key=lambda m: m.get("display_order", 0)
-                )
+                metrics = sorted(project["metrics"], key=lambda m: m.get("display_order", 0))
                 metrics = [self._deserialize_metric(metric) for metric in metrics]
 
             # Get evidence for this project
-            evidence_list = await self.list_project_evidence(
-                client, project_id, user_id
-            )
+            evidence_list = await self.list_project_evidence(client, project_id, user_id)
 
             project_data = Project(
                 id=project["id"],
@@ -240,16 +211,10 @@ class ProjectService:
                 role=project["role"],
                 teamSize=project["team_size"],
                 problem=project["problem"],
-                contributions=(
-                    project["contributions"]
-                    if isinstance(project["contributions"], list)
-                    else [project["contributions"]]
-                ),
+                contributions=(project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]]),
                 techStack=project["tech_stack"],
                 metrics=metrics,
-                portfolio_id=(
-                    project["portfolio_id"] if "portfolio_id" in project else None
-                ),
+                portfolio_id=(project["portfolio_id"] if "portfolio_id" in project else None),
                 evidence=evidence_list if evidence_list else None,
             )
 
@@ -258,42 +223,40 @@ class ProjectService:
             raise
         except Exception as e:
             print(f"Get project error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to fetch project")
+            raise HTTPException(status_code=500, detail="Failed to fetch project") from e
 
     async def create_project(
         self,
         client: Client,
         subscription_info: SubscriptionInfoResponse,
         user_id: str,
-        project_data: Dict[str, Any],
+        project_data: dict[str, Any],
     ) -> Project:
-        """
-        Create a new project
+        """Create a new project
 
         Args:
+        ----
             client: Supabase client (injected from router)
             subscription_info: Subscription information
             user_id: User's ID
             project_data: Project data (may include portfolio_id)
 
         Returns:
+        -------
             Created project
+
         """
         if not subscription_info.can_add_project:
             raise HTTPException(
                 status_code=403,
-                detail=f"Project limit reached. Free users are limited to {subscription_info.max_projects} projects. Upgrade to Pro for unlimited projects.",
+                detail=f"Project limit reached. Free users are limited to {subscription_info.max_projects} projects. Upgrade to Pro for unlimited projects.",  # noqa: E501
             )
         try:
             # Extract portfolio_id if provided
             portfolio_id = project_data.pop("portfolio_id", None)
 
             # Get current project count for display_order (within profile if specified)
-            count_query = (
-                client.table("impact_projects")
-                .select("id", count="exact")
-                .eq("user_id", user_id)
-            )
+            count_query = client.table("impact_projects").select("id", count="exact").eq("user_id", user_id)
 
             if portfolio_id:
                 count_query = count_query.eq("portfolio_id", portfolio_id)
@@ -322,9 +285,7 @@ class ProjectService:
             if portfolio_id:
                 project_insert["portfolio_id"] = portfolio_id
 
-            project_result = (
-                client.table("impact_projects").insert(project_insert).execute()
-            )
+            project_result = client.table("impact_projects").insert(project_insert).execute()
 
             if not project_result.data:
                 raise HTTPException(status_code=500, detail="Failed to create project")
@@ -376,16 +337,10 @@ class ProjectService:
                 role=project["role"],
                 teamSize=project["team_size"],
                 problem=project["problem"],
-                contributions=(
-                    project["contributions"]
-                    if isinstance(project["contributions"], list)
-                    else [project["contributions"]]
-                ),
+                contributions=(project["contributions"] if isinstance(project["contributions"], list) else [project["contributions"]]),
                 techStack=project["tech_stack"],
                 metrics=metrics,
-                portfolio_id=(
-                    project["portfolio_id"] if "portfolio_id" in project else None
-                ),
+                portfolio_id=(project["portfolio_id"] if "portfolio_id" in project else None),
             )
 
             return project_data_result
@@ -393,29 +348,30 @@ class ProjectService:
             raise
         except Exception as e:
             print(f"Create project error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to create project")
+            raise HTTPException(status_code=500, detail="Failed to create project") from e
 
     async def update_project(
         self,
         client: Client,
         project_id: str,
         user_id: str,
-        project_data: Dict[str, Any],
+        project_data: dict[str, Any],
     ) -> Project:
-        """
-        Update a project
+        """Update a project
 
         Args:
+        ----
             client: Supabase client (injected from router)
             project_id: Project ID
             user_id: User's ID (for authorization)
             project_data: Project data to update
 
         Returns:
+        -------
             Updated project
+
         """
         try:
-
             # Extract metrics if provided
             metrics = project_data.pop("metrics", None)
 
@@ -443,13 +399,7 @@ class ProjectService:
 
             # Update project if there's data to update
             if update_data:
-                project_result = (
-                    client.table("impact_projects")
-                    .update(update_data)
-                    .eq("id", project_id)
-                    .eq("user_id", user_id)
-                    .execute()
-                )
+                project_result = client.table("impact_projects").update(update_data).eq("id", project_id).eq("user_id", user_id).execute()
 
                 if not project_result.data:
                     raise HTTPException(status_code=404, detail="Project not found")
@@ -457,9 +407,7 @@ class ProjectService:
             # Update metrics if provided
             if metrics is not None:
                 # Delete old metrics
-                client.table("project_metrics").delete().eq(
-                    "project_id", project_id
-                ).execute()
+                client.table("project_metrics").delete().eq("project_id", project_id).execute()
 
                 # Insert new metrics (handle both legacy and standardized formats)
                 if metrics:
@@ -503,31 +451,25 @@ class ProjectService:
             raise
         except Exception as e:
             print(f"Update project error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to update project")
+            raise HTTPException(status_code=500, detail="Failed to update project") from e
 
-    async def delete_project(
-        self, client: Client, project_id: str, user_id: str
-    ) -> MessageResponse:
-        """
-        Delete a project
+    async def delete_project(self, client: Client, project_id: str, user_id: str) -> MessageResponse:
+        """Delete a project
 
         Args:
+        ----
             client: Supabase client (injected from router)
             project_id: Project ID
             user_id: User's ID (for authorization)
 
         Returns:
+        -------
             MessageResponse with success status
+
         """
         try:
             # Delete project (metrics will be cascade deleted if FK is set up correctly)
-            result = (
-                client.table("impact_projects")
-                .delete()
-                .eq("id", project_id)
-                .eq("user_id", user_id)
-                .execute()
-            )
+            result = client.table("impact_projects").delete().eq("id", project_id).eq("user_id", user_id).execute()
 
             if not result.data:
                 raise HTTPException(status_code=404, detail="Project not found")
@@ -537,27 +479,24 @@ class ProjectService:
             raise
         except Exception as e:
             print(f"Delete project error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to delete project")
+            raise HTTPException(status_code=500, detail="Failed to delete project") from e
 
     async def get_user_total_evidence_size(self, client: Client, user_id: str) -> int:
-        """
-        Get total size of all evidence for a user across all projects
+        """Get total size of all evidence for a user across all projects
 
         Args:
+        ----
             client: Supabase client (injected from router)
             user_id: User's ID
 
         Returns:
+        -------
             Total size in bytes
+
         """
         try:
             # Get all projects for user
-            projects_result = (
-                client.table("impact_projects")
-                .select("id")
-                .eq("user_id", user_id)
-                .execute()
-            )
+            projects_result = client.table("impact_projects").select("id").eq("user_id", user_id).execute()
 
             if not projects_result.data:
                 return 0
@@ -565,49 +504,33 @@ class ProjectService:
             project_ids = [p["id"] for p in projects_result.data]
 
             # Get sum of file sizes for all evidence
-            evidence_result = (
-                client.table("project_evidence")
-                .select("file_size")
-                .in_("project_id", project_ids)
-                .execute()
-            )
+            evidence_result = client.table("project_evidence").select("file_size").in_("project_id", project_ids).execute()
 
-            total_size = (
-                sum(e.get("file_size", 0) for e in evidence_result.data)
-                if evidence_result.data
-                else 0
-            )
+            total_size = sum(e.get("file_size", 0) for e in evidence_result.data) if evidence_result.data else 0
             return total_size
         except HTTPException:
             raise
         except Exception as e:
             print(f"Get user total evidence size error: {e}")
-            raise HTTPException(
-                status_code=500, detail="Failed to calculate total evidence size"
-            )
+            raise HTTPException(status_code=500, detail="Failed to calculate total evidence size") from e
 
-    async def list_project_evidence(
-        self, client: Client, project_id: str, user_id: Optional[str] = None
-    ) -> List[ProjectEvidence]:
-        """
-        List all evidence for a project
+    async def list_project_evidence(self, client: Client, project_id: str, user_id: str | None = None) -> list[ProjectEvidence]:
+        """List all evidence for a project
 
         Args:
+        ----
             client: Supabase client (injected from router)
             project_id: Project ID
             user_id: User's ID (for authorization) or None for public access check
 
         Returns:
+        -------
             List of evidence items
+
         """
         try:
             # Fetch project details to determine access
-            proj_query = (
-                client.table("impact_projects")
-                .select("user_id, portfolio_id")
-                .eq("id", project_id)
-                .single()
-            )
+            proj_query = client.table("impact_projects").select("user_id, portfolio_id").eq("id", project_id).single()
 
             proj_result = proj_query.execute()
 
@@ -628,11 +551,7 @@ class ProjectService:
             # 2. Access granted if project is published (skip if already granted)
             if not has_access:
                 # Check published_profiles
-                pub_query = (
-                    client.table("published_profiles")
-                    .select("id")
-                    .eq("is_published", True)
-                )
+                pub_query = client.table("published_profiles").select("id").eq("is_published", True)
 
                 if portfolio_id:
                     # Specific profile check
@@ -646,39 +565,31 @@ class ProjectService:
                     has_access = True
 
             if not has_access:
-                raise HTTPException(
-                    status_code=404, detail="Project not found or access denied"
-                )
+                raise HTTPException(status_code=404, detail="Project not found or access denied")
 
             return await self._fetch_evidence_list(client, project_id)
         except HTTPException:
             raise
         except Exception as e:
             print(f"List project evidence error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to fetch evidence")
+            raise HTTPException(status_code=500, detail="Failed to fetch evidence") from e
 
-    async def _fetch_evidence_list(
-        self, client: Client, project_id: str
-    ) -> List[ProjectEvidence]:
-        """
-        Fetch evidence list for a project
+    async def _fetch_evidence_list(self, client: Client, project_id: str) -> list[ProjectEvidence]:
+        """Fetch evidence list for a project
 
         Args:
+        ----
             client: Supabase client (injected from router)
             project_id: Project ID
 
         Returns:
+        -------
             List of evidence items
+
         """
         try:
             # Get evidence
-            evidence_result = (
-                client.table("project_evidence")
-                .select("*")
-                .eq("project_id", project_id)
-                .order("display_order")
-                .execute()
-            )
+            evidence_result = client.table("project_evidence").select("*").eq("project_id", project_id).order("display_order").execute()
 
             evidence_list = []
             if evidence_result.data:
@@ -711,7 +622,7 @@ class ProjectService:
             raise
         except Exception as e:
             print(f"List project evidence error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to fetch evidence")
+            raise HTTPException(status_code=500, detail="Failed to fetch evidence") from e
 
     async def upload_evidence_file(
         self,
@@ -723,10 +634,10 @@ class ProjectService:
         file_size: int,
         file_content: bytes,
     ) -> ProjectEvidence:
-        """
-        Upload evidence file to Supabase storage and create evidence record.
+        """Upload evidence file to Supabase storage and create evidence record.
 
         Args:
+        ----
             client: Supabase client (injected from router)
             project_id: Project ID
             user_id: User's ID (for authorization)
@@ -736,43 +647,26 @@ class ProjectService:
             file_content: Binary content of the file
 
         Returns:
+        -------
             ProjectEvidence with the uploaded file details
+
         """
         try:
             # Validate mime type is image
             if not mime_type.startswith("image/"):
-                raise HTTPException(
-                    status_code=400, detail="Only image files are allowed"
-                )
+                raise HTTPException(status_code=400, detail="Only image files are allowed")
 
             # Verify project ownership
-            project_result = (
-                client.table("impact_projects")
-                .select("id")
-                .eq("id", project_id)
-                .eq("user_id", user_id)
-                .single()
-                .execute()
-            )
+            project_result = client.table("impact_projects").select("id").eq("id", project_id).eq("user_id", user_id).single().execute()
 
             if not project_result.data:
                 raise HTTPException(status_code=404, detail="Project not found")
 
             # Check user's total size limit based on subscription
             # Get user's subscription type
-            profile_result = (
-                client.table("profiles")
-                .select("subscription_type")
-                .eq("id", user_id)
-                .single()
-                .execute()
-            )
+            profile_result = client.table("profiles").select("subscription_type").eq("id", user_id).single().execute()
 
-            subscription_type = (
-                profile_result.data.get("subscription_type", "free")
-                if profile_result.data
-                else "free"
-            )
+            subscription_type = profile_result.data.get("subscription_type", "free") if profile_result.data else "free"
 
             # Set limit based on subscription
             if subscription_type == "pro":
@@ -789,16 +683,12 @@ class ProjectService:
                 plan_name = "Pro" if subscription_type == "pro" else "free"
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Upload would exceed {plan_name} plan storage limit. Current: {used_mb:.2f} MB / {max_mb} MB across all projects",
+                    detail=f"Upload would exceed {plan_name} plan storage limit. Current: {used_mb:.2f} MB / {max_mb} MB across all projects",  # noqa: E501
                 )
 
             # Generate unique file path
             file_extension = file_name.split(".")[-1] if "." in file_name else ""
-            unique_file_name = (
-                f"{uuid.uuid4()}.{file_extension}"
-                if file_extension
-                else str(uuid.uuid4())
-            )
+            unique_file_name = f"{uuid.uuid4()}.{file_extension}" if file_extension else str(uuid.uuid4())
             file_path = f"{user_id}/{project_id}/{unique_file_name}"
 
             # Upload file to Supabase storage
@@ -810,9 +700,7 @@ class ProjectService:
                 )
             except Exception as e:
                 print(f"Storage upload error: {e}")
-                raise HTTPException(
-                    status_code=500, detail="Failed to upload file to storage"
-                )
+                raise HTTPException(status_code=500, detail="Failed to upload file to storage") from e
 
             # Get current max display_order for this project
             existing_evidence = (
@@ -839,14 +727,10 @@ class ProjectService:
                 "display_order": display_order,
             }
 
-            evidence_result = (
-                client.table("project_evidence").insert(evidence_insert).execute()
-            )
+            evidence_result = client.table("project_evidence").insert(evidence_insert).execute()
 
             if not evidence_result.data:
-                raise HTTPException(
-                    status_code=500, detail="Failed to create evidence record"
-                )
+                raise HTTPException(status_code=500, detail="Failed to create evidence record")
 
             evidence = evidence_result.data[0]
 
@@ -855,9 +739,7 @@ class ProjectService:
             bucket_name = "project-evidence"
             image_url = None
             if supabase_url and file_path:
-                image_url = (
-                    f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_path}"
-                )
+                image_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_path}"
 
             return ProjectEvidence(
                 id=evidence["id"],
@@ -874,23 +756,21 @@ class ProjectService:
             raise
         except Exception as e:
             print(f"Upload evidence file error: {e}")
-            raise HTTPException(
-                status_code=500, detail="Failed to upload evidence file"
-            )
+            raise HTTPException(status_code=500, detail="Failed to upload evidence file") from e
 
-    async def delete_evidence(
-        self, client: Client, evidence_id: str, user_id: str
-    ) -> MessageResponse:
-        """
-        Delete evidence record and file from storage
+    async def delete_evidence(self, client: Client, evidence_id: str, user_id: str) -> MessageResponse:
+        """Delete evidence record and file from storage
 
         Args:
+        ----
             client: Supabase client (injected from router)
             evidence_id: Evidence ID
             user_id: User's ID (for authorization)
 
         Returns:
+        -------
             MessageResponse with success status
+
         """
         try:
             # Get evidence with project info to verify ownership
@@ -913,59 +793,42 @@ class ProjectService:
             try:
                 client.storage.from_("project-evidence").remove([file_path])
             except Exception as storage_error:
-                print(
-                    f"Storage delete error (continuing with DB delete): {storage_error}"
-                )
+                print(f"Storage delete error (continuing with DB delete): {storage_error}")
 
             # Delete evidence record
-            delete_result = (
-                client.table("project_evidence")
-                .delete()
-                .eq("id", evidence_id)
-                .execute()
-            )
+            delete_result = client.table("project_evidence").delete().eq("id", evidence_id).execute()
 
             if not delete_result.data:
                 raise HTTPException(status_code=404, detail="Evidence not found")
 
-            return MessageResponse(
-                success=True, message="Evidence deleted successfully"
-            )
+            return MessageResponse(success=True, message="Evidence deleted successfully")
         except HTTPException:
             raise
         except Exception as e:
             print(f"Delete evidence error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to delete evidence")
+            raise HTTPException(status_code=500, detail="Failed to delete evidence") from e
 
     async def get_evidence_stats(self, client: Client, user_id: str) -> dict:
-        """
-        Get evidence storage statistics for a user
+        """Get evidence storage statistics for a user
 
         Args:
+        ----
             client: Supabase client (injected from router)
             user_id: User's ID
 
         Returns:
+        -------
             Dictionary with total_size_bytes, limit_bytes, total_size_mb, limit_mb, percentage_used
+
         """
         try:
             # Get total size across all projects
             total_size_bytes = await self.get_user_total_evidence_size(client, user_id)
 
             # Get user's subscription type
-            profile_result = (
-                client.table("profiles")
-                .select("subscription_type")
-                .eq("id", user_id)
-                .single()
-                .execute()
-            )
+            profile_result = client.table("profiles").select("subscription_type").eq("id", user_id).single().execute()
 
-            subscription_type = (
-                profile_result.data.get("subscription_type", "free")
-                if profile_result.data
-                else "free"
-            )
+            subscription_type = profile_result.data.get("subscription_type", "free") if profile_result.data else "free"
 
             # Set limit based on subscription
             if subscription_type == "pro":
@@ -976,9 +839,7 @@ class ProjectService:
             limit_bytes = limit_mb * 1024 * 1024
 
             # Calculate percentage
-            percentage_used = (
-                (total_size_bytes / limit_bytes * 100) if limit_bytes > 0 else 0
-            )
+            percentage_used = (total_size_bytes / limit_bytes * 100) if limit_bytes > 0 else 0
 
             return {
                 "total_size_bytes": total_size_bytes,
@@ -991,4 +852,4 @@ class ProjectService:
             raise
         except Exception as e:
             print(f"Get evidence stats error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to get evidence stats")
+            raise HTTPException(status_code=500, detail="Failed to get evidence stats") from e

@@ -1,14 +1,12 @@
-"""
-Waitlist Service - Handle waitlist operations
-"""
+"""Waitlist Service - Handle waitlist operations"""
 
-from typing import Optional
-from fastapi import HTTPException
-from supabase import Client
 import logging
 
-from backend.schemas.waitlist import WaitlistEntry, WaitlistResponse
+from fastapi import HTTPException
+
 from backend.integrations.email_client import EmailClient
+from backend.schemas.waitlist import WaitlistEntry, WaitlistResponse
+from supabase import Client
 
 logger = logging.getLogger(__name__)
 
@@ -17,36 +15,32 @@ class WaitlistService:
     """Service for handling waitlist operations."""
 
     def __init__(self, email_client: EmailClient):
-        """
-        Initialize WaitlistService with dependencies.
+        """Initialize WaitlistService with dependencies.
 
         Args:
+        ----
             email_client: Email integration client for sending emails
+
         """
         self.email_client = email_client
 
-    async def signup(
-        self, client: Client, email: str, name: Optional[str] = None
-    ) -> WaitlistResponse:
-        """
-        Add a user to the waitlist and send confirmation email.
+    async def signup(self, client: Client, email: str, name: str | None = None) -> WaitlistResponse:
+        """Add a user to the waitlist and send confirmation email.
 
         Args:
+        ----
             client: Supabase client
             email: User's email address
             name: Optional user's name
 
         Returns:
+        -------
             WaitlistResponse with success status and entry data
+
         """
         try:
             # Check if email already exists
-            existing = (
-                client.table("waitlist")
-                .select("*")
-                .eq("email", email.lower().strip())
-                .execute()
-            )
+            existing = client.table("waitlist").select("*").eq("email", email.lower().strip()).execute()
 
             if existing.data:
                 # Email already exists, return existing entry
@@ -79,9 +73,7 @@ class WaitlistService:
             )
 
             if not email_sent:
-                logger.warning(
-                    f"Failed to send confirmation email to {email}, but user was added to waitlist"
-                )
+                logger.warning(f"Failed to send confirmation email to {email}, but user was added to waitlist")
 
             return WaitlistResponse(
                 success=True,
@@ -93,4 +85,4 @@ class WaitlistService:
             raise
         except Exception as e:
             logger.error(f"Waitlist signup error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to add to waitlist")
+            raise HTTPException(status_code=500, detail="Failed to add to waitlist") from e

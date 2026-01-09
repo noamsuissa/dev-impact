@@ -1,53 +1,46 @@
-"""
-User Service - Handle user profile operations with Supabase
-"""
+"""User Service - Handle user profile operations with Supabase"""
 
 import re
-from typing import Dict, Any
-from fastapi import HTTPException
-from supabase import Client
+from typing import Any
 
-from backend.schemas.user import UserProfile, CheckUsernameResponse
-from backend.schemas.auth import MessageResponse
+from fastapi import HTTPException
+
 from backend.integrations.stripe_client import StripeClient
+from backend.schemas.auth import MessageResponse
+from backend.schemas.user import CheckUsernameResponse, UserProfile
+from supabase import Client
 
 
 class UserService:
     """Service for handling user profile operations."""
 
     def __init__(self, stripe_client: StripeClient):
-        """
-        Initialize UserService with dependencies.
+        """Initialize UserService with dependencies.
 
         Args:
+        ----
             stripe_client: Stripe integration client for subscription operations
+
         """
         self.stripe_client = stripe_client
 
-    async def get_profile(
-        self, client: Client, user_id: str | None = None
-    ) -> UserProfile:
-        """
-        Get user profile by ID
+    async def get_profile(self, client: Client, user_id: str | None = None) -> UserProfile:
+        """Get user profile by ID
 
         Args:
+        ----
             client: Supabase client (injected from router)
             user_id: User's ID
 
         Returns:
+        -------
             UserProfile containing user profile data
-        """
 
+        """
         if not user_id:
             raise HTTPException(status_code=400, detail="User ID is required")
         try:
-            result = (
-                client.table("profiles")
-                .select("*")
-                .eq("id", user_id)
-                .maybe_single()
-                .execute()
-            )
+            result = client.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
 
             if not result.data:
                 raise HTTPException(status_code=404, detail="Profile not found")
@@ -69,43 +62,36 @@ class UserService:
         except Exception as e:
             # Check if it's a "not found" type error from Supabase
             error_str = str(e).lower()
-            if (
-                "not found" in error_str
-                or "no rows" in error_str
-                or "pgrst" in error_str
-            ):
-                raise HTTPException(status_code=404, detail="Profile not found")
+            if "not found" in error_str or "no rows" in error_str or "pgrst" in error_str:
+                raise HTTPException(status_code=404, detail="Profile not found") from e
             print(f"Get profile error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to fetch profile")
+            raise HTTPException(status_code=500, detail="Failed to fetch profile") from e
 
-    async def update_profile(
-        self, client: Client, user_id: str, profile_data: Dict[str, Any]
-    ) -> UserProfile:
-        """
-        Update user profile
+    async def update_profile(self, client: Client, user_id: str, profile_data: dict[str, Any]) -> UserProfile:
+        """Update user profile
 
         Args:
+        ----
             client: Supabase client (injected from router)
             user_id: User's ID
             profile_data: Profile data to update
 
         Returns:
+        -------
             UserProfile containing updated profile data
+
         """
         try:
-
             # Prepare update data
             # Include all values, even None, to allow clearing fields (e.g., disconnecting GitHub)
             # Only exclude keys that weren't provided in the request
-            update_data = {k: v for k, v in profile_data.items()}
+            update_data = dict(profile_data.items())
 
             if not update_data:
                 # If no data to update, just return current profile
                 return await self.get_profile(client, user_id)
 
-            result = (
-                client.table("profiles").update(update_data).eq("id", user_id).execute()
-            )
+            result = client.table("profiles").update(update_data).eq("id", user_id).execute()
 
             if not result.data or len(result.data) == 0:
                 raise HTTPException(status_code=404, detail="Profile not found")
@@ -129,24 +115,23 @@ class UserService:
             raise
         except Exception as e:
             print(f"Update profile error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to update profile")
+            raise HTTPException(status_code=500, detail="Failed to update profile") from e
 
-    async def create_or_update_profile(
-        self, client: Client, user_id: str, profile_data: Dict[str, Any]
-    ) -> UserProfile:
-        """
-        Create or update user profile (for onboarding)
+    async def create_or_update_profile(self, client: Client, user_id: str, profile_data: dict[str, Any]) -> UserProfile:
+        """Create or update user profile (for onboarding)
 
         Args:
+        ----
             client: Supabase client (injected from router)
             user_id: User's ID
             profile_data: Profile data
 
         Returns:
+        -------
             UserProfile containing profile data
+
         """
         try:
-
             # Prepare upsert data
             upsert_data = {"id": user_id, **profile_data}
 
@@ -160,9 +145,7 @@ class UserService:
             result = client.table("profiles").upsert(upsert_data).execute()
 
             if not result.data:
-                raise HTTPException(
-                    status_code=500, detail="Failed to create/update profile"
-                )
+                raise HTTPException(status_code=500, detail="Failed to create/update profile")
 
             return UserProfile(
                 id=result.data["id"],
@@ -180,20 +163,20 @@ class UserService:
             raise
         except Exception as e:
             print(f"Create/update profile error: {e}")
-            raise HTTPException(
-                status_code=500, detail="Failed to create/update profile"
-            )
+            raise HTTPException(status_code=500, detail="Failed to create/update profile") from e
 
     async def delete_account(self, client: Client, user_id: str) -> MessageResponse:
-        """
-        Delete user account (profile and auth user).
+        """Delete user account (profile and auth user).
 
         Args:
+        ----
             client: Supabase client
             user_id: User's ID
 
         Returns:
+        -------
             MessageResponse with success message
+
         """
         try:
             # 1. Try to cancel subscription if exists
@@ -214,7 +197,7 @@ class UserService:
             raise
         except Exception as e:
             print(f"Delete account error: {e}")
-            raise HTTPException(status_code=500, detail="Failed to delete account")
+            raise HTTPException(status_code=500, detail="Failed to delete account") from e
 
     def validate_username(self, username: str) -> bool:
         """Validate username format"""
@@ -224,18 +207,18 @@ class UserService:
         pattern = r"^[a-z0-9-]{3,50}$"
         return bool(re.match(pattern, username))
 
-    async def check_username(
-        self, client: Client, username: str
-    ) -> CheckUsernameResponse:
-        """
-        Check if a username is available for publishing portfolios
+    async def check_username(self, client: Client, username: str) -> CheckUsernameResponse:
+        """Check if a username is available for publishing portfolios
 
         Args:
+        ----
             client: Supabase client (injected from router)
             username: The username to check
 
         Returns:
+        -------
             CheckUsernameResponse with availability status
+
         """
         try:
             if not self.validate_username(username):
@@ -246,20 +229,14 @@ class UserService:
                 )
 
             # Use RPC call to check availability (checks format, reserved names, and existing profiles)
-            result = client.rpc(
-                "is_username_available", {"desired_username": username}
-            ).execute()
+            result = client.rpc("is_username_available", {"desired_username": username}).execute()
 
             available = result.data
 
             return CheckUsernameResponse(
                 available=available,
                 valid=True,
-                message=(
-                    "Username is available"
-                    if available
-                    else "Username is taken or reserved"
-                ),
+                message=("Username is available" if available else "Username is taken or reserved"),
             )
         except HTTPException:
             raise

@@ -1,10 +1,12 @@
-from typing import Optional
+"""Auth Utils - Shared utilities for authentication operations"""
+
 import jwt
-from fastapi import HTTPException, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
-from backend.schemas.auth import AuthResponse, UserResponse, SessionResponse
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
 from backend.core.container import ServiceDBClient
+from backend.schemas.auth import AuthResponse, SessionResponse, UserResponse
 
 load_dotenv()
 
@@ -14,8 +16,7 @@ bearer_scheme = HTTPBearer()
 def get_access_token(
     authorization: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ) -> str:
-    """
-    Dependency to extract and validate Bearer token from Authorization header.
+    """Dependency to extract and validate Bearer token from Authorization header.
 
     Raises HTTPException if token is missing or invalid.
     Returns the access token string.
@@ -23,15 +24,17 @@ def get_access_token(
     return authorization.credentials
 
 
-async def verify_token(client: ServiceDBClient, access_token: str) -> Optional[str]:
-    """
-    Verify access token and return user ID
+async def verify_token(client: ServiceDBClient, access_token: str) -> str | None:
+    """Verify access token and return user ID
 
     Args:
+    ----
         access_token: User's access token
 
     Returns:
+    -------
         User ID if valid, None otherwise
+
     """
     try:
         user = client.auth.get_user(access_token)
@@ -45,14 +48,16 @@ async def verify_token(client: ServiceDBClient, access_token: str) -> Optional[s
 
 
 async def get_session(client: ServiceDBClient, access_token: str) -> AuthResponse:
-    """
-    Get current session
+    """Get current session
 
     Args:
+    ----
         access_token: User's access token
 
     Returns:
+    -------
         AuthResponse containing user and session data
+
     """
     try:
         # Set the authorization header
@@ -65,9 +70,7 @@ async def get_session(client: ServiceDBClient, access_token: str) -> AuthRespons
             raise HTTPException(status_code=401, detail="Invalid or expired token")
 
         return AuthResponse(
-            user=UserResponse(
-                id=user.user.id, email=user.user.email, created_at=user.user.created_at
-            ),
+            user=UserResponse(id=user.user.id, email=user.user.email, created_at=user.user.created_at),
             session=SessionResponse(
                 access_token=access_token,
             ),
@@ -76,26 +79,26 @@ async def get_session(client: ServiceDBClient, access_token: str) -> AuthRespons
         raise
     except Exception as e:
         print(f"Get session error: {e}")
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from e
 
 
 async def refresh_session(client: ServiceDBClient, refresh_token: str) -> AuthResponse:
-    """
-    Refresh user session
+    """Refresh user session
 
     Args:
+    ----
         refresh_token: User's refresh token
 
     Returns:
+    -------
         AuthResponse containing new session data
+
     """
     try:
         response = client.auth.refresh_session(refresh_token)
 
         if response.session is None:
-            raise HTTPException(
-                status_code=401, detail="Invalid or expired refresh token"
-            )
+            raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
         return AuthResponse(
             user=UserResponse(
@@ -113,10 +116,10 @@ async def refresh_session(client: ServiceDBClient, refresh_token: str) -> AuthRe
         raise
     except Exception as e:
         print(f"Refresh session error: {e}")
-        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token") from e
 
 
-def get_user_id_from_token(token: str) -> Optional[str]:
+def get_user_id_from_token(token: str) -> str | None:
     """Extract user ID from JWT token"""
     try:
         # Decode JWT without verification (we trust Supabase tokens)
@@ -129,7 +132,7 @@ def get_user_id_from_token(token: str) -> Optional[str]:
         return None
 
 
-def get_user_id_from_authorization(authorization: Optional[str]) -> str:
+def get_user_id_from_authorization(authorization: str | None) -> str:
     """Extract and validate user ID from authorization header"""
     if not authorization:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -147,7 +150,7 @@ def get_user_id_from_authorization(authorization: Optional[str]) -> str:
     return user_id
 
 
-def get_user_email_from_authorization(authorization: Optional[str]) -> str:
+def get_user_email_from_authorization(authorization: str | None) -> str:
     """Extract and validate user email from authorization header"""
     if not authorization:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -168,4 +171,4 @@ def get_user_email_from_authorization(authorization: Optional[str]) -> str:
         return email
     except jwt.DecodeError as e:
         print(f"Error decoding token: {e}")
-        raise HTTPException(status_code=401, detail="Invalid authentication token")
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e

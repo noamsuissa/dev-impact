@@ -4,9 +4,9 @@ Auth Schemas - Pydantic models for authentication
 
 from __future__ import annotations
 
-from pydantic import BaseModel, EmailStr, field_serializer
-from typing import Optional, Union
 from datetime import datetime
+
+from pydantic import BaseModel, EmailStr, field_serializer
 
 
 class SignUpRequest(BaseModel):
@@ -21,9 +21,9 @@ class SignInRequest(BaseModel):
 
     email: EmailStr
     password: str
-    mfa_challenge_id: Optional[str] = None
-    mfa_code: Optional[str] = None
-    mfa_factor_id: Optional[str] = None
+    mfa_challenge_id: str | None = None
+    mfa_code: str | None = None
+    mfa_factor_id: str | None = None
 
 
 class RefreshTokenRequest(BaseModel):
@@ -49,10 +49,10 @@ class UserResponse(BaseModel):
 
     id: str
     email: str
-    created_at: Union[str, datetime]
+    created_at: str | datetime
 
     @field_serializer("created_at")
-    def serialize_created_at(self, value: Union[str, datetime]) -> str:
+    def serialize_created_at(self, value: str | datetime) -> str:
         """Convert datetime to ISO format string"""
         if isinstance(value, datetime):
             return value.isoformat()
@@ -63,8 +63,8 @@ class SessionResponse(BaseModel):
     """Session response schema"""
 
     access_token: str
-    refresh_token: Optional[str] = None
-    expires_at: Optional[int] = None
+    refresh_token: str | None = None
+    expires_at: int | None = None
 
 
 class MFAFactorResponse(BaseModel):
@@ -72,20 +72,20 @@ class MFAFactorResponse(BaseModel):
 
     id: str
     type: str
-    friendly_name: Optional[str] = None
+    friendly_name: str | None = None
     status: str
 
 
 class AuthResponse(BaseModel):
     """Authentication response schema"""
 
-    user: Optional[UserResponse] = None
-    session: Optional[SessionResponse] = None
-    requires_email_verification: Optional[bool] = False
-    requires_mfa: Optional[bool] = False
-    mfa_challenge_id: Optional[str] = None
-    mfa_factor_id: Optional[str] = None
-    mfa_factors: Optional[list[MFAFactorResponse]] = None
+    user: UserResponse | None = None
+    session: SessionResponse | None = None
+    requires_email_verification: bool | None = False
+    requires_mfa: bool | None = False
+    mfa_challenge_id: str | None = None
+    mfa_factor_id: str | None = None
+    mfa_factors: list[MFAFactorResponse] | None = None
 
 
 class MessageResponse(BaseModel):
@@ -98,7 +98,7 @@ class MessageResponse(BaseModel):
 class MFAEnrollRequest(BaseModel):
     """MFA enroll request schema"""
 
-    friendly_name: Optional[str] = "Authenticator App"
+    friendly_name: str | None = "Authenticator App"
 
 
 class MFAVerifyRequest(BaseModel):
@@ -115,7 +115,7 @@ class MFAEnrollResponse(BaseModel):
     type: str
     qr_code: str
     secret: str
-    friendly_name: Optional[str] = None
+    friendly_name: str | None = None
 
 
 class MFAListResponse(BaseModel):

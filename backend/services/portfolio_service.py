@@ -1,31 +1,31 @@
-"""
-Portfolio Service - Unified service for portfolio CRUD and publishing operations
+"""Portfolio Service - Unified service for portfolio CRUD and publishing operations
 Merges functionality from user_profile_service.py and profile_service.py
 """
 
 import os
 import re
-from typing import Optional, List
 from datetime import datetime
+
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from supabase import Client
+
+from backend.schemas.auth import MessageResponse
 
 # Note: No cross-service imports - services are fully decoupled
 # Router layer orchestrates multi-service workflows
 from backend.schemas.portfolio import (
-    Portfolio,
-    PublishPortfolioResponse,
-    PortfolioResponse,
-    ListPortfoliosResponse,
-    UserData,
     GitHubData,
+    ListPortfoliosResponse,
+    Portfolio,
     PortfolioData,
-    PortfolioViewStats,
+    PortfolioResponse,
     PortfolioStatsResponse,
+    PortfolioViewStats,
+    PublishPortfolioResponse,
+    UserData,
 )
-from backend.schemas.auth import MessageResponse
 from backend.schemas.subscription import SubscriptionInfoResponse
+from supabase import Client
 
 # Load environment variables
 load_dotenv()
@@ -77,12 +77,12 @@ class PortfolioService:
         subscription_info: SubscriptionInfoResponse,
         user_id: str,
         name: str,
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> Portfolio:
-        """
-        Create a new portfolio
+        """Create a new portfolio
 
         Args:
+        ----
             client: Supabase client (injected from router)
             subscription_info: Subscription information
             user_id: The authenticated user's ID
@@ -90,18 +90,18 @@ class PortfolioService:
             description: Optional portfolio description
 
         Returns:
+        -------
             Portfolio containing created portfolio data
+
         """
         if not subscription_info.can_add_portfolio:
             raise HTTPException(
                 status_code=403,
-                detail=f"Portfolio limit reached. Free users are limited to {subscription_info.max_portfolios} portfolios. Upgrade to Pro for unlimited portfolios.",
+                detail=f"Portfolio limit reached. Free users are limited to {subscription_info.max_portfolios} portfolios. Upgrade to Pro for unlimited portfolios.",  # noqa: E501
             )
         try:
             if not name or not name.strip():
-                raise HTTPException(
-                    status_code=400, detail="Portfolio name is required"
-                )
+                raise HTTPException(status_code=400, detail="Portfolio name is required")
 
             # Generate slug from name
             base_slug = self.generate_slug(name)
@@ -110,13 +110,7 @@ class PortfolioService:
             # Ensure slug is unique per user
             counter = 1
             while True:
-                existing = (
-                    client.table("portfolios")
-                    .select("id")
-                    .eq("user_id", user_id)
-                    .eq("slug", slug)
-                    .execute()
-                )
+                existing = client.table("portfolios").select("id").eq("user_id", user_id).eq("slug", slug).execute()
 
                 if not existing.data or len(existing.data) == 0:
                     break
@@ -126,17 +120,10 @@ class PortfolioService:
 
                 # Safety check to prevent infinite loop
                 if counter > 1000:
-                    raise HTTPException(
-                        status_code=500, detail="Failed to generate unique slug"
-                    )
+                    raise HTTPException(status_code=500, detail="Failed to generate unique slug")
 
             # Get current portfolio count for display_order
-            count_result = (
-                client.table("portfolios")
-                .select("id", count="exact")
-                .eq("user_id", user_id)
-                .execute()
-            )
+            count_result = client.table("portfolios").select("id", count="exact").eq("user_id", user_id).execute()
 
             display_order = len(count_result.data) if count_result.data else 0
 
@@ -156,9 +143,7 @@ class PortfolioService:
             )
 
             if not result.data or len(result.data) == 0:
-                raise HTTPException(
-                    status_code=500, detail="Failed to create portfolio"
-                )
+                raise HTTPException(status_code=500, detail="Failed to create portfolio")
 
             portfolio = result.data[0]
             return Portfolio(
@@ -176,26 +161,21 @@ class PortfolioService:
             print(f"Create portfolio error: {e}")
             raise HTTPException(status_code=500, detail="Failed to create portfolio") from e
 
-    async def list_portfolios(self, client: Client, user_id: str) -> List[Portfolio]:
-        """
-        List all portfolios for a user
+    async def list_portfolios(self, client: Client, user_id: str) -> list[Portfolio]:
+        """List all portfolios for a user
 
         Args:
+        ----
             client: Supabase client (injected from router)
             user_id: The user's ID
 
         Returns:
+        -------
             List of Portfolio objects
+
         """
         try:
-            result = (
-                client.table("portfolios")
-                .select("*")
-                .eq("user_id", user_id)
-                .order("display_order")
-                .order("created_at")
-                .execute()
-            )
+            result = client.table("portfolios").select("*").eq("user_id", user_id).order("display_order").order("created_at").execute()
 
             portfolios = []
             for portfolio in result.data:
@@ -218,29 +198,22 @@ class PortfolioService:
             print(f"List portfolios error: {e}")
             raise HTTPException(status_code=500, detail="Failed to list portfolios") from e
 
-    async def get_portfolio(
-        self, client: Client, portfolio_id: str, user_id: str
-    ) -> Portfolio:
-        """
-        Get a single portfolio
+    async def get_portfolio(self, client: Client, portfolio_id: str, user_id: str) -> Portfolio:
+        """Get a single portfolio
 
         Args:
+        ----
             client: Supabase client (injected from router)
             portfolio_id: The portfolio ID
             user_id: The user's ID (for authorization)
 
         Returns:
+        -------
             Portfolio object
+
         """
         try:
-            result = (
-                client.table("portfolios")
-                .select("*")
-                .eq("id", portfolio_id)
-                .eq("user_id", user_id)
-                .single()
-                .execute()
-            )
+            result = client.table("portfolios").select("*").eq("id", portfolio_id).eq("user_id", user_id).single().execute()
 
             if not result.data:
                 raise HTTPException(status_code=404, detail="Portfolio not found")
@@ -266,13 +239,13 @@ class PortfolioService:
         client: Client,
         portfolio_id: str,
         user_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ) -> Portfolio:
-        """
-        Update a portfolio
+        """Update a portfolio
 
         Args:
+        ----
             client: Supabase client (injected from router)
             portfolio_id: The portfolio ID
             user_id: The user's ID (for authorization)
@@ -280,16 +253,13 @@ class PortfolioService:
             description: Optional new description
 
         Returns:
+        -------
             Updated Portfolio object
+
         """
         try:
             # Verify ownership
-            existing = (
-                client.table("portfolios")
-                .select("user_id, slug")
-                .eq("id", portfolio_id)
-                .execute()
-            )
+            existing = client.table("portfolios").select("user_id, slug").eq("id", portfolio_id).execute()
 
             if not existing.data or len(existing.data) == 0:
                 raise HTTPException(status_code=404, detail="Portfolio not found")
@@ -304,9 +274,7 @@ class PortfolioService:
             update_data = {}
             if name is not None:
                 if not name.strip():
-                    raise HTTPException(
-                        status_code=400, detail="Portfolio name cannot be empty"
-                    )
+                    raise HTTPException(status_code=400, detail="Portfolio name cannot be empty")
                 update_data["name"] = name.strip()
                 # Regenerate slug if name changed
                 new_slug = self.generate_slug(name.strip())
@@ -330,32 +298,20 @@ class PortfolioService:
                     counter += 1
 
                     if counter > 1000:
-                        raise HTTPException(
-                            status_code=500, detail="Failed to generate unique slug"
-                        )
+                        raise HTTPException(status_code=500, detail="Failed to generate unique slug")
                 update_data["slug"] = new_slug
 
             if description is not None:
-                update_data["description"] = (
-                    description.strip() if description else None
-                )
+                update_data["description"] = description.strip() if description else None
 
             if not update_data:
                 raise HTTPException(status_code=400, detail="No fields to update")
 
             # Update portfolio
-            result = (
-                client.table("portfolios")
-                .update(update_data)
-                .eq("id", portfolio_id)
-                .eq("user_id", user_id)
-                .execute()
-            )
+            result = client.table("portfolios").update(update_data).eq("id", portfolio_id).eq("user_id", user_id).execute()
 
             if not result.data or len(result.data) == 0:
-                raise HTTPException(
-                    status_code=500, detail="Failed to update portfolio"
-                )
+                raise HTTPException(status_code=500, detail="Failed to update portfolio")
 
             portfolio = result.data[0]
             return Portfolio(
@@ -373,28 +329,23 @@ class PortfolioService:
             print(f"Update portfolio error: {e}")
             raise HTTPException(status_code=500, detail="Failed to update portfolio") from e
 
-    async def delete_portfolio(
-        self, client: Client, portfolio_id: str, user_id: str
-    ) -> MessageResponse:
-        """
-        Delete a portfolio
+    async def delete_portfolio(self, client: Client, portfolio_id: str, user_id: str) -> MessageResponse:
+        """Delete a portfolio
 
         Args:
+        ----
             client: Supabase client (injected from router)
             portfolio_id: The portfolio ID
             user_id: The user's ID (for authorization)
 
         Returns:
+        -------
             MessageResponse with success status
+
         """
         try:
             # Verify ownership
-            existing = (
-                client.table("portfolios")
-                .select("user_id")
-                .eq("id", portfolio_id)
-                .execute()
-            )
+            existing = client.table("portfolios").select("user_id").eq("id", portfolio_id).execute()
 
             if not existing.data or len(existing.data) == 0:
                 raise HTTPException(status_code=404, detail="Portfolio not found")
@@ -406,18 +357,10 @@ class PortfolioService:
                 )
 
             # Delete all projects assigned to this portfolio first
-            client.table("impact_projects").delete().eq(
-                "portfolio_id", portfolio_id
-            ).eq("user_id", user_id).execute()
+            client.table("impact_projects").delete().eq("portfolio_id", portfolio_id).eq("user_id", user_id).execute()
 
             # Delete portfolio
-            (
-                client.table("portfolios")
-                .delete()
-                .eq("id", portfolio_id)
-                .eq("user_id", user_id)
-                .execute()
-            )
+            (client.table("portfolios").delete().eq("id", portfolio_id).eq("user_id", user_id).execute())
 
             return MessageResponse(
                 success=True,
@@ -439,13 +382,13 @@ class PortfolioService:
         username: str,
         portfolio_id: str,
         user_profile,
-        projects: List,
+        projects: list,
         user_id: str | None = None,
     ) -> PublishPortfolioResponse:
-        """
-        Publish a portfolio with a username
+        """Publish a portfolio with a username
 
         Args:
+        ----
             client: Supabase client (injected from router)
             username: The user's username for publishing
             portfolio_id: The portfolio ID to publish
@@ -454,7 +397,9 @@ class PortfolioService:
             projects: Pre-fetched list of projects (List[Project])
 
         Returns:
+        -------
             PublishPortfolioResponse with success status, username, slug, and URL
+
         """
         if not user_id:
             raise HTTPException(status_code=400, detail="User ID is required")
@@ -496,10 +441,7 @@ class PortfolioService:
 
             if existing.data and len(existing.data) > 0:
                 existing_profile = existing.data[0]
-                if (
-                    existing_profile.get("user_id")
-                    and existing_profile["user_id"] != user_id
-                ):
+                if existing_profile.get("user_id") and existing_profile["user_id"] != user_id:
                     raise HTTPException(
                         status_code=409,
                         detail="This portfolio slug is already taken for this username",
@@ -530,13 +472,7 @@ class PortfolioService:
             }
 
             # Check if portfolio is already published
-            existing = (
-                client.table("published_profiles")
-                .select("id")
-                .eq("username", username)
-                .eq("profile_slug", portfolio_slug)
-                .execute()
-            )
+            existing = client.table("published_profiles").select("id").eq("username", username).eq("profile_slug", portfolio_slug).execute()
 
             # Insert or update published portfolio with fresh data
             if existing.data and len(existing.data) > 0:
@@ -574,9 +510,7 @@ class PortfolioService:
                 )
 
             if not result.data:
-                raise HTTPException(
-                    status_code=500, detail="Failed to publish portfolio"
-                )
+                raise HTTPException(status_code=500, detail="Failed to publish portfolio")
 
             # Get base domain from environment
             base_domain = os.getenv("BASE_DOMAIN", "dev-impact.io")
@@ -600,20 +534,20 @@ class PortfolioService:
                 detail="An unexpected error occurred while publishing the portfolio",
             ) from e
 
-    async def unpublish_portfolio(
-        self, client: Client, username: str, portfolio_slug: str, user_id: str
-    ) -> MessageResponse:
-        """
-        Unpublish a portfolio
+    async def unpublish_portfolio(self, client: Client, username: str, portfolio_slug: str, user_id: str) -> MessageResponse:
+        """Unpublish a portfolio
 
         Args:
+        ----
             client: Supabase client (injected from router)
             username: The profile username
             portfolio_slug: The portfolio slug to unpublish
             user_id: The authenticated user's ID
 
         Returns:
+        -------
             MessageResponse with success status and message
+
         """
         try:
             # Verify ownership via portfolio_id
@@ -631,13 +565,7 @@ class PortfolioService:
             # Check ownership via portfolio_id relationship
             portfolio_id = result.data[0].get("portfolio_id")
             if portfolio_id:
-                portfolio_check = (
-                    client.table("portfolios")
-                    .select("user_id")
-                    .eq("id", portfolio_id)
-                    .single()
-                    .execute()
-                )
+                portfolio_check = client.table("portfolios").select("user_id").eq("id", portfolio_id).single().execute()
 
                 if portfolio_check.data and portfolio_check.data["user_id"] != user_id:
                     raise HTTPException(
@@ -646,19 +574,15 @@ class PortfolioService:
                     )
 
             # Unpublish (set is_published to false)
-            client.table("published_profiles").update({"is_published": False}).eq(
-                "username", username
-            ).eq("profile_slug", portfolio_slug).execute()
+            client.table("published_profiles").update({"is_published": False}).eq("username", username).eq(
+                "profile_slug", portfolio_slug
+            ).execute()
 
-            return MessageResponse(
-                success=True, message="Portfolio unpublished successfully"
-            )
+            return MessageResponse(success=True, message="Portfolio unpublished successfully")
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail="Failed to unpublish portfolio"
-            ) from e
+            raise HTTPException(status_code=500, detail="Failed to unpublish portfolio") from e
 
     # ============================================
     # PUBLIC PORTFOLIO VIEWING
@@ -668,39 +592,34 @@ class PortfolioService:
         self,
         client: Client,
         username: str,
-        portfolio_slug: Optional[str] = None,
+        portfolio_slug: str | None = None,
         increment_view_count: bool = True,
     ) -> PortfolioResponse:
-        """
-        Get a published portfolio by username and optional portfolio slug (PUBLIC)
+        """Get a published portfolio by username and optional portfolio slug (PUBLIC)
 
         Args:
+        ----
             client: Supabase client (injected from router)
             username: The profile username to fetch
             portfolio_slug: Optional portfolio slug (for multi-portfolio support)
             increment_view_count: Whether to increment the view count (default True)
 
         Returns:
+        -------
             PortfolioResponse containing portfolio data
+
         """
         try:
             if not self.validate_username(username):
                 raise HTTPException(status_code=400, detail="Invalid username format")
 
             # Build query
-            query = (
-                client.table("published_profiles")
-                .select("*")
-                .eq("username", username)
-                .eq("is_published", True)
-            )
+            query = client.table("published_profiles").select("*").eq("username", username).eq("is_published", True)
 
             # If portfolio_slug is provided, filter by it
             if portfolio_slug:
                 if not self.validate_slug(portfolio_slug):
-                    raise HTTPException(
-                        status_code=400, detail="Invalid portfolio slug format"
-                    )
+                    raise HTTPException(status_code=400, detail="Invalid portfolio slug format")
                 query = query.eq("profile_slug", portfolio_slug)
 
             result = query.execute()
@@ -716,9 +635,7 @@ class PortfolioService:
             if increment_view_count:
                 try:
                     update_query = (
-                        client.table("published_profiles")
-                        .update({"view_count": current_view_count + 1})
-                        .eq("username", username)
+                        client.table("published_profiles").update({"view_count": current_view_count + 1}).eq("username", username)
                     )
 
                     if portfolio_slug:
@@ -728,7 +645,7 @@ class PortfolioService:
 
                     update_query.execute()
                     current_view_count += 1
-                except Exception as e: # pylint: disable=broad-exception-caught
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     print(f"Failed to increment view count: {e}")
 
             # Return portfolio data
@@ -752,28 +669,23 @@ class PortfolioService:
                 detail="An unexpected error occurred while fetching the portfolio",
             ) from e
 
-    async def get_published_portfolio_stats(
-        self, client: Client, user_id: str
-    ) -> PortfolioStatsResponse:
-        """
-        Get view count statistics for all of a user's published portfolios (including unpublished)
+    async def get_published_portfolio_stats(self, client: Client, user_id: str) -> PortfolioStatsResponse:
+        """Get view count statistics for all of a user's published portfolios (including unpublished)
 
         Args:
+        ----
             client: Supabase client (injected from router)
             user_id: The authenticated user's ID
 
         Returns:
+        -------
             PortfolioStatsResponse containing view counts for all portfolios
+
         """
         try:
             # Query published_profiles by user_id (not filtered by is_published)
             # This allows us to get view counts even for unpublished portfolios
-            result = (
-                client.table("published_profiles")
-                .select("profile_slug, view_count, is_published")
-                .eq("user_id", user_id)
-                .execute()
-            )
+            result = client.table("published_profiles").select("profile_slug, view_count, is_published").eq("user_id", user_id).execute()
 
             stats = []
             for portfolio in result.data:
@@ -793,26 +705,24 @@ class PortfolioService:
                 detail="An unexpected error occurred while fetching portfolio stats",
             ) from e
 
-    async def list_published_portfolios(
-        self, client: Client, limit: int = 50, offset: int = 0
-    ) -> ListPortfoliosResponse:
-        """
-        List all published portfolios (PUBLIC)
+    async def list_published_portfolios(self, client: Client, limit: int = 50, offset: int = 0) -> ListPortfoliosResponse:
+        """List all published portfolios (PUBLIC)
 
         Args:
+        ----
             client: Supabase client (injected from router)
             limit: Maximum number of portfolios to return
             offset: Number of portfolios to skip
 
         Returns:
+        -------
             ListPortfoliosResponse containing portfolios list and pagination info
+
         """
         try:
             result = (
                 client.table("published_profiles")
-                .select(
-                    "username, profile_slug, profile_data, view_count, published_at, updated_at"
-                )
+                .select("username, profile_slug, profile_data, view_count, published_at, updated_at")
                 .eq("is_published", True)
                 .order("published_at", desc=True)
                 .range(offset, offset + limit - 1)
@@ -830,16 +740,10 @@ class PortfolioService:
                             name=portfolio_data["user"]["name"],
                             github=GitHubData(
                                 username=(
-                                    portfolio_data["user"].get("github").get("username")
-                                    if portfolio_data["user"].get("github")
-                                    else None
+                                    portfolio_data["user"].get("github").get("username") if portfolio_data["user"].get("github") else None
                                 ),
                                 avatar_url=(
-                                    portfolio_data["user"]
-                                    .get("github")
-                                    .get("avatar_url")
-                                    if portfolio_data["user"].get("github")
-                                    else None
+                                    portfolio_data["user"].get("github").get("avatar_url") if portfolio_data["user"].get("github") else None
                                 ),
                             ),
                         ),
@@ -854,9 +758,7 @@ class PortfolioService:
                     )
                 )
 
-            return ListPortfoliosResponse(
-                portfolios=portfolios, total=len(portfolios), limit=limit, offset=offset
-            )
+            return ListPortfoliosResponse(portfolios=portfolios, total=len(portfolios), limit=limit, offset=offset)
         except HTTPException:
             raise
         except Exception as e:

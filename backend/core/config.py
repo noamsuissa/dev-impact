@@ -1,10 +1,9 @@
-"""
-Centralized configuration classes for all services.
+"""Centralized configuration classes for all services.
 All configuration is loaded from environment variables.
 """
 
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 
 
 @dataclass
@@ -21,12 +20,8 @@ class StripeConfig:
     def from_env(cls) -> "StripeConfig":
         """Load Stripe configuration from environment variables."""
         # Get price IDs with fallback for backward compatibility
-        price_id_monthly = os.getenv("STRIPE_PRICE_ID_MONTHLY") or os.getenv(
-            "STRIPE_PRICE_ID", ""
-        )
-        price_id_yearly = os.getenv("STRIPE_PRICE_ID_YEARLY") or os.getenv(
-            "STRIPE_PRICE_ID", ""
-        )
+        price_id_monthly = os.getenv("STRIPE_PRICE_ID_MONTHLY") or os.getenv("STRIPE_PRICE_ID", "")
+        price_id_yearly = os.getenv("STRIPE_PRICE_ID_YEARLY") or os.getenv("STRIPE_PRICE_ID", "")
 
         return cls(
             secret_key=os.getenv("STRIPE_SECRET_KEY", ""),
@@ -76,15 +71,9 @@ class GitHubConfig:
         """Load GitHub configuration from environment variables."""
         return cls(
             client_id=os.getenv("GITHUB_CLIENT_ID", ""),
-            device_auth_url=os.getenv(
-                "GITHUB_DEVICE_AUTH_URL", "https://github.com/login/device/code"
-            ),
-            token_url=os.getenv(
-                "GITHUB_TOKEN_URL", "https://github.com/login/oauth/access_token"
-            ),
-            user_api_url=os.getenv(
-                "GITHUB_USER_API_URL", "https://api.github.com/user"
-            ),
+            device_auth_url=os.getenv("GITHUB_DEVICE_AUTH_URL", "https://github.com/login/device/code"),
+            token_url=os.getenv("GITHUB_TOKEN_URL", "https://github.com/login/oauth/access_token"),
+            user_api_url=os.getenv("GITHUB_USER_API_URL", "https://api.github.com/user"),
         )
 
 

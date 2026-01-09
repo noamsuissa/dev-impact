@@ -1,22 +1,22 @@
-"""
-Auth Service - Handle authentication operations with Supabase
+"""Auth Service - Handle authentication operations with Supabase
 """
 
 import os
-from typing import Optional
 import traceback
+
+import httpx
+import jwt
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from supabase import create_client, Client
-import jwt
-import httpx
+
 from backend.schemas.auth import (
     AuthResponse,
-    UserResponse,
-    SessionResponse,
     MessageResponse,
     MFAFactorResponse,
+    SessionResponse,
+    UserResponse,
 )
+from supabase import Client, create_client
 
 # Load environment variables
 load_dotenv()
@@ -26,16 +26,18 @@ class AuthService:
     """Service for handling authentication operations with Supabase."""
 
     async def sign_up(self, client: Client, email: str, password: str) -> AuthResponse:
-        """
-        Sign up a new user
+        """Sign up a new user
 
         Args:
+        ----
             client: Supabase client (injected from router)
             email: User's email
             password: User's password
 
         Returns:
+        -------
             AuthResponse containing user and session data
+
         """
         try:
             # Get redirect URL from environment (fallback to localhost for dev)
@@ -43,9 +45,7 @@ class AuthService:
 
             options = {"email_redirect_to": redirect_url}
 
-            response = client.auth.sign_up(
-                {"email": email, "password": password, "options": options}
-            )
+            response = client.auth.sign_up({"email": email, "password": password, "options": options})
 
             if response.user is None:
                 raise HTTPException(
@@ -81,14 +81,14 @@ class AuthService:
         client: Client,
         email: str,
         password: str,
-        mfa_challenge_id: Optional[str] = None,
-        mfa_code: Optional[str] = None,
-        mfa_factor_id: Optional[str] = None,
+        mfa_challenge_id: str | None = None,
+        mfa_code: str | None = None,
+        mfa_factor_id: str | None = None,
     ) -> AuthResponse:
-        """
-        Sign in an existing user
+        """Sign in an existing user
 
         Args:
+        ----
             client: Supabase client (injected from router)
             email: User's email
             password: User's password
@@ -97,7 +97,9 @@ class AuthService:
             mfa_factor_id: MFA factor ID if verifying MFA challenge
 
         Returns:
+        -------
             AuthResponse containing user and session data, or MFA challenge info
+
         """
         try:
             # If MFA challenge ID and code provided, verify MFA
@@ -109,23 +111,17 @@ class AuthService:
                     )
 
                 # First sign in with password to get a session token
-                password_response = client.auth.sign_in_with_password(
-                    {"email": email, "password": password}
-                )
+                password_response = client.auth.sign_in_with_password({"email": email, "password": password})
 
                 if password_response.user is None or password_response.session is None:
-                    raise HTTPException(
-                        status_code=401, detail="Invalid email or password"
-                    )
+                    raise HTTPException(status_code=401, detail="Invalid email or password")
 
                 # Use user API endpoint directly to verify MFA challenge
                 url = os.getenv("SUPABASE_URL")
                 anon_key = os.getenv("SUPABASE_ANON_KEY")
 
                 if not url or not anon_key:
-                    raise HTTPException(
-                        status_code=500, detail="Supabase configuration not found"
-                    )
+                    raise HTTPException(status_code=500, detail="Supabase configuration not found")
 
                 try:
                     # Verify using the user API endpoint with factor_id
@@ -142,23 +138,14 @@ class AuthService:
 
                         if verify_response.status_code != 200:
                             error_text = verify_response.text
-                            print(
-                                f"MFA verify API error: {verify_response.status_code} - {error_text}"
-                            )
-                            raise HTTPException(
-                                status_code=401, detail="Invalid MFA code"
-                            )
+                            print(f"MFA verify API error: {verify_response.status_code} - {error_text}")
+                            raise HTTPException(status_code=401, detail="Invalid MFA code")
 
                     # After successful verification, refresh the session to get AAL2 tokens
                     # Use the original Supabase client (not the httpx client)
-                    session_response = client.auth.refresh_session(
-                        password_response.session.refresh_token
-                    )
+                    session_response = client.auth.refresh_session(password_response.session.refresh_token)
 
-                    if (
-                        session_response.user is None
-                        or session_response.session is None
-                    ):
+                    if session_response.user is None or session_response.session is None:
                         raise HTTPException(
                             status_code=401,
                             detail="Failed to complete MFA verification",
@@ -185,9 +172,7 @@ class AuthService:
                     raise HTTPException(status_code=401, detail="Invalid MFA code") from verify_err
 
             # Initial sign in with password
-            response = client.auth.sign_in_with_password(
-                {"email": email, "password": password}
-            )
+            response = client.auth.sign_in_with_password({"email": email, "password": password})
 
             # Check if user has MFA factors enrolled
             # If they do, we need to challenge them even if a session was returned
@@ -212,18 +197,11 @@ class AuthService:
 
                             if factors_response.status_code == 200:
                                 factors_data = factors_response.json()
-                                factors = (
-                                    factors_data
-                                    if isinstance(factors_data, list)
-                                    else factors_data.get("factors", [])
-                                )
+                                factors = factors_data if isinstance(factors_data, list) else factors_data.get("factors", [])
 
                                 # Filter for verified TOTP factors
                                 verified_totp_factors = [
-                                    f
-                                    for f in factors
-                                    if f.get("factor_type") == "totp"
-                                    and f.get("status") == "verified"
+                                    f for f in factors if f.get("factor_type") == "totp" and f.get("status") == "verified"
                                 ]
 
                                 if verified_totp_factors:
@@ -232,11 +210,7 @@ class AuthService:
                                     if factor_id:
                                         # Use user API to create challenge (requires user's access token from password sign-in)
                                         anon_key = os.getenv("SUPABASE_ANON_KEY")
-                                        if (
-                                            anon_key
-                                            and response.session
-                                            and response.session.access_token
-                                        ):
+                                        if anon_key and response.session and response.session.access_token:
                                             try:
                                                 # Use user API endpoint with the session token from password sign-in
                                                 async with httpx.AsyncClient() as user_client:
@@ -249,16 +223,9 @@ class AuthService:
                                                         },
                                                     )
 
-                                                    if (
-                                                        challenge_response.status_code
-                                                        == 200
-                                                    ):
-                                                        challenge_data = (
-                                                            challenge_response.json()
-                                                        )
-                                                        challenge_id = (
-                                                            challenge_data.get("id")
-                                                        )
+                                                    if challenge_response.status_code == 200:
+                                                        challenge_data = challenge_response.json()
+                                                        challenge_id = challenge_data.get("id")
 
                                                         if challenge_id:
                                                             return AuthResponse(
@@ -273,9 +240,7 @@ class AuthService:
                                                                 mfa_factor_id=factor_id,  # Include factor_id for verification
                                                                 mfa_factors=[
                                                                     MFAFactorResponse(
-                                                                        id=f.get(
-                                                                            "id", ""
-                                                                        ),
+                                                                        id=f.get("id", ""),
                                                                         type=f.get(
                                                                             "factor_type",
                                                                             f.get(
@@ -283,9 +248,7 @@ class AuthService:
                                                                                 "",
                                                                             ),
                                                                         ),
-                                                                        friendly_name=f.get(
-                                                                            "friendly_name"
-                                                                        ),
+                                                                        friendly_name=f.get("friendly_name"),
                                                                         status=f.get(
                                                                             "status",
                                                                             "verified",
@@ -296,18 +259,14 @@ class AuthService:
                                                             )
                                                     else:
                                                         print(
-                                                            f"User API challenge error: {challenge_response.status_code} - {challenge_response.text}"
+                                                            f"User API challenge error: {challenge_response.status_code} - {challenge_response.text}"  # noqa: E501
                                                         )
-                                            except Exception as challenge_err: # pylint: disable=broad-exception-caught
-                                                print(
-                                                    f"Failed to create MFA challenge: {challenge_err}"
-                                                )
+                                            except Exception as challenge_err:  # pylint: disable=broad-exception-caught
+                                                print(f"Failed to create MFA challenge: {challenge_err}")
                                                 traceback.print_exc()
                                         else:
-                                            print(
-                                                "Missing anon key or session token for MFA challenge"
-                                            )
-                    except Exception as mfa_check_err: # pylint: disable=broad-exception-caught
+                                            print("Missing anon key or session token for MFA challenge")
+                    except Exception as mfa_check_err:  # pylint: disable=broad-exception-caught
                         print(f"Error checking MFA factors: {mfa_check_err}")
 
             # Check if MFA is required (user exists but no session) - fallback check
@@ -319,9 +278,7 @@ class AuthService:
                 anon_key = os.getenv("SUPABASE_ANON_KEY")
 
                 if not url or not anon_key:
-                    raise HTTPException(
-                        status_code=500, detail="Supabase configuration not found"
-                    )
+                    raise HTTPException(status_code=500, detail="Supabase configuration not found")
 
                 # Create client with anon key and set auth header if we have a token
                 mfa_client = create_client(url, anon_key)
@@ -335,27 +292,18 @@ class AuthService:
                         mfa_client.postgrest.auth(response.access_token)
 
                     factors_response = mfa_client.auth.mfa.list_factors()
-                    factors = (
-                        factors_response.all if hasattr(factors_response, "all") else []
-                    )
+                    factors = factors_response.all if hasattr(factors_response, "all") else []
 
                     if factors and len(factors) > 0:
                         # Create challenge for first TOTP factor
                         totp_factor = next(
-                            (
-                                f
-                                for f in factors
-                                if getattr(f, "factor_type", getattr(f, "type", None))
-                                == "totp"
-                            ),
+                            (f for f in factors if getattr(f, "factor_type", getattr(f, "type", None)) == "totp"),
                             None,
                         )
                         if totp_factor:
                             factor_id = getattr(totp_factor, "id", None)
                             if factor_id:
-                                challenge_response = mfa_client.auth.mfa.challenge(
-                                    {"factor_id": factor_id}
-                                )
+                                challenge_response = mfa_client.auth.mfa.challenge({"factor_id": factor_id})
                                 challenge_id = getattr(challenge_response, "id", None)
 
                                 return AuthResponse(
@@ -370,18 +318,14 @@ class AuthService:
                                     mfa_factors=[
                                         MFAFactorResponse(
                                             id=getattr(f, "id", ""),
-                                            type=getattr(
-                                                f, "factor_type", getattr(f, "type", "")
-                                            ),
-                                            friendly_name=getattr(
-                                                f, "friendly_name", None
-                                            ),
+                                            type=getattr(f, "factor_type", getattr(f, "type", "")),
+                                            friendly_name=getattr(f, "friendly_name", None),
                                             status=getattr(f, "status", "verified"),
                                         )
                                         for f in factors
                                     ],
                                 )
-                except Exception as mfa_error: # pylint: disable=broad-exception-caught
+                except Exception as mfa_error:  # pylint: disable=broad-exception-caught
                     print(f"MFA setup error: {mfa_error}")
                     # If we can't get factors, still return MFA required
                     # The frontend will need to handle this case
@@ -423,15 +367,17 @@ class AuthService:
             raise HTTPException(status_code=401, detail="Invalid email or password") from e
 
     async def sign_out(self, client: Client, access_token: str) -> MessageResponse:
-        """
-        Sign out a user
+        """Sign out a user
 
         Args:
+        ----
             client: Supabase client (injected from router)
             access_token: User's access token
 
         Returns:
+        -------
             MessageResponse with success status
+
         """
         try:
             # Set the user's session
@@ -439,32 +385,32 @@ class AuthService:
             client.auth.sign_out()
 
             return MessageResponse(success=True, message="Signed out successfully")
-        except Exception as e: # pylint: disable=broad-exception-caught
+        except Exception as e:  # pylint: disable=broad-exception-caught
             print(f"Sign out error: {e}")
             # Even if sign out fails, we still return success as the client will clear local tokens
             return MessageResponse(success=True, message="Signed out")
 
     async def reset_password_email(self, client: Client, email: str) -> MessageResponse:
-        """
-        Send password reset email
+        """Send password reset email
 
         Args:
+        ----
             client: Supabase client (injected from router)
             email: User's email
 
         Returns:
+        -------
             MessageResponse with success status
+
         """
         try:
             # Get redirect URL from environment (fallback to localhost for dev)
             redirect_url = os.getenv("AUTH_REDIRECT_URL", "http://localhost:5173")
 
-            client.auth.reset_password_email(
-                email, options={"redirect_to": redirect_url}
-            )
+            client.auth.reset_password_email(email, options={"redirect_to": redirect_url})
 
             return MessageResponse(success=True, message="Password reset email sent")
-        except Exception as e: # pylint: disable=broad-exception-caught
+        except Exception as e:  # pylint: disable=broad-exception-caught
             print(f"Reset password email error: {e}")
             # Return success even on error to prevent email enumeration
             return MessageResponse(
@@ -472,18 +418,18 @@ class AuthService:
                 message="If an account exists, a password reset email has been sent",
             )
 
-    async def update_password(
-        self, access_token: str, new_password: str
-    ) -> MessageResponse:
-        """
-        Update user password
+    async def update_password(self, access_token: str, new_password: str) -> MessageResponse:
+        """Update user password
 
         Args:
+        ----
             access_token: User's access token from recovery link
             new_password: New password
 
         Returns:
+        -------
             MessageResponse with success status
+
         """
         try:
             # Decode the JWT to get the user ID
@@ -498,9 +444,7 @@ class AuthService:
             service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
             if not url or not service_key:
-                raise HTTPException(
-                    status_code=500, detail="Server configuration error"
-                )
+                raise HTTPException(status_code=500, detail="Server configuration error")
 
             # Update password using Admin API
             async with httpx.AsyncClient() as client:
@@ -516,13 +460,9 @@ class AuthService:
 
                 if response.status_code not in [200, 204]:
                     print(f"Supabase update password failed: {response.text}")
-                    raise HTTPException(
-                        status_code=400, detail="Failed to update password"
-                    )
+                    raise HTTPException(status_code=400, detail="Failed to update password")
 
-            return MessageResponse(
-                success=True, message="Password updated successfully"
-            )
+            return MessageResponse(success=True, message="Password updated successfully")
         except Exception as e:
             print(f"Update password error: {e}")
             raise HTTPException(status_code=400, detail="Failed to update password") from e

@@ -1,23 +1,23 @@
-"""
-Auth Router - Handle authentication endpoints
+"""Auth Router - Handle authentication endpoints
 """
 
 from fastapi import APIRouter, Depends
+
+from backend.core.container import AuthServiceDep, MFAServiceDep, ServiceDBClient
 from backend.schemas.auth import (
-    SignUpRequest,
-    SignInRequest,
-    RefreshTokenRequest,
-    ResetPasswordRequest,
-    UpdatePasswordRequest,
     AuthResponse,
     MessageResponse,
     MFAEnrollRequest,
-    MFAVerifyRequest,
     MFAEnrollResponse,
     MFAListResponse,
+    MFAVerifyRequest,
+    RefreshTokenRequest,
+    ResetPasswordRequest,
+    SignInRequest,
+    SignUpRequest,
+    UpdatePasswordRequest,
 )
 from backend.utils import auth_utils
-from backend.core.container import ServiceDBClient, AuthServiceDep, MFAServiceDep
 
 router = APIRouter(
     prefix="/api/auth",
@@ -26,11 +26,8 @@ router = APIRouter(
 
 
 @router.post("/signup", response_model=AuthResponse)
-async def sign_up(
-    request: SignUpRequest, client: ServiceDBClient, auth_service: AuthServiceDep
-):
-    """
-    Sign up a new user
+async def sign_up(request: SignUpRequest, client: ServiceDBClient, auth_service: AuthServiceDep):
+    """Sign up a new user
 
     Creates a new user account with email and password.
     May require email verification depending on Supabase settings.
@@ -40,11 +37,8 @@ async def sign_up(
 
 
 @router.post("/signin", response_model=AuthResponse)
-async def sign_in(
-    request: SignInRequest, client: ServiceDBClient, auth_service: AuthServiceDep
-):
-    """
-    Sign in an existing user
+async def sign_in(request: SignInRequest, client: ServiceDBClient, auth_service: AuthServiceDep):
+    """Sign in an existing user
 
     Authenticates user with email and password.
     If MFA is enabled, returns MFA challenge info instead of session.
@@ -67,8 +61,7 @@ async def sign_out(
     auth_service: AuthServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Sign out current user
+    """Sign out current user
 
     Invalidates the user's session.
     """
@@ -77,11 +70,8 @@ async def sign_out(
 
 
 @router.get("/session", response_model=AuthResponse)
-async def get_session(
-    client: ServiceDBClient, authorization: str = Depends(auth_utils.get_access_token)
-):
-    """
-    Get current session
+async def get_session(client: ServiceDBClient, authorization: str = Depends(auth_utils.get_access_token)):
+    """Get current session
 
     Returns current user and session data if token is valid.
     """
@@ -91,8 +81,7 @@ async def get_session(
 
 @router.post("/refresh", response_model=AuthResponse)
 async def refresh_session(request: RefreshTokenRequest, client: ServiceDBClient):
-    """
-    Refresh user session
+    """Refresh user session
 
     Gets a new access token using refresh token.
     """
@@ -101,11 +90,8 @@ async def refresh_session(request: RefreshTokenRequest, client: ServiceDBClient)
 
 
 @router.post("/reset-password", response_model=MessageResponse)
-async def reset_password(
-    request: ResetPasswordRequest, client: ServiceDBClient, auth_service: AuthServiceDep
-):
-    """
-    Send password reset email
+async def reset_password(request: ResetPasswordRequest, client: ServiceDBClient, auth_service: AuthServiceDep):
+    """Send password reset email
 
     Sends a password reset link to the user's email.
     """
@@ -119,8 +105,7 @@ async def update_password(
     auth_service: AuthServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Update user password
+    """Update user password
 
     Updates the password for the currently authenticated user.
     Requires valid access token.
@@ -135,8 +120,7 @@ async def mfa_enroll(
     mfa_service: MFAServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Enroll user in MFA (TOTP)
+    """Enroll user in MFA (TOTP)
 
     Creates a new TOTP factor and returns QR code for setup.
     Requires valid access token.
@@ -151,15 +135,12 @@ async def mfa_verify_enrollment(
     mfa_service: MFAServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Verify MFA enrollment with a code
+    """Verify MFA enrollment with a code
 
     Verifies the TOTP code to complete enrollment.
     Requires valid access token.
     """
-    result = await mfa_service.mfa_verify_enrollment(
-        authorization, request.factor_id, request.code
-    )
+    result = await mfa_service.mfa_verify_enrollment(authorization, request.factor_id, request.code)
     return result
 
 
@@ -169,8 +150,7 @@ async def mfa_list_factors(
     mfa_service: MFAServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    List all MFA factors for the current user
+    """List all MFA factors for the current user
 
     Returns list of enrolled MFA factors.
     Requires valid access token.
@@ -187,8 +167,7 @@ async def mfa_unenroll(
     mfa_service: MFAServiceDep,
     authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Unenroll (remove) an MFA factor
+    """Unenroll (remove) an MFA factor
 
     Removes the specified MFA factor from the user's account.
     Requires valid access token.

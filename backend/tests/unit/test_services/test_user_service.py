@@ -1,13 +1,14 @@
-"""
-Unit tests for UserService
+"""Unit tests for UserService
 Tests business logic with mocked dependencies
 """
 
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import Mock, AsyncMock
 from fastapi import HTTPException
-from backend.services.user_service import UserService
+
 from backend.schemas.user import UserProfile
+from backend.services.user_service import UserService
 
 
 class TestUserService:
@@ -89,9 +90,7 @@ class TestUserService:
             "city": "San Francisco",
             "is_published": True,
         }
-        result = await user_service.update_profile(
-            mock_supabase_client, "user_123", update_data
-        )
+        result = await user_service.update_profile(mock_supabase_client, "user_123", update_data)
 
         # Assert
         assert isinstance(result, UserProfile)
@@ -100,15 +99,11 @@ class TestUserService:
         assert result.is_published is True
 
     @pytest.mark.asyncio
-    async def test_delete_account(
-        self, user_service, mock_supabase_client, mock_stripe_client
-    ):
+    async def test_delete_account(self, user_service, mock_supabase_client, mock_stripe_client):
         """Test deleting user account cancels subscription"""
         # Setup mocks
         mock_stripe_client.cancel_subscription = AsyncMock()
-        mock_supabase_client.table.return_value.delete.return_value.eq.return_value.execute.return_value = (
-            Mock()
-        )
+        mock_supabase_client.table.return_value.delete.return_value.eq.return_value.execute.return_value = Mock()
         mock_supabase_client.auth.admin.delete_user = Mock()
 
         # Execute
@@ -119,26 +114,18 @@ class TestUserService:
         assert "deleted successfully" in result.message
 
         # Verify Stripe cancellation was called
-        mock_stripe_client.cancel_subscription.assert_called_once_with(
-            mock_supabase_client, "user_123"
-        )
+        mock_stripe_client.cancel_subscription.assert_called_once_with(mock_supabase_client, "user_123")
 
         # Verify database deletion was called
         mock_supabase_client.table.assert_called()
         mock_supabase_client.auth.admin.delete_user.assert_called_once_with("user_123")
 
     @pytest.mark.asyncio
-    async def test_delete_account_no_subscription(
-        self, user_service, mock_supabase_client, mock_stripe_client
-    ):
+    async def test_delete_account_no_subscription(self, user_service, mock_supabase_client, mock_stripe_client):
         """Test deleting account when user has no subscription"""
         # Setup mocks - Stripe cancellation raises exception
-        mock_stripe_client.cancel_subscription = AsyncMock(
-            side_effect=Exception("No subscription")
-        )
-        mock_supabase_client.table.return_value.delete.return_value.eq.return_value.execute.return_value = (
-            Mock()
-        )
+        mock_stripe_client.cancel_subscription = AsyncMock(side_effect=Exception("No subscription"))
+        mock_supabase_client.table.return_value.delete.return_value.eq.return_value.execute.return_value = Mock()
         mock_supabase_client.auth.admin.delete_user = Mock()
 
         # Execute - should still succeed
@@ -170,9 +157,7 @@ class TestUserService:
         mock_supabase_client.rpc.return_value.execute.return_value = Mock(data=True)
 
         # Execute
-        result = await user_service.check_username(
-            mock_supabase_client, "availableuser"
-        )
+        result = await user_service.check_username(mock_supabase_client, "availableuser")
 
         # Assert
         assert result.available is True
@@ -194,14 +179,10 @@ class TestUserService:
         assert "taken" in result.message.lower()
 
     @pytest.mark.asyncio
-    async def test_check_username_invalid_format(
-        self, user_service, mock_supabase_client
-    ):
+    async def test_check_username_invalid_format(self, user_service, mock_supabase_client):
         """Test checking username with invalid format"""
         # Execute
-        result = await user_service.check_username(
-            mock_supabase_client, "INVALID USERNAME"
-        )
+        result = await user_service.check_username(mock_supabase_client, "INVALID USERNAME")
 
         # Assert
         assert result.available is False

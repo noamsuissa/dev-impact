@@ -1,13 +1,14 @@
-"""
-Tests for PortfolioService
+"""Tests for PortfolioService
 """
 
 from unittest.mock import MagicMock
-from fastapi import HTTPException
+
 import pytest
+from fastapi import HTTPException
+
 from backend.schemas.portfolio import (
-    PortfolioStatsResponse,
     PortfolioResponse,
+    PortfolioStatsResponse,
 )
 
 
@@ -25,14 +26,10 @@ class TestGetPublishedPortfolioStats:
             {"profile_slug": "portfolio-2", "view_count": 15, "is_published": False},
         ]
 
-        mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = (
-            mock_response
-        )
+        mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_response
 
         # Act
-        result = await portfolio_service.get_published_portfolio_stats(
-            mock_supabase_client, user_id
-        )
+        result = await portfolio_service.get_published_portfolio_stats(mock_supabase_client, user_id)
 
         # Assert
         assert isinstance(result, PortfolioStatsResponse)
@@ -44,12 +41,8 @@ class TestGetPublishedPortfolioStats:
         assert result.stats[1].view_count == 15
         assert result.stats[1].is_published is False
         mock_supabase_client.table.assert_called_with("published_profiles")
-        mock_supabase_client.table.return_value.select.assert_called_with(
-            "profile_slug, view_count, is_published"
-        )
-        mock_supabase_client.table.return_value.select.return_value.eq.assert_called_with(
-            "user_id", user_id
-        )
+        mock_supabase_client.table.return_value.select.assert_called_with("profile_slug, view_count, is_published")
+        mock_supabase_client.table.return_value.select.return_value.eq.assert_called_with("user_id", user_id)
 
     @pytest.mark.asyncio
     async def test_get_published_portfolio_stats_empty(self, portfolio_service, mock_supabase_client):
@@ -59,39 +52,27 @@ class TestGetPublishedPortfolioStats:
         mock_response = MagicMock()
         mock_response.data = []
 
-        mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = (
-            mock_response
-        )
+        mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_response
 
         # Act
-        result = await portfolio_service.get_published_portfolio_stats(
-            mock_supabase_client, user_id
-        )
+        result = await portfolio_service.get_published_portfolio_stats(mock_supabase_client, user_id)
 
         # Assert
         assert isinstance(result, PortfolioStatsResponse)
         assert len(result.stats) == 0
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_stats_missing_slug(
-        self, portfolio_service, mock_supabase_client
-    ):
+    async def test_get_published_portfolio_stats_missing_slug(self, portfolio_service, mock_supabase_client):
         """Test handling of missing profile_slug (should default to empty string)"""
         # Arrange
         user_id = "user-123"
         mock_response = MagicMock()
-        mock_response.data = [
-            {"profile_slug": None, "view_count": 5, "is_published": True}
-        ]
+        mock_response.data = [{"profile_slug": None, "view_count": 5, "is_published": True}]
 
-        mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = (
-            mock_response
-        )
+        mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.return_value = mock_response
 
         # Act
-        result = await portfolio_service.get_published_portfolio_stats(
-            mock_supabase_client, user_id
-        )
+        result = await portfolio_service.get_published_portfolio_stats(mock_supabase_client, user_id)
 
         # Assert
         assert len(result.stats) == 1
@@ -102,19 +83,13 @@ class TestGetPublishedPortfolioStats:
         """Test exception handling"""
         # Arrange
         user_id = "user-123"
-        mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.side_effect = Exception(
-            "Database error"
-        )
+        mock_supabase_client.table.return_value.select.return_value.eq.return_value.execute.side_effect = Exception("Database error")
 
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
-            await portfolio_service.get_published_portfolio_stats(
-                mock_supabase_client, user_id
-            )
+            await portfolio_service.get_published_portfolio_stats(mock_supabase_client, user_id)
         assert exc_info.value.status_code == 500
-        assert "An unexpected error occurred while fetching portfolio stats" in str(
-            exc_info.value.detail
-        )
+        assert "An unexpected error occurred while fetching portfolio stats" in str(exc_info.value.detail)
 
 
 class TestGetPublishedPortfolio:
@@ -162,9 +137,7 @@ class TestGetPublishedPortfolio:
         # Set up the mock chain
         # The query object returns itself on each method call (fluent interface)
         mock_query = MagicMock()
-        mock_query.eq.return_value = (
-            mock_query  # Each .eq() returns the same query object
-        )
+        mock_query.eq.return_value = mock_query  # Each .eq() returns the same query object
         mock_query.execute.return_value = mock_select_response
 
         mock_table = MagicMock()
@@ -172,18 +145,14 @@ class TestGetPublishedPortfolio:
 
         # Set up update chain
         mock_update_query = MagicMock()
-        mock_update_query.eq.return_value = (
-            mock_update_query  # Each .eq() returns the same query object
-        )
+        mock_update_query.eq.return_value = mock_update_query  # Each .eq() returns the same query object
         mock_update_query.execute.return_value = mock_update_response
 
         mock_supabase_client.table.return_value = mock_table
         mock_table.update.return_value = mock_update_query
 
         # Act
-        result = await portfolio_service.get_published_portfolio(
-            mock_supabase_client, username, portfolio_slug, increment_view_count=True
-        )
+        result = await portfolio_service.get_published_portfolio(mock_supabase_client, username, portfolio_slug, increment_view_count=True)
 
         # Assert
         assert isinstance(result, PortfolioResponse)
@@ -232,9 +201,7 @@ class TestGetPublishedPortfolio:
         # Set up the mock chain
         # The query object returns itself on each method call (fluent interface)
         mock_query = MagicMock()
-        mock_query.eq.return_value = (
-            mock_query  # Each .eq() returns the same query object
-        )
+        mock_query.eq.return_value = mock_query  # Each .eq() returns the same query object
         mock_query.execute.return_value = mock_select_response
 
         mock_table = MagicMock()
@@ -243,9 +210,7 @@ class TestGetPublishedPortfolio:
         mock_supabase_client.table.return_value = mock_table
 
         # Act
-        result = await portfolio_service.get_published_portfolio(
-            mock_supabase_client, username, portfolio_slug, increment_view_count=False
-        )
+        result = await portfolio_service.get_published_portfolio(mock_supabase_client, username, portfolio_slug, increment_view_count=False)
 
         # Assert
         assert isinstance(result, PortfolioResponse)
@@ -256,9 +221,7 @@ class TestGetPublishedPortfolio:
         mock_table.update.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_increment_default_true(
-        self, portfolio_service, mock_supabase_client
-    ):
+    async def test_get_published_portfolio_increment_default_true(self, portfolio_service, mock_supabase_client):
         """Test that increment_view_count defaults to True"""
         # Arrange
         username = "testuser"
@@ -308,9 +271,7 @@ class TestGetPublishedPortfolio:
         mock_supabase_client.table.return_value = mock_table
 
         # Act (no increment_view_count parameter, should default to True)
-        result = await portfolio_service.get_published_portfolio(
-            mock_supabase_client, username, portfolio_slug
-        )
+        result = await portfolio_service.get_published_portfolio(mock_supabase_client, username, portfolio_slug)
 
         # Assert
         assert result.view_count == initial_view_count + 1
@@ -348,9 +309,7 @@ class TestGetPublishedPortfolio:
         assert "Portfolio not found" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
-    async def test_get_published_portfolio_increment_exception_handled(
-        self, portfolio_service, mock_supabase_client
-    ):
+    async def test_get_published_portfolio_increment_exception_handled(self, portfolio_service, mock_supabase_client):
         """Test that exception during increment doesn't break the response"""
         # Arrange
         username = "testuser"
@@ -401,13 +360,9 @@ class TestGetPublishedPortfolio:
         mock_supabase_client.table.return_value = mock_table
 
         # Act
-        result = await portfolio_service.get_published_portfolio(
-            mock_supabase_client, username, portfolio_slug, increment_view_count=True
-        )
+        result = await portfolio_service.get_published_portfolio(mock_supabase_client, username, portfolio_slug, increment_view_count=True)
 
         # Assert - should still return the portfolio with original view count
         assert isinstance(result, PortfolioResponse)
-        assert (
-            result.view_count == initial_view_count
-        )  # Not incremented due to exception
+        assert result.view_count == initial_view_count  # Not incremented due to exception
         assert result.username == username

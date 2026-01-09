@@ -1,15 +1,16 @@
-"""
-Email integration client.
+"""Email integration client.
 Handles email sending with Jinja templates via SMTP.
 """
 
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from typing import Dict, Any, Optional
-from pathlib import Path
 import logging
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from pathlib import Path
+from typing import Any
+
 import aiosmtplib
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 from backend.core.config import EmailConfig
 
 logger = logging.getLogger(__name__)
@@ -19,11 +20,12 @@ class EmailClient:
     """Client for sending emails with Jinja templates."""
 
     def __init__(self, config: EmailConfig):
-        """
-        Initialize email client with configuration.
+        """Initialize email client with configuration.
 
         Args:
+        ----
             config: Email configuration object
+
         """
         self.config = config
 
@@ -41,19 +43,21 @@ class EmailClient:
         to_email: str,
         subject: str,
         template_name: str,
-        template_vars: Optional[Dict[str, Any]] = None,
+        template_vars: dict[str, Any] | None = None,
     ) -> bool:
-        """
-        Send an email using a Jinja template.
+        """Send an email using a Jinja template.
 
         Args:
+        ----
             to_email: Recipient email address
             subject: Email subject
             template_name: Name of the Jinja template file (e.g., "waitlist_confirmation.html")
             template_vars: Dictionary of variables to pass to the template
 
         Returns:
+        -------
             True if email was sent successfully, False otherwise
+
         """
         if not self.config.user or not self.config.password:
             logger.warning("SMTP credentials not configured, skipping email send")
@@ -98,6 +102,6 @@ class EmailClient:
             logger.info("Email sent successfully to %s", to_email)
             return True
 
-        except Exception as e: # pylint: disable=broad-exception-caught
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logger.error("Failed to send email to %s: %s", to_email, e)
             return False
