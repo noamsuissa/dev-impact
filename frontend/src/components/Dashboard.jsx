@@ -162,30 +162,30 @@ const Dashboard = () => {
           &gt; Actions
         </div>
         <div className="flex gap-5 flex-wrap">
-          <TerminalButton 
+          <TerminalButton
             onClick={() => {
               // Only check limit if subscription info is loaded
-              if (portfolios.subscriptionInfo && 
-                  !portfolios.subscriptionInfo.can_add_project && 
+              if (portfolios.subscriptionInfo &&
+                  !portfolios.subscriptionInfo.can_add_project &&
                   portfolios.subscriptionInfo.subscription_type !== 'pro') {
                 upgrade.setIsModalOpen(true)
               } else {
                 navigate('/project/new')
               }
             }}
-            className={portfolios.subscriptionInfo && 
-                       !portfolios.subscriptionInfo.can_add_project && 
+            className={portfolios.subscriptionInfo &&
+                       !portfolios.subscriptionInfo.can_add_project &&
                        portfolios.subscriptionInfo.subscription_type !== 'pro'
-              ? 'opacity-70 hover:opacity-100' 
+              ? 'opacity-70 hover:opacity-100'
               : ''}
-            title={portfolios.subscriptionInfo && 
-                   !portfolios.subscriptionInfo.can_add_project && 
+            title={portfolios.subscriptionInfo &&
+                   !portfolios.subscriptionInfo.can_add_project &&
                    portfolios.subscriptionInfo.subscription_type !== 'pro'
               ? `Project limit reached (${portfolios.subscriptionInfo.project_count || 0}/${portfolios.subscriptionInfo.max_projects || 10}). Click to upgrade to Pro for unlimited projects.`
               : ''}
           >
-            {portfolios.subscriptionInfo && 
-             !portfolios.subscriptionInfo.can_add_project && 
+            {portfolios.subscriptionInfo &&
+             !portfolios.subscriptionInfo.can_add_project &&
              portfolios.subscriptionInfo.subscription_type !== 'pro' ? (
               <>
                 <Sparkles size={16} className="inline mr-2 animate-pulse" />
@@ -416,7 +416,7 @@ const Dashboard = () => {
         isOpen={upgrade.isModalOpen}
         onClose={() => upgrade.setIsModalOpen(false)}
         isLimitReached={
-          (!portfolios.subscriptionInfo?.can_add_portfolio || !portfolios.subscriptionInfo?.can_add_project) && 
+          (!portfolios.subscriptionInfo?.can_add_portfolio || !portfolios.subscriptionInfo?.can_add_project) &&
           portfolios.subscriptionInfo?.subscription_type !== 'pro'
         }
         title={

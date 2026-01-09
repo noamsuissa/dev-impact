@@ -13,7 +13,7 @@ const UpgradeModal = ({ isOpen, onClose, title, message, isLimitReached = false,
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState(null);
     const [internalBillingPeriod, setInternalBillingPeriod] = useState('monthly');
-    
+
     // Use prop if provided, otherwise use internal state
     const billingPeriod = propBillingPeriod !== undefined ? propBillingPeriod : internalBillingPeriod;
     const setBillingPeriod = onBillingPeriodChange || setInternalBillingPeriod;
