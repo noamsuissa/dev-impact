@@ -125,10 +125,13 @@ class TestAuthService:
         with patch("backend.services.auth.auth_service.create_client") as mock_create_client:
             mock_mfa_client = Mock()
 
-            # Mock factors list response
+            # Mock factors list response - need proper attributes for MFAFactorResponse
             mock_factor = Mock()
             mock_factor.id = "factor_123"
-            mock_factor.factor_type = "totp"
+            mock_factor.factor_type = "totp"  # Code checks factor_type first, then type
+            mock_factor.type = "totp"  # Fallback
+            mock_factor.friendly_name = "My Authenticator"  # Required string or None
+            mock_factor.status = "verified"  # Required string
             mock_factors_response = Mock()
             mock_factors_response.all = [mock_factor]
 
