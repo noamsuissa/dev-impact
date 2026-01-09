@@ -1,42 +1,55 @@
+"""GitHub integration client.
+Handles GitHub OAuth Device Flow and API calls.
+"""
+
 import httpx
-from typing import Optional
-from backend.schemas.github_auth import DeviceCodeResponse, TokenResponse, GitHubUser
-import os
-from dotenv import load_dotenv
 from fastapi import HTTPException
 
-load_dotenv()
-
-GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
-GITHUB_DEVICE_AUTH_URL = os.getenv("GITHUB_DEVICE_AUTH_URL", "https://github.com/login/device/code")
-GITHUB_TOKEN_URL = os.getenv("GITHUB_TOKEN_URL", "https://github.com/login/oauth/access_token")
-GITHUB_USER_API_URL = os.getenv("GITHUB_USER_API_URL", "https://api.github.com/user")
+from backend.core.config import GitHubConfig
+from backend.schemas.github_auth import DeviceCodeResponse, GitHubUser, TokenResponse
 
 
-class GitHubService:
-    """Service for handling GitHub OAuth Device Flow and API calls."""
+class GitHubClient:
+    """Client for GitHub OAuth Device Flow and API operations."""
 
-    @staticmethod
-    async def initiate_device_flow() -> DeviceCodeResponse:
+    def __init__(self, config: GitHubConfig):
+        """Initialize GitHub client with configuration.
+
+        Args:
+        ----
+            config: GitHub configuration object
+
         """
-        Initiate GitHub Device Flow authentication.
+        self.config = config
+
+    async def initiate_device_flow(self) -> DeviceCodeResponse:
+        """Initiate GitHub Device Flow authentication.
         Returns device code, user code, and verification URI.
+
+        Returns
+        -------
+            Device code response with verification details
+
+        Raises
+        ------
+            HTTPException: If device flow initiation fails
+
         """
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    GITHUB_DEVICE_AUTH_URL,
+                    self.config.device_auth_url,
                     headers={
                         "Accept": "application/json",
                     },
                     data={
-                        "client_id": GITHUB_CLIENT_ID,
+                        "client_id": self.config.client_id,
                         "scope": "read:user",
                     },
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 return DeviceCodeResponse(
                     device_code=data["device_code"],
                     user_code=data["user_code"],
@@ -46,32 +59,41 @@ class GitHubService:
                 )
         except HTTPException:
             raise
-        except Exception:
-            raise HTTPException(status_code=500, detail="Failed to initiate GitHub device flow")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Failed to initiate GitHub device flow") from e
 
-    @staticmethod
-    async def poll_for_token(device_code: str) -> Optional[TokenResponse]:
-        """
-        Poll GitHub for access token.
-        Returns TokenResponse if authorized, None if still pending.
-        Raises exception on error.
+    async def poll_for_token(self, device_code: str) -> TokenResponse | None:
+        """Poll GitHub for access token.
+
+        Args:
+        ----
+            device_code: Device code from initiate_device_flow
+
+        Returns:
+        -------
+            TokenResponse if authorized, None if still pending
+
+        Raises:
+        ------
+            HTTPException: On error or timeout
+
         """
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    GITHUB_TOKEN_URL,
+                    self.config.token_url,
                     headers={
                         "Accept": "application/json",
                     },
                     data={
-                        "client_id": GITHUB_CLIENT_ID,
+                        "client_id": self.config.client_id,
                         "device_code": device_code,
                         "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
                     },
                 )
-                
+
                 data = response.json()
-                
+
                 # Check for errors
                 if "error" in data:
                     error = data["error"]
@@ -82,12 +104,12 @@ class GitHubService:
                         # Should increase polling interval (handled by frontend)
                         return None
                     elif error == "expired_token":
-                        raise Exception("Device code expired")
+                        raise HTTPException(status_code=400, detail="Device code expired")
                     elif error == "access_denied":
-                        raise Exception("User denied authorization")
+                        raise HTTPException(status_code=403, detail="User denied authorization")
                     else:
-                        raise Exception(f"GitHub OAuth error: {error}")
-                
+                        raise HTTPException(status_code=400, detail="GitHub OAuth error")
+
                 # Success
                 return TokenResponse(
                     status="success",
@@ -98,18 +120,28 @@ class GitHubService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to poll for GitHub token: {e}")
-    
-    @staticmethod
-    async def get_user_profile(access_token: str) -> GitHubUser:
-        """
-        Fetch GitHub user profile using access token.
-        Returns user profile information.
+            raise HTTPException(status_code=500, detail="Failed to poll for GitHub token") from e
+
+    async def get_user_profile(self, access_token: str) -> GitHubUser:
+        """Fetch GitHub user profile using access token.
+
+        Args:
+        ----
+            access_token: GitHub OAuth access token
+
+        Returns:
+        -------
+            GitHub user profile information
+
+        Raises:
+        ------
+            HTTPException: If profile fetch fails
+
         """
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    GITHUB_USER_API_URL,
+                    self.config.user_api_url,
                     headers={
                         "Accept": "application/json",
                         "Authorization": f"Bearer {access_token}",
@@ -117,7 +149,7 @@ class GitHubService:
                 )
                 response.raise_for_status()
                 data = response.json()
-                
+
                 return GitHubUser(
                     login=data["login"],
                     avatar_url=data["avatar_url"],
@@ -127,4 +159,4 @@ class GitHubService:
         except HTTPException:
             raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to get GitHub user profile: {e}")
+            raise HTTPException(status_code=500, detail="Failed to get GitHub user profile") from e

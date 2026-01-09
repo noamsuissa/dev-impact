@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS project_evidence (
     mime_type TEXT NOT NULL,
     display_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Constraints
     CONSTRAINT project_evidence_file_path_not_empty CHECK (length(trim(file_path)) > 0),
     CONSTRAINT project_evidence_file_name_not_empty CHECK (length(trim(file_name)) > 0),

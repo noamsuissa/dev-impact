@@ -4,7 +4,7 @@
 -- ============================================
 -- ADD STRIPE_CUSTOMER_ID TO PROFILES TABLE
 -- ============================================
-ALTER TABLE profiles 
+ALTER TABLE profiles
 ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
 
 -- Create index for faster lookups by Stripe customer ID

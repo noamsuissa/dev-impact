@@ -20,7 +20,7 @@ const AccountPage = ({ user, projects }) => {
   const [showMFASetup, setShowMFASetup] = useState(false);
   const [mfaError, setMfaError] = useState(null);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  
+
   // Account editing state
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -29,7 +29,7 @@ const AccountPage = ({ user, projects }) => {
     full_name: '',
     location: null, // { city, country } object or null
   });
-  
+
   // GitHub disconnect state
   const [isDisconnectingGitHub, setIsDisconnectingGitHub] = useState(false);
 
@@ -170,10 +170,10 @@ const AccountPage = ({ user, projects }) => {
       // Convert empty strings to null for optional fields, or include trimmed non-empty values
       // Note: GitHub username and avatar are managed via OAuth connection, not manually editable
       const updateData = {};
-      
+
       const fullName = editFormData.full_name.trim();
       updateData.full_name = fullName || null;
-      
+
       // Location comes from LocationAutocomplete as { city, country } object
       if (editFormData.location) {
         updateData.city = editFormData.location.city || null;
@@ -185,11 +185,11 @@ const AccountPage = ({ user, projects }) => {
       }
 
       await userClient.updateProfile(updateData);
-      
+
       // Refresh user profile in AuthContext
       // This will trigger a re-render of the parent component which will pass the updated userProfile prop
       await updateUserProfile();
-      
+
       setIsEditing(false);
     } catch (error) {
       console.error('Failed to update profile:', error);
@@ -215,10 +215,10 @@ const AccountPage = ({ user, projects }) => {
         github_username: null,
         github_avatar_url: null,
       });
-      
+
       // Refresh user profile in AuthContext
       await updateUserProfile();
-      
+
       // Small delay to ensure context updates, then reload
       setTimeout(() => {
         window.location.reload();
@@ -594,4 +594,3 @@ const AccountPage = ({ user, projects }) => {
 };
 
 export default AccountPage;
-

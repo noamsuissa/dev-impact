@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS waitlist (
     name TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     notified_at TIMESTAMPTZ,
-    
+
     -- Constraints
     CONSTRAINT waitlist_email_not_empty CHECK (length(trim(email)) > 0),
     CONSTRAINT waitlist_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$')

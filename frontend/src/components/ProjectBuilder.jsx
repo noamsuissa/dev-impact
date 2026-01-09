@@ -4,8 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import TerminalButton from './common/TerminalButton';
 import TerminalInput from './common/TerminalInput';
 import TerminalSelect from './common/TerminalSelect';
-import { 
-  isLegacyMetric, 
+import {
+  isLegacyMetric,
   calculateImprovement
 } from '../utils/metrics';
 
@@ -60,7 +60,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
 
   const addMetric = () => {
     // Add a new standardized metric by default
-    setMetrics([...metrics, { 
+    setMetrics([...metrics, {
       type: 'performance',
       primary: { value: '', unit: '%', label: '' },
       comparison: null,
@@ -73,12 +73,12 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
 
   const updateMetric = (index, field, value) => {
     const updated = [...metrics];
-    
+
     // Handle nested updates for standardized metrics
     if (field.includes('.')) {
       const parts = field.split('.');
       let current = updated[index];
-      
+
       // Navigate to the parent object
       for (let i = 0; i < parts.length - 1; i++) {
         if (!current[parts[i]]) {
@@ -86,17 +86,17 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
         }
         current = current[parts[i]];
       }
-      
+
       // Set the final value
       current[parts[parts.length - 1]] = value;
     } else {
       updated[index][field] = value;
     }
-    
+
     // Auto-calculate improvement if comparison is complete
     if (field.startsWith('comparison.') && updated[index].comparison) {
       const comp = updated[index].comparison;
-      if (comp.before?.value !== undefined && comp.before?.unit && 
+      if (comp.before?.value !== undefined && comp.before?.unit &&
           comp.after?.value !== undefined && comp.after?.unit) {
         const improvement = calculateImprovement(comp.before, comp.after);
         if (improvement !== null && updated[index].primary) {
@@ -106,18 +106,18 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
         }
       }
     }
-    
+
     setMetrics(updated);
   };
 
   const removeMetric = (index) => {
     setMetrics(metrics.filter((_, i) => i !== index));
   };
-  
+
   const toggleMetricComparison = (index) => {
     const updated = [...metrics];
     const metric = updated[index];
-    
+
     if (metric._showComparison) {
       // Hide but don't clear - just hide the UI
       metric._showComparison = false;
@@ -131,14 +131,14 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
         };
       }
     }
-    
+
     setMetrics(updated);
   };
-  
+
   const toggleMetricContext = (index) => {
     const updated = [...metrics];
     const metric = updated[index];
-    
+
     if (metric._showContext) {
       // Hide but don't clear - just hide the UI
       metric._showContext = false;
@@ -149,7 +149,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
         metric.context = { frequency: '', scope: '' };
       }
     }
-    
+
     setMetrics(updated);
   };
 
@@ -178,11 +178,11 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
       .map(m => {
         // Remove UI-only fields
         const { _showComparison, _showContext, ...cleaned } = m;
-        
+
         // Clean up null/empty optional fields
         // Check for undefined explicitly (0 is a valid value!)
-        if (!cleaned.comparison || 
-            cleaned.comparison.before?.value === undefined || 
+        if (!cleaned.comparison ||
+            cleaned.comparison.before?.value === undefined ||
             cleaned.comparison.after?.value === undefined) {
           cleaned.comparison = null;
         }
@@ -192,10 +192,10 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
         if (!cleaned.timeframe) {
           cleaned.timeframe = null;
         }
-        
+
         return cleaned;
       });
-    
+
     const project = {
       id: initialData?.id || Date.now().toString(),
       company,
@@ -294,7 +294,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
         <div className="mb-2">&gt; Impact Metrics:</div>
         {metrics.map((metric, i) => {
           const isLegacy = isLegacyMetric(metric);
-          
+
           return (
             <div key={i} className="border border-terminal-border p-4 mb-2.5 bg-terminal-bg-lighter">
               {isLegacy ? (
@@ -346,7 +346,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                       ]}
                     />
                   </div>
-                  
+
                   {/* Primary Value */}
                   <div className="mb-2.5">
                     <div className="mb-1 text-xs">Primary Metric:</div>
@@ -401,7 +401,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Comparison Section (Collapsible) */}
                   <div className="mb-2.5">
                     <button
@@ -412,7 +412,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                       {metric._showComparison ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       {metric._showComparison ? 'Hide' : 'Add'} Before/After Comparison
                     </button>
-                    
+
                     {metric._showComparison && (
                       <div className="border border-terminal-border p-3 bg-terminal-bg">
                         <div className="grid grid-cols-2 gap-2.5">
@@ -511,7 +511,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Context Section (Collapsible) */}
                   <div className="mb-2.5">
                     <button
@@ -522,7 +522,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                       {metric._showContext ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                       {metric._showContext ? 'Hide' : 'Add'} Context & Timeframe
                     </button>
-                    
+
                     {metric._showContext && (
                       <div className="border border-terminal-border p-3 bg-terminal-bg">
                         <div className="mb-2.5">
@@ -561,7 +561,7 @@ const ProjectForm = ({ initialData, onSave, onCancel, isEditing, portfolios = []
                   </div>
                 </>
               )}
-              
+
               <TerminalButton onClick={() => removeMetric(i)}>
                 [Remove Metric]
               </TerminalButton>

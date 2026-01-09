@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS published_profiles (
     view_count INTEGER DEFAULT 0,
     published_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     CONSTRAINT username_format CHECK (username ~ '^[a-z0-9-]+$'),
     CONSTRAINT username_length CHECK (char_length(username) >= 3 AND char_length(username) <= 50)
 );
@@ -22,9 +22,9 @@ CREATE INDEX IF NOT EXISTS idx_published_profiles_user_id ON published_profiles(
 CREATE INDEX IF NOT EXISTS idx_published_profiles_is_published ON published_profiles(is_published);
 
 -- Add username column to profiles table if it doesn't exist
-DO $$ 
+DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_name='profiles' AND column_name='username') THEN
         ALTER TABLE profiles ADD COLUMN username TEXT UNIQUE;
         ALTER TABLE profiles ADD CONSTRAINT username_format CHECK (username ~ '^[a-z0-9-]+$');
@@ -74,7 +74,7 @@ CREATE POLICY "Users can delete their own published profile"
 -- Create view for public profile display (without sensitive data)
 CREATE OR REPLACE VIEW public_profiles
 WITH (security_invoker=true) AS
-SELECT 
+SELECT
     pp.username,
     pp.profile_data,
     pp.view_count,
@@ -94,4 +94,3 @@ COMMENT ON TABLE published_profiles IS 'Stores published profiles with unique us
 COMMENT ON COLUMN published_profiles.username IS 'Unique username for the profile URL (lowercase, alphanumeric, hyphens only)';
 COMMENT ON COLUMN published_profiles.profile_data IS 'JSON data containing projects and profile information';
 COMMENT ON COLUMN published_profiles.view_count IS 'Number of times this profile has been viewed';
-

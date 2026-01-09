@@ -112,4 +112,3 @@ const PortfolioTabs = ({ portfolios, selectedPortfolioId, onSelectPortfolio, onA
 };
 
 export default PortfolioTabs;
-

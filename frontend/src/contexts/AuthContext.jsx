@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
   // Helper function to load and merge user profile with auth user
   const loadUserProfile = async (authUser) => {
     if (!authUser) return null
-    
+
     try {
       const profileData = await userClient.getProfile()
       if (profileData) {
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Failed to load user profile:', err)
       return authUser
     }
-    
+
     return authUser
   }
 
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
     const loadSession = async () => {
       try {
         const data = await auth.getSession()
-        
+
         if (data.user) {
           setSession(data.session)
           // Load and merge profile data
@@ -139,4 +139,3 @@ export const AuthProvider = ({ children }) => {
 
 // Export context for use in the custom hook
 export { AuthContext }
-

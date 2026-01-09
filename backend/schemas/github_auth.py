@@ -1,8 +1,11 @@
+"""GitHub Auth Schemas - Pydantic models for GitHub authentication operations"""
+
 from pydantic import BaseModel
-from typing import Optional
 
 
 class DeviceCodeResponse(BaseModel):
+    """Device code response schema"""
+
     device_code: str
     user_code: str
     verification_uri: str
@@ -11,23 +14,30 @@ class DeviceCodeResponse(BaseModel):
 
 
 class PollRequest(BaseModel):
+    """Poll request schema"""
+
     device_code: str
 
 
 class TokenResponse(BaseModel):
+    """Token response schema"""
+
     status: str
-    access_token: Optional[str] = None
-    token_type: Optional[str] = None
-    scope: Optional[str] = None
+    access_token: str | None = None
+    token_type: str | None = None
+    scope: str | None = None
 
 
 class GitHubUser(BaseModel):
+    """GitHub user schema"""
+
     login: str
     avatar_url: str
-    name: Optional[str] = None
-    email: Optional[str] = None
+    name: str | None = None
+    email: str | None = None
 
 
 class UserProfileRequest(BaseModel):
-    access_token: str
+    """User profile request schema"""
 
+    access_token: str

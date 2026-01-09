@@ -35,7 +35,7 @@ const ResetPassword = () => {
     };
 
     const isValid = rules.minLength && rules.hasUpperCase && rules.hasLowerCase && rules.hasNumber && rules.hasSpecial;
-    
+
     return { rules, isValid };
   }, [password]);
 
@@ -164,13 +164,13 @@ const ResetPassword = () => {
 
           {/* Submit Button */}
           <div className="fade-in flex gap-5 pt-5" style={{ animationDelay: '0.2s' }}>
-            <TerminalButton 
-              type="submit" 
+            <TerminalButton
+              type="submit"
               disabled={
-                loading || 
-                !password || 
-                !confirmPassword || 
-                !passwordValidation.isValid || 
+                loading ||
+                !password ||
+                !confirmPassword ||
+                !passwordValidation.isValid ||
                 password !== confirmPassword
               }
             >
@@ -202,4 +202,3 @@ const PasswordRequirement = ({ met, children }) => (
 );
 
 export default ResetPassword;
-

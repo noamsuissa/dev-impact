@@ -185,4 +185,3 @@ This project is licensed under the AGPLv3 - see the [LICENSE](LICENSE) file for 
 ---
 
 Built with ❤️ by developers, for developers.
-

@@ -12,12 +12,12 @@ export default function NotFound() {
           {/* ASCII Art 404 */}
           <pre className="text-[#ff6b6b] text-sm md:text-base overflow-x-auto">
 {`
-  _  _    ___   _  _   
- | || |  / _ \\ | || |  
- | || |_| | | || || |_ 
+  _  _    ___   _  _
+ | || |  / _ \\ | || |
+ | || |_| | | || || |_
  |__   _| | | ||__   _|
-    | | | |_| |   | |  
-    |_|  \\___/    |_|  
+    | | | |_| |   | |
+    |_|  \\___/    |_|
 `}
           </pre>
 
@@ -45,13 +45,13 @@ export default function NotFound() {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <TerminalButton 
+            <TerminalButton
               onClick={() => navigate('/')}
               className="flex-1"
             >
               &gt; Go Home
             </TerminalButton>
-            <TerminalButton 
+            <TerminalButton
               onClick={() => navigate(-1)}
               className="flex-1"
             >
@@ -63,4 +63,3 @@ export default function NotFound() {
     </div>
   );
 }
-

@@ -9,19 +9,19 @@ const DashboardContext = createContext()
 
 export const DashboardProvider = ({ children }) => {
   const { user, updateUserProfile } = useAuth()
-  
+
   // GitHub state
   const [githubState, setGithubState] = useState('initial') // initial, loading, awaiting, success, error
   const [deviceCode, setDeviceCode] = useState(null)
   const [githubError, setGithubError] = useState(null)
-  
+
   // Publish state
   const [publishState, setPublishState] = useState('initial') // initial, loading, success, error
   const [publishedUrl, setPublishedUrl] = useState(null)
   const [isPublished, setIsPublished] = useState(false)
   const [showCopied, setShowCopied] = useState(false)
   const [publishError, setPublishError] = useState(null)
-  
+
   // Data state
   const [projects, setProjects] = useState([])
   const [portfoliosList, setPortfoliosList] = useState([])
@@ -29,7 +29,7 @@ export const DashboardProvider = ({ children }) => {
   const [publishedPortfolioSlugs, setPublishedPortfolioSlugs] = useState([])
   const [portfolioViewCounts, setPortfolioViewCounts] = useState({}) // Map of portfolio slug to view count
   const [subscriptionInfo, setSubscriptionInfo] = useState(null)
-  
+
   // Modal state
   const [isPortfolioModalOpen, setIsPortfolioModalOpen] = useState(false)
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false)
@@ -85,9 +85,9 @@ export const DashboardProvider = ({ children }) => {
         // Restore selected profile from localStorage or select first profile
         setSelectedPortfolioId(prev => {
           if (prev) return prev // Keep current selection if already set
-          
+
           if (portfoliosList.length === 0) return null
-          
+
           // Try to restore from localStorage
           if (typeof window !== 'undefined') {
             const stored = localStorage.getItem('selectedPortfolioId')
@@ -95,7 +95,7 @@ export const DashboardProvider = ({ children }) => {
               return stored
             }
           }
-          
+
           // Default to first profile
           return portfoliosList[0].id
         })
@@ -179,7 +179,7 @@ export const DashboardProvider = ({ children }) => {
           viewCountsMap[stat.portfolio_slug] = stat.view_count
         })
         setPortfolioViewCounts(viewCountsMap)
-        
+
         // Also update published slugs from stats
         const publishedSlugs = stats.stats
           .filter(stat => stat.is_published)
@@ -229,7 +229,7 @@ export const DashboardProvider = ({ children }) => {
       const shareUrl = generatePortfolioUrl(user.username, selectedPortfolio.slug)
       return { isPublished: true, publishedUrl: shareUrl }
     }
-    
+
     return { isPublished: false, publishedUrl: null }
   }, [user, selectedPortfolioId, portfoliosList, publishedPortfolioSlugs])
 
@@ -495,7 +495,7 @@ export const DashboardProvider = ({ children }) => {
         // Check project count before creating
         const projectCountBefore = subscriptionInfo?.project_count || 0
         const maxProjects = subscriptionInfo?.max_projects || 10
-        
+
         const created = await projectsClient.create(project)
         // Ensure portfolio_id is included in the created project
         const createdWithPortfolio = {
@@ -503,17 +503,17 @@ export const DashboardProvider = ({ children }) => {
           portfolio_id: created.portfolio_id || project.portfolio_id || null
         }
         setProjects([...projects, createdWithPortfolio])
-        
+
         // Refresh subscription info after creating a project
         try {
           const subInfo = await subscriptions.getSubscriptionInfo()
           setSubscriptionInfo(subInfo)
-          
+
           // If user just hit the limit (was at max-1, now at max), trigger upgrade modal
-          const justHitLimit = projectCountBefore === maxProjects - 1 && 
-                               subInfo.project_count >= maxProjects && 
+          const justHitLimit = projectCountBefore === maxProjects - 1 &&
+                               subInfo.project_count >= maxProjects &&
                                subInfo.subscription_type !== 'pro'
-          
+
           if (justHitLimit) {
             // Trigger upgrade modal after a short delay to allow navigation
             setTimeout(() => {
@@ -536,7 +536,7 @@ export const DashboardProvider = ({ children }) => {
     try {
       await projectsClient.delete(id)
       setProjects(projects.filter(p => p.id !== id))
-      
+
       // Refresh subscription info after deleting a project
       try {
         const subInfo = await subscriptions.getSubscriptionInfo()

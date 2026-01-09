@@ -38,7 +38,7 @@ const PublishPortfolioModal = ({ isOpen, onClose, portfolios = [], onPublish, pu
   if (!isOpen) return null;
 
   const availablePortfolios = portfolios.filter(p => !publishedPortfolioSlugs.includes(p.slug));
-  
+
   // Convert portfolios to options format for TerminalSelect
   const portfolioOptions = availablePortfolios.map(p => ({
     value: p.id,
@@ -115,4 +115,3 @@ const PublishPortfolioModal = ({ isOpen, onClose, portfolios = [], onPublish, pu
 };
 
 export default PublishPortfolioModal;
-

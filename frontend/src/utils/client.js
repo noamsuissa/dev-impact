@@ -836,5 +836,3 @@ export default {
   subscriptions,
   storage,
 };
-
-

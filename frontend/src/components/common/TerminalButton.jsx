@@ -1,7 +1,7 @@
 import React from 'react';
 
 const TerminalButton = ({ children, onClick, disabled, className = '' }) => (
-  <button 
+  <button
     className={`terminal-button ${className}`}
     onClick={onClick}
     disabled={disabled}
@@ -11,4 +11,3 @@ const TerminalButton = ({ children, onClick, disabled, className = '' }) => (
 );
 
 export default TerminalButton;
-

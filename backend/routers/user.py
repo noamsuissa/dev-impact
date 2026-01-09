@@ -1,12 +1,16 @@
-"""
-User Router - Handle user profile endpoints
-"""
+"""User Router - Handle user profile endpoints"""
+
 from fastapi import APIRouter, Depends
-from backend.schemas.user import UserProfile, UpdateProfileRequest, OnboardingRequest, CheckUsernameResponse
+
+from backend.core.container import ServiceDBClient, UserServiceDep
 from backend.schemas.auth import MessageResponse
-from backend.services.user_service import UserService
+from backend.schemas.user import (
+    CheckUsernameResponse,
+    OnboardingRequest,
+    UpdateProfileRequest,
+    UserProfile,
+)
 from backend.utils import auth_utils
-from backend.utils.dependencies import ServiceDBClient, StripeServiceDep
 
 router = APIRouter(
     prefix="/api/user",
@@ -17,16 +21,16 @@ router = APIRouter(
 @router.get("/profile", response_model=UserProfile)
 async def get_profile(
     client: ServiceDBClient,
-    authorization: str = Depends(auth_utils.get_access_token)
+    user_service: UserServiceDep,
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Get current user's profile
-    
+    """Get current user's profile
+
     Returns the authenticated user's profile data.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
-    profile = await UserService.get_profile(client, user_id)
+
+    profile = await user_service.get_profile(client, user_id)
     return profile
 
 
@@ -34,21 +38,21 @@ async def get_profile(
 async def update_profile(
     request: UpdateProfileRequest,
     client: ServiceDBClient,
-    authorization: str = Depends(auth_utils.get_access_token)
+    user_service: UserServiceDep,
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Update current user's profile
-    
+    """Update current user's profile
+
     Updates the authenticated user's profile data.
     Note: Setting a field to null will clear that field (e.g., disconnecting GitHub).
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
+
     # Use exclude_unset=True instead of exclude_none=True
     # This allows explicitly set None values to be included (for clearing fields)
     # while excluding fields that weren't provided in the request
     profile_data = request.model_dump(exclude_unset=True)
-    profile = await UserService.update_profile(client, user_id, profile_data)
+    profile = await user_service.update_profile(client, user_id, profile_data)
     return profile
 
 
@@ -56,15 +60,15 @@ async def update_profile(
 async def complete_onboarding(
     request: OnboardingRequest,
     client: ServiceDBClient,
-    authorization: str = Depends(auth_utils.get_access_token)
+    user_service: UserServiceDep,
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Complete user onboarding
-    
+    """Complete user onboarding
+
     Creates or updates user profile with onboarding data.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
+
     profile_data = {
         "username": request.username,
         "full_name": request.name,
@@ -73,35 +77,33 @@ async def complete_onboarding(
         "city": request.city,
         "country": request.country,
     }
-    profile = await UserService.create_or_update_profile(client, user_id, profile_data)
+    profile = await user_service.create_or_update_profile(client, user_id, profile_data)
     return profile
 
 
 @router.get("/check-username/{username}", response_model=CheckUsernameResponse)
-async def check_username(username: str, client: ServiceDBClient):
-    """
-    Check if a username is available for publishing portfolios
-    
+async def check_username(username: str, client: ServiceDBClient, user_service: UserServiceDep):
+    """Check if a username is available for publishing portfolios
+
     Returns whether the username is available and valid.
     This is a public endpoint that doesn't require authentication.
     """
-    result = await UserService.check_username(client, username)
+    result = await user_service.check_username(client, username)
     return result
 
 
 @router.delete("/account", response_model=MessageResponse)
 async def delete_account(
     client: ServiceDBClient,
-    stripe_service: StripeServiceDep,
-    authorization: str = Depends(auth_utils.get_access_token)
+    user_service: UserServiceDep,
+    authorization: str = Depends(auth_utils.get_access_token),
 ):
-    """
-    Delete current user's account
-    
+    """Delete current user's account
+
     Permanently deletes the user's profile and authentication account.
     This action cannot be undone.
     """
     user_id = auth_utils.get_user_id_from_authorization(authorization)
-    
-    result = await UserService.delete_account(client, user_id, stripe_service)
+
+    result = await user_service.delete_account(client, user_id)
     return result

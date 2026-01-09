@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     published_at TIMESTAMPTZ,
-    
+
     -- Constraints
     CONSTRAINT username_format CHECK (username ~ '^[a-z0-9][a-z0-9-]*[a-z0-9]$'),
     CONSTRAINT username_length CHECK (length(username) >= 3 AND length(username) <= 39)
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS impact_projects (
     display_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Constraints
     CONSTRAINT team_size_positive CHECK (team_size > 0),
     CONSTRAINT contributions_not_empty CHECK (array_length(contributions, 1) > 0),
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS project_metrics (
     detail TEXT,
     display_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Constraints
     CONSTRAINT primary_value_not_empty CHECK (length(trim(primary_value)) > 0),
     CONSTRAINT label_not_empty CHECK (length(trim(label)) > 0)
@@ -86,11 +86,11 @@ CREATE TABLE IF NOT EXISTS github_stats (
     total_commits INTEGER DEFAULT 0,
     contribution_data JSONB,
     last_synced_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Constraints
     CONSTRAINT stats_non_negative CHECK (
-        total_repos >= 0 AND 
-        total_stars >= 0 AND 
+        total_repos >= 0 AND
+        total_stars >= 0 AND
         total_commits >= 0
     )
 );
@@ -150,22 +150,22 @@ BEGIN
     IF desired_username !~ '^[a-z0-9][a-z0-9-]*[a-z0-9]$' THEN
         RETURN false;
     END IF;
-    
+
     -- Check length
     IF length(desired_username) < 3 OR length(desired_username) > 39 THEN
         RETURN false;
     END IF;
-    
+
     -- Check if reserved
     IF EXISTS (SELECT 1 FROM public.reserved_usernames WHERE username = desired_username) THEN
         RETURN false;
     END IF;
-    
+
     -- Check if taken
     IF EXISTS (SELECT 1 FROM public.profiles WHERE username = desired_username) THEN
         RETURN false;
     END IF;
-    
+
     RETURN true;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -261,8 +261,8 @@ CREATE POLICY "Published profile projects are viewable by everyone"
     ON impact_projects FOR SELECT
     USING (
         EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = impact_projects.user_id 
+            SELECT 1 FROM profiles
+            WHERE profiles.id = impact_projects.user_id
             AND profiles.is_published = true
         )
     );
@@ -272,8 +272,8 @@ CREATE POLICY "Users can view their own projects"
     ON impact_projects FOR SELECT
     USING (
         EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = impact_projects.user_id 
+            SELECT 1 FROM profiles
+            WHERE profiles.id = impact_projects.user_id
             AND profiles.id = auth.uid()
         )
     );
@@ -283,8 +283,8 @@ CREATE POLICY "Users can insert their own projects"
     ON impact_projects FOR INSERT
     WITH CHECK (
         EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = user_id 
+            SELECT 1 FROM profiles
+            WHERE profiles.id = user_id
             AND profiles.id = auth.uid()
         )
     );
@@ -294,8 +294,8 @@ CREATE POLICY "Users can update their own projects"
     ON impact_projects FOR UPDATE
     USING (
         EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = user_id 
+            SELECT 1 FROM profiles
+            WHERE profiles.id = user_id
             AND profiles.id = auth.uid()
         )
     );
@@ -305,8 +305,8 @@ CREATE POLICY "Users can delete their own projects"
     ON impact_projects FOR DELETE
     USING (
         EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = user_id 
+            SELECT 1 FROM profiles
+            WHERE profiles.id = user_id
             AND profiles.id = auth.uid()
         )
     );
@@ -384,8 +384,8 @@ CREATE POLICY "Published profile stats are viewable by everyone"
     ON github_stats FOR SELECT
     USING (
         EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = github_stats.user_id 
+            SELECT 1 FROM profiles
+            WHERE profiles.id = github_stats.user_id
             AND profiles.is_published = true
         )
     );
@@ -395,8 +395,8 @@ CREATE POLICY "Users can view their own stats"
     ON github_stats FOR SELECT
     USING (
         EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = user_id 
+            SELECT 1 FROM profiles
+            WHERE profiles.id = user_id
             AND profiles.id = auth.uid()
         )
     );
@@ -406,8 +406,8 @@ CREATE POLICY "Users can insert their own stats"
     ON github_stats FOR INSERT
     WITH CHECK (
         EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = user_id 
+            SELECT 1 FROM profiles
+            WHERE profiles.id = user_id
             AND profiles.id = auth.uid()
         )
     );
@@ -417,8 +417,8 @@ CREATE POLICY "Users can update their own stats"
     ON github_stats FOR UPDATE
     USING (
         EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = user_id 
+            SELECT 1 FROM profiles
+            WHERE profiles.id = user_id
             AND profiles.id = auth.uid()
         )
     );
@@ -430,7 +430,7 @@ CREATE POLICY "Users can update their own stats"
 -- View for complete published profiles with all related data
 CREATE OR REPLACE VIEW published_profiles_complete
 WITH (security_invoker=true) AS
-SELECT 
+SELECT
     p.id,
     p.username,
     p.full_name,
@@ -493,4 +493,3 @@ GRANT SELECT ON reserved_usernames TO anon, authenticated;
 -- 3. Update backend to use Supabase instead of JSON files
 -- 4. Update frontend to call Supabase APIs
 -- ============================================
-

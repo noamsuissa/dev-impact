@@ -15,24 +15,24 @@ BEGIN
     SELECT subscription_type INTO user_subscription
     FROM profiles
     WHERE id = user_uuid;
-    
+
     -- Default to 'free' if not set
     IF user_subscription IS NULL THEN
         user_subscription := 'free';
     END IF;
-    
+
     -- Set max portfolios based on subscription
     IF user_subscription = 'pro' THEN
         max_portfolios := 1000; -- Unlimited for pro
     ELSE
         max_portfolios := 1; -- Free/hobby users limited to 1
     END IF;
-    
+
     -- Count existing portfolios
     SELECT COUNT(*) INTO portfolio_count
     FROM portfolios
     WHERE user_id = user_uuid;
-    
+
     -- Return true if under limit
     RETURN portfolio_count < max_portfolios;
 END;
@@ -66,24 +66,24 @@ BEGIN
     SELECT subscription_type INTO user_subscription
     FROM profiles
     WHERE id = user_uuid;
-    
+
     -- Default to 'free' if not set
     IF user_subscription IS NULL THEN
         user_subscription := 'free';
     END IF;
-    
+
     -- Set max portfolios based on subscription
     IF user_subscription = 'pro' THEN
         max_portfolios := 1000; -- Unlimited for pro
     ELSE
         max_portfolios := 1; -- Free/hobby users limited to 1
     END IF;
-    
+
     -- Count existing portfolios
     SELECT COUNT(*) INTO portfolio_count
     FROM portfolios
     WHERE user_id = user_uuid;
-    
+
     -- Build result JSON with new field names
     result := json_build_object(
         'subscription_type', user_subscription,
@@ -91,8 +91,7 @@ BEGIN
         'max_portfolios', max_portfolios,
         'can_add_portfolio', portfolio_count < max_portfolios
     );
-    
+
     RETURN result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-

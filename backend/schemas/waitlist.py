@@ -1,27 +1,28 @@
-"""
-Waitlist Schemas - Pydantic models for waitlist operations
-"""
-from pydantic import BaseModel, EmailStr, field_serializer
-from typing import Optional, Union
+"""Waitlist Schemas - Pydantic models for waitlist operations"""
+
 from datetime import datetime
+
+from pydantic import BaseModel, EmailStr, field_serializer
 
 
 class WaitlistSignupRequest(BaseModel):
     """Waitlist signup request"""
+
     email: EmailStr
-    name: Optional[str] = None
+    name: str | None = None
 
 
 class WaitlistEntry(BaseModel):
     """Waitlist entry response"""
+
     id: str
     email: str
-    name: Optional[str] = None
-    created_at: Union[str, datetime]
-    notified_at: Optional[Union[str, datetime]] = None
-    
-    @field_serializer('created_at', 'notified_at')
-    def serialize_datetime(self, value: Union[str, datetime, None]) -> Optional[str]:
+    name: str | None = None
+    created_at: str | datetime
+    notified_at: str | datetime | None = None
+
+    @field_serializer("created_at", "notified_at")
+    def serialize_datetime(self, value: str | datetime | None) -> str | None:
         """Convert datetime to ISO format string"""
         if value is None:
             return None
@@ -32,7 +33,7 @@ class WaitlistEntry(BaseModel):
 
 class WaitlistResponse(BaseModel):
     """Waitlist signup response"""
+
     success: bool
     message: str
-    entry: Optional[WaitlistEntry] = None
-
+    entry: WaitlistEntry | None = None

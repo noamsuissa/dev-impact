@@ -26,14 +26,14 @@ const PricingPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const enablePayments = import.meta.env.VITE_ENABLE_PAYMENTS === 'true';
-  
+
   const getProPlanPrice = () => {
     if (billingPeriod === 'yearly') {
       return { price: '$8', period: 'per month', billed: '$96 billed yearly' };
     }
     return { price: '$10', period: 'per month', billed: null };
   };
-  
+
   const plans = [
     {
       name: 'Hobby',
@@ -388,4 +388,3 @@ const PricingPage = () => {
 };
 
 export default PricingPage;
-

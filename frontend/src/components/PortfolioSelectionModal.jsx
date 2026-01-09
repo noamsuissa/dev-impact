@@ -102,4 +102,3 @@ const PortfolioSelectionModal = ({ isOpen, onClose, portfolios = [], onSelect })
 };
 
 export default PortfolioSelectionModal;
-
