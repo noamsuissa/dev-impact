@@ -21,6 +21,7 @@ class TestMFAService:
         assert service is not None
 
     @pytest.mark.asyncio
+    @patch.dict("os.environ", {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_ANON_KEY": "test_anon_key"})
     async def test_mfa_enroll(self, mfa_service):
         """Test enrolling in MFA (TOTP)"""
         # Mock httpx for Supabase Auth API
@@ -61,6 +62,7 @@ class TestMFAService:
             assert "configuration not found" in exc_info.value.detail.lower()
 
     @pytest.mark.asyncio
+    @patch.dict("os.environ", {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_ANON_KEY": "test_anon_key"})
     async def test_mfa_verify_enrollment(self, mfa_service):
         """Test verifying MFA enrollment with code"""
         # Mock httpx for Supabase Auth API
@@ -88,6 +90,7 @@ class TestMFAService:
             assert "verified" in result.message.lower()
 
     @pytest.mark.asyncio
+    @patch.dict("os.environ", {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_ANON_KEY": "test_anon_key"})
     async def test_mfa_verify_enrollment_invalid_code(self, mfa_service):
         """Test MFA verification with invalid code"""
         # Mock httpx for Supabase Auth API
@@ -115,6 +118,7 @@ class TestMFAService:
             assert "Invalid verification code" in exc_info.value.detail
 
     @pytest.mark.asyncio
+    @patch.dict("os.environ", {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_SERVICE_ROLE_KEY": "test_service_key"})
     async def test_mfa_list_factors(self, mfa_service):
         """Test listing user's MFA factors"""
         # Mock httpx for Admin API
@@ -139,6 +143,7 @@ class TestMFAService:
             assert result.factors[0].type == "totp"
 
     @pytest.mark.asyncio
+    @patch.dict("os.environ", {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_SERVICE_ROLE_KEY": "test_service_key"})
     async def test_mfa_list_factors_empty(self, mfa_service):
         """Test listing factors when user has none"""
         # Mock httpx for Admin API
@@ -158,6 +163,7 @@ class TestMFAService:
             assert len(result.factors) == 0
 
     @pytest.mark.asyncio
+    @patch.dict("os.environ", {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_SERVICE_ROLE_KEY": "test_service_key"})
     async def test_mfa_unenroll(self, mfa_service):
         """Test removing MFA factor"""
         # Mock httpx for Admin API

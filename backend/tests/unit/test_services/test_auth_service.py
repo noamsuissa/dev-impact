@@ -105,41 +105,43 @@ class TestAuthService:
             assert result.requires_mfa is False
 
     @pytest.mark.asyncio
+    @patch.dict("os.environ", {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_ANON_KEY": "test_anon_key"})
     async def test_sign_in_with_mfa(self, auth_service, mock_supabase_client):
         """Test login with MFA challenge"""
-        # Setup mock - password sign in succeeds
+        # Setup mock - password sign in succeeds but session is None (MFA required)
         mock_user = Mock()
         mock_user.id = "user_123"
         mock_user.email = "test@example.com"
         mock_user.created_at = "2024-01-01T00:00:00"
 
-        mock_session = Mock()
-        mock_session.access_token = "access_token_123"
-        mock_session.refresh_token = "refresh_token_123"
-        mock_session.expires_at = 1704067200
-
         mock_auth_response = Mock()
         mock_auth_response.user = mock_user
-        mock_auth_response.session = mock_session
+        mock_auth_response.session = None  # No session - triggers MFA check
+        mock_auth_response.access_token = None  # No access token
 
         mock_supabase_client.auth.sign_in_with_password = Mock(return_value=mock_auth_response)
 
-        # Mock MFA check - has factors
-        with patch("httpx.AsyncClient") as mock_client_class:
-            mock_client = AsyncMock()
-            mock_client_class.return_value.__aenter__.return_value = mock_client
+        # Mock Supabase client creation and MFA methods
+        with patch("backend.services.auth.auth_service.create_client") as mock_create_client:
+            mock_mfa_client = Mock()
 
-            # Mock factors list
+            # Mock factors list response
+            mock_factor = Mock()
+            mock_factor.id = "factor_123"
+            mock_factor.factor_type = "totp"
             mock_factors_response = Mock()
-            mock_factors_response.status_code = 200
-            mock_factors_response.json.return_value = [{"id": "factor_123", "factor_type": "totp", "status": "verified"}]
-            mock_client.get.return_value = mock_factors_response
+            mock_factors_response.all = [mock_factor]
 
-            # Mock challenge creation
-            mock_challenge_response = Mock()
-            mock_challenge_response.status_code = 200
-            mock_challenge_response.json.return_value = {"id": "challenge_123"}
-            mock_client.post.return_value = mock_challenge_response
+            # Mock challenge response
+            mock_challenge = Mock()
+            mock_challenge.id = "challenge_123"
+
+            # Set up the client chain
+            mock_mfa_client.auth.mfa.list_factors.return_value = mock_factors_response
+            mock_mfa_client.auth.mfa.challenge.return_value = mock_challenge
+            mock_mfa_client.postgrest.auth = Mock()  # For setting auth header
+
+            mock_create_client.return_value = mock_mfa_client
 
             # Execute
             result = await auth_service.sign_in(mock_supabase_client, "test@example.com", "password123")
@@ -198,6 +200,7 @@ class TestAuthService:
         mock_supabase_client.auth.reset_password_email.assert_called_once()
 
     @pytest.mark.asyncio
+    @patch.dict("os.environ", {"SUPABASE_URL": "https://test.supabase.co", "SUPABASE_SERVICE_ROLE_KEY": "test_service_key"})
     async def test_update_password(self, auth_service):
         """Test updating password from token"""
         # Create a valid JWT token
